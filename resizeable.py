@@ -53,6 +53,53 @@ class Signals(QObject):
     creating = pyqtSignal(QGraphicsRectItem)
 
 
+def check_parent_limits(parent: QGraphicsRectItem, scene_x, scene_y):
+    if parent is not None:
+        pos_on_item = parent.mapFromScene(scene_x, scene_y)
+        x, y = pos_on_item.x(), pos_on_item.y()
+        x = parent.rect().x() if x < parent.rect().x() else x
+        x = parent.rect().x() + parent.rect().width() if x > parent.rect().x() + parent.rect().width() else x
+        y = parent.rect().y() if y < parent.rect().y() else y
+        y = parent.rect().y() + parent.rect().height() if y > parent.rect().y() + parent.rect().height() else y
+        point_on_scene = parent.mapToScene(x, y)
+        x, y = point_on_scene.x(), point_on_scene.y()
+    else:
+        x, y = scene_x, scene_y
+
+    return x, y
+
+
+class SelectorRectItem(QGraphicsRectItem, QObject):
+    def __init__(self, parent=None):
+        super(SelectorRectItem, self).__init__(parent=parent)
+        self.signals = Signals()
+        self.p1 = None
+
+    def view_mouse_press_event(self, view, event):
+        if self.parentItem() is None:
+            self.p1 = view.mapToScene(event.pos())
+        else:
+            self.p1 = self.parentItem().mapFromScene(view.mapToScene(event.pos()))
+
+        self.setPos(self.p1)
+        self.setRect(QRectF(0, 0, 0, 0))
+
+    def view_mouse_move_event(self, view, event):
+        if self.p1 is not None:
+            scene_x, scene_y = view.mapToScene(event.pos()).x(), view.mapToScene(event.pos()).y()
+            x, y = check_parent_limits(self.parentItem(), scene_x, scene_y)
+            if self.parentItem() is not None:
+                pose_on_parent = self.parentItem().mapFromScene(x, y)
+                x, y = pose_on_parent.x(), pose_on_parent.y()
+
+            self.setRect(QRectF(0, 0, x - self.p1.x(), y - self.p1.y()).normalized())
+            self.signals.creating.emit(self)
+
+    def view_mouse_release_event(self, view, event):
+        if self.p1 is not None:
+            self.signals.done.emit(self)
+        self.p1 = None
+
 class ResizableRectItem(QGraphicsRectItem, QObject):
 
     def __init__(self, parent=None):
@@ -406,15 +453,15 @@ class MainWindow(QGraphicsView):
 
     def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
 
-        if self.done < 1:
-            self.rect_item = ResizableRectItem(self.padre)
-            self.rect_item = FancyResizableRectItem(pen=Qt.red, brush=Qt.green)
-            self.rect_item.set_border_width(5)
-            self.rect_item.set_fill_color(Qt.red, 23)
+        if self.done < 13333:
+            self.rect_item = SelectorRectItem()
+            #self.rect_item = FancyResizableRectItem(pen=Qt.red, brush=Qt.green)
+            #self.rect_item.set_border_width(5)
+            #self.rect_item.set_fill_color(Qt.red, 23)
             # self.rect_item.set_movable(False)
             self.scene.addItem(self.rect_item)
             self.rect_item.view_mouse_press_event(self, event)
-            self.rect_item.signals.done.connect(lambda x: print(x.rect().x(), x.rect().y(), x.rect().width(), x.rect().height()))
+            self.rect_item.signals.done.connect(lambda x: self.scene.removeItem(self.rect_item))
             self.rect_item.signals.moving.connect(lambda x: print("moving"))
             self.rect_item.signals.resizing.connect(lambda x: print("resizing"))
             self.rect_item.signals.creating.connect(lambda x: print("creating"))
