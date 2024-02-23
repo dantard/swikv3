@@ -3,7 +3,7 @@ import math
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QGraphicsRectItem, QGraphicsView
 
-from Page import Page
+from simplepage import SimplePage
 
 
 class LayoutManager:

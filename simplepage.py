@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import QWidget, QGraphicsPixmapItem, \
 import MuPDFRenderer
 
 
-class Page(QGraphicsRectItem):
+class SimplePage(QGraphicsRectItem):
     STATE_BLANK = 0
     STATE_WAITING_FINAL = 1
     STATE_FINAL = 2
@@ -33,7 +33,7 @@ class Page(QGraphicsRectItem):
         self.setAcceptTouchEvents(True)
         self.w, self.h = self.renderer.get_page_size(index)
         self.setRect(QRectF(0, 0, self.w, self.h))
-        self.state = Page.STATE_INVALID
+        self.state = SimplePage.STATE_INVALID
         self.rectangle = None
         self.rubberband = None
         self.rearrange_pickup_pose = None
@@ -75,7 +75,6 @@ class Page(QGraphicsRectItem):
     def mouseReleaseEvent(self, event: 'QGraphicsSceneMouseEvent') -> None:
         super().mouseReleaseEvent(event)
 
-
     def get_sep(self):
         return 10 + 17  # * self.get_scaling_ratio()
 
@@ -107,7 +106,7 @@ class Page(QGraphicsRectItem):
         self.ratio = ratio
         self.setTransform(QTransform(ratio, 0, 0, 0, ratio, 0, 0, 0, 1))
         self.image.setVisible(False)
-        self.state = Page.STATE_INVALID
+        self.state = SimplePage.STATE_INVALID
         self.paint_accessories()
 
     def fit_width(self):
@@ -120,14 +119,14 @@ class Page(QGraphicsRectItem):
 
     def paint(self, painter, option, widget: typing.Optional[QWidget] = ...) -> None:
         super().paint(painter, option, widget)
-        if self.state == Page.STATE_INVALID:
+        if self.state == SimplePage.STATE_INVALID:
             image, final = self.renderer.request_image(self.index, self.ratio, 0)
-            self.state = Page.STATE_FINAL if final else Page.STATE_WAITING_FINAL
+            self.state = SimplePage.STATE_FINAL if final else SimplePage.STATE_WAITING_FINAL
             self.image.setVisible(True)
             self.image.setPixmap(image)
             self.image.update()
-        elif self.state == Page.STATE_WAITING_FINAL:
-            self.state = Page.STATE_FINAL
+        elif self.state == SimplePage.STATE_WAITING_FINAL:
+            self.state = SimplePage.STATE_FINAL
 
     def image_ready(self, index, ratio, key, pixmap):
         if index == self.index and key == 0 and ratio == self.ratio:
@@ -187,19 +186,19 @@ class Page(QGraphicsRectItem):
         return not intersection.isEmpty()
 
     def is_completely_shown(self):
-        portRect = self.view.viewport().rect()
-        sceneRect = self.view.mapToScene(portRect).boundingRect()
-        itemRect = self.mapRectFromScene(sceneRect)
-        isec = itemRect.intersected(self.boundingRect())
-        if isec.height() < self.rect().height() or isec.width() < self.rect().width():
+        port_rect = self.view.viewport().rect()
+        scene_rect = self.view.mapToScene(port_rect).boundingRect()
+        item_rect = self.mapRectFromScene(scene_rect)
+        intersection = item_rect.intersected(self.boundingRect())
+        if intersection.height() < self.rect().height() or intersection.width() < self.rect().width():
             return False
         return True
 
     def visibleRect(self):
-        portRect = self.view.viewport().rect()
-        sceneRect = self.view.mapToScene(portRect).boundingRect()
-        itemRect = self.mapRectFromScene(sceneRect)
-        isec = itemRect.intersected(self.boundingRect())
+        port_rect = self.view.viewport().rect()
+        scene_rect = self.view.mapToScene(port_rect).boundingRect()
+        item_rect = self.mapRectFromScene(scene_rect)
+        isec = item_rect.intersected(self.boundingRect())
         return isec
 
     def page_updated(self, index):

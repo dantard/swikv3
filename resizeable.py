@@ -7,8 +7,12 @@ from PyQt5.QtGui import QImage, QFont, QFontMetrics, QColor, QBrush, QPen
 from PyQt5.QtWidgets import QApplication, QGraphicsView, QGraphicsScene, QGraphicsRectItem, QWidget, QStyle, QMenu, QDialog, QSlider
 from PyQt5.QtCore import Qt, QPointF, QRectF, QTimer, QObject, pyqtSignal
 
+from coloreable import ColoreableRectItem
 from colorwidget import ColorWidget, ColorAndAlpha, ColorAlphaWidth
 from dialogs import ComposableDialog
+from paintable import PaintableRectItem
+from selector import SelectorRectItem, PaintableSelectorRectItem
+from utils import Signals
 
 
 class HandleItem(QGraphicsRectItem):
@@ -46,64 +50,16 @@ class HandleItem(QGraphicsRectItem):
         super().paint(painter, option, widget)
 
 
-class Signals(QObject):
-    done = pyqtSignal(QGraphicsRectItem)
-    moving = pyqtSignal(QGraphicsRectItem)
-    resizing = pyqtSignal(QGraphicsRectItem)
-    creating = pyqtSignal(QGraphicsRectItem)
+class SelectorPaintableRectItem(SelectorRectItem, PaintableRectItem):
+    pass
 
 
-def check_parent_limits(parent: QGraphicsRectItem, scene_x, scene_y):
-    if parent is not None:
-        pos_on_item = parent.mapFromScene(scene_x, scene_y)
-        x, y = pos_on_item.x(), pos_on_item.y()
-        x = parent.rect().x() if x < parent.rect().x() else x
-        x = parent.rect().x() + parent.rect().width() if x > parent.rect().x() + parent.rect().width() else x
-        y = parent.rect().y() if y < parent.rect().y() else y
-        y = parent.rect().y() + parent.rect().height() if y > parent.rect().y() + parent.rect().height() else y
-        point_on_scene = parent.mapToScene(x, y)
-        x, y = point_on_scene.x(), point_on_scene.y()
-    else:
-        x, y = scene_x, scene_y
+# class ResizableRectItem(PaintableSelectorRectItem):
+class ResizableRectItem(ColoreableRectItem, PaintableRectItem):
 
-    return x, y
-
-
-class SelectorRectItem(QGraphicsRectItem, QObject):
-    def __init__(self, parent=None):
-        super(SelectorRectItem, self).__init__(parent=parent)
-        self.signals = Signals()
-        self.p1 = None
-
-    def view_mouse_press_event(self, view, event):
-        if self.parentItem() is None:
-            self.p1 = view.mapToScene(event.pos())
-        else:
-            self.p1 = self.parentItem().mapFromScene(view.mapToScene(event.pos()))
-
-        self.setPos(self.p1)
-        self.setRect(QRectF(0, 0, 0, 0))
-
-    def view_mouse_move_event(self, view, event):
-        if self.p1 is not None:
-            scene_x, scene_y = view.mapToScene(event.pos()).x(), view.mapToScene(event.pos()).y()
-            x, y = check_parent_limits(self.parentItem(), scene_x, scene_y)
-            if self.parentItem() is not None:
-                pose_on_parent = self.parentItem().mapFromScene(x, y)
-                x, y = pose_on_parent.x(), pose_on_parent.y()
-
-            self.setRect(QRectF(0, 0, x - self.p1.x(), y - self.p1.y()).normalized())
-            self.signals.creating.emit(self)
-
-    def view_mouse_release_event(self, view, event):
-        if self.p1 is not None:
-            self.signals.done.emit(self)
-        self.p1 = None
-
-class ResizableRectItem(QGraphicsRectItem, QObject):
-
-    def __init__(self, parent=None):
-        super().__init__(parent=parent)
+    def __init__(self, parent=None, **kwargs):
+        super().__init__(parent, **kwargs)
+        super(ColoreableRectItem, self).__init__(parent, **kwargs)
 
         self.signals = Signals()
         self.resizeable = True
@@ -112,9 +68,8 @@ class ResizableRectItem(QGraphicsRectItem, QObject):
         self.setAcceptHoverEvents(True)
         self.handle_size = 10  # Size of resize handles
         self.handle_pressed = None
-        self.handles_enabled = False
+        self.handles_enabled = True
         self.handles = []
-        self.p1 = None
 
         self.timer = QTimer()
         self.timer.setSingleShot(True)
@@ -140,17 +95,6 @@ class ResizableRectItem(QGraphicsRectItem, QObject):
 
     def get_resizeable(self):
         return self.resizeable
-
-    def get_rect_on_scene(self):
-        if self.parentItem() is None:
-            return self.rect()
-        return self.mapToScene(self.rect()).boundingRect()
-
-    def get_rect_on_parent(self):
-        if self.parentItem() is None:
-            return None
-        else:
-            return self.rect()
 
     def get_movable(self):
         return self.movable
@@ -284,47 +228,11 @@ class ResizableRectItem(QGraphicsRectItem, QObject):
     def hoverEnterEvent(self, event) -> None:
         self.set_handle_visibility(True)
 
-    def view_mouse_press_event(self, view, event):
-        if self.parentItem() is None:
-            self.p1 = view.mapToScene(event.pos())
-        else:
-            self.p1 = self.parentItem().mapFromScene(view.mapToScene(event.pos()))
-
-        self.setPos(self.p1)
-        self.setRect(QRectF(0, 0, 0, 0))
-
-    def check_parent_limits(self, parent: QGraphicsRectItem, scene_x, scene_y):
-        if parent is not None:
-            pos_on_item = parent.mapFromScene(scene_x, scene_y)
-            x, y = pos_on_item.x(), pos_on_item.y()
-            x = parent.rect().x() if x < parent.rect().x() else x
-            x = parent.rect().x() + parent.rect().width() if x > parent.rect().x() + parent.rect().width() else x
-            y = parent.rect().y() if y < parent.rect().y() else y
-            y = parent.rect().y() + parent.rect().height() if y > parent.rect().y() + parent.rect().height() else y
-            point_on_scene = parent.mapToScene(x, y)
-            x, y = point_on_scene.x(), point_on_scene.y()
-        else:
-            x, y = scene_x, scene_y
-
-        return x, y
-
-    def view_mouse_move_event(self, view, event):
-        if self.p1 is not None:
-            scene_x, scene_y = view.mapToScene(event.pos()).x(), view.mapToScene(event.pos()).y()
-            x, y = self.check_parent_limits(self.parentItem(), scene_x, scene_y)
-            if self.parentItem() is not None:
-                pose_on_parent = self.parentItem().mapFromScene(x, y)
-                x, y = pose_on_parent.x(), pose_on_parent.y()
-
-            self.setRect(QRectF(0, 0, x - self.p1.x(), y - self.p1.y()).normalized())
-            self.signals.creating.emit(self)
-
-    def view_mouse_release_event(self, view, event):
-        self.update_handles_position()
-        self.handles_enabled = True
-        if self.p1 is not None:
-            self.signals.done.emit(self)
-        self.p1 = None
+    # Only if derived from Paintableselector
+    # def view_mouse_release_event(self, view, event):
+    #    super().view_mouse_release_event(view, event)
+    #    self.update_handles_position()
+    #    self.handles_enabled = True
 
     def populate_menu(self, menu: QMenu):
         menu.addAction("Delete", lambda: self.scene().removeItem(self))
@@ -333,111 +241,6 @@ class ResizableRectItem(QGraphicsRectItem, QObject):
         menu = QMenu()
         self.populate_menu(menu)
         menu.exec(event.screenPos())
-
-
-class ColoreableRectItem(ResizableRectItem):
-    def __init__(self, parent=None, **kwargs):
-        super(ColoreableRectItem, self).__init__()
-
-        self.setPen(kwargs.get("pen", QPen(Qt.transparent)))
-        self.setBrush(kwargs.get("brush", QBrush(Qt.white)))
-
-    def set_border_color(self, color: QColor, alpha=255):
-        color = QColor(color)
-        pen = self.pen()
-        pen.setColor(QColor(color.red(), color.green(), color.blue(), alpha))
-        self.setPen(pen)
-
-    def set_fill_color(self, color: QColor, alpha=255):
-        color = QColor(color)
-        brush = self.brush()
-        brush.setColor(QColor(color.red(), color.green(), color.blue(), alpha))
-        self.setBrush(brush)
-
-    def set_border_width(self, width: int):
-        pen = self.pen()
-        pen.setWidth(width)
-        self.setPen(pen)
-
-    def populate_menu(self, menu: QMenu):
-        super().populate_menu(menu)
-        menu.addAction("Change color", self.change_color)
-
-    def change_color(self):
-        color = ComposableDialog()
-        color.add_row("Border", ColorAlphaWidth(self.pen().color()))
-        color.add_row("Fill", ColorAndAlpha(self.brush().color()))
-
-        if color.exec() == QDialog.Accepted:
-            self.set_border_color(color.get("Border").get_color())
-            self.set_fill_color(color.get("Fill").get_color())
-
-
-
-
-class FancyResizableRectItem(ColoreableRectItem):
-    TEXT_MODE_STRETCH = 0
-    TEXT_MODE_KEEP = 1
-    IMAGE_MODE_STRETCH = 3
-    IMAGE_MODE_MAINTAIN_RATIO = 1
-    IMAGE_MODE_MAINTAIN_SIZE = 2
-
-    def __init__(self, parent=None, **kwargs):
-        super(FancyResizableRectItem, self).__init__(parent, **kwargs)
-        self.image_mode = kwargs.get("image_mode", self.IMAGE_MODE_MAINTAIN_RATIO)
-        self.image = kwargs.get("image", None)
-        self.text = kwargs.get("text", "")
-        self.text_mode = kwargs.get("text_mode", self.TEXT_MODE_STRETCH)
-        self.max_font_size = kwargs.get("max_font_size", 100)
-        self.font = kwargs.get("font", QFont("Arial", 12))
-
-    def paint(self, painter: QtGui.QPainter, option, widget: typing.Optional[QWidget] = ...) -> None:
-        super().paint(painter, option, widget)
-
-        # if self.init_pos is None:
-        #    return
-
-        if self.image is not None:
-            if self.image_mode == self.IMAGE_MODE_MAINTAIN_RATIO:
-                rw, rh = self.rect().width(), self.rect().height()
-                iw, ih = self.image.width(), self.image.height()
-                if rw != 0 and iw != 0 and ih != 0:
-                    i_ratio = ih / iw
-                    r_ratio = rh / rw
-                    if r_ratio > i_ratio:
-                        ratio = rw / iw
-                    else:
-                        ratio = rh / ih
-
-                    qr = QRectF(self.rect().x(), self.rect().y(), iw * ratio, ih * ratio)
-                    painter.drawImage(qr, self.image)
-            elif self.image_mode == self.IMAGE_MODE_STRETCH:
-                painter.drawImage(self.rect(), self.image)
-            elif self.image_mode == self.IMAGE_MODE_MAINTAIN_SIZE:
-                w = min(self.rect().width(), self.image.width())
-                h = min(self.rect().height(), self.image.height())
-                img = self.image.copy(0, 0, int(w), int(h))
-                painter.drawImage(QRectF(self.rect().x(), self.rect().y(), w, h), img)
-
-        if self.text is not None:
-            font_size = self.max_font_size  # * self.init_pos_item.get_scaling_ratio()
-            if self.text_mode == self.TEXT_MODE_STRETCH:
-                while True:
-                    self.font.setPixelSize(max(int(font_size), 1))
-                    fm = QFontMetrics(self.font)
-                    maxi, lines = 0, self.text.split("\n")
-                    for line in lines:
-                        maxi = max(fm.horizontalAdvance(line), maxi)
-
-                    font_size = font_size - 1
-                    if (maxi <= self.rect().width() and len(lines) * fm.height() <= self.rect().height() + 4) or font_size <= 1:
-                        break
-            else:
-                self.font.setPixelSize(int(max(font_size, 1)))
-
-            painter.setFont(self.font)
-            painter.setPen(Qt.black)
-            painter.drawText(self.rect(), 0, self.text)
 
 
 class MainWindow(QGraphicsView):
@@ -454,19 +257,32 @@ class MainWindow(QGraphicsView):
     def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
 
         if self.done < 13333:
-            self.rect_item = SelectorRectItem()
-            #self.rect_item = FancyResizableRectItem(pen=Qt.red, brush=Qt.green)
-            #self.rect_item.set_border_width(5)
-            #self.rect_item.set_fill_color(Qt.red, 23)
+            # self.rect_item = PaintableSelectorRectItem(text="hola")
+            self.rect_item = PaintableSelectorRectItem(text="hola")
+            # self.rect_item = FancyResizableRectItem(pen=Qt.red, brush=Qt.green)
+            # self.rect_item.set_border_width(5)
+            # self.rect_item.set_fill_color(Qt.red, 111)
+
             # self.rect_item.set_movable(False)
             self.scene.addItem(self.rect_item)
             self.rect_item.view_mouse_press_event(self, event)
-            self.rect_item.signals.done.connect(lambda x: self.scene.removeItem(self.rect_item))
+            self.rect_item.signals.done.connect(self.draw_done)
             self.rect_item.signals.moving.connect(lambda x: print("moving"))
             self.rect_item.signals.resizing.connect(lambda x: print("resizing"))
-            self.rect_item.signals.creating.connect(lambda x: print("creating"))
+            # self.rect_item.signals.creating.connect(lambda x: print("creating"))
 
         super().mousePressEvent(event)
+
+    def draw_done(self):
+        for w, k in self.rect_item.get_kwargs().items():
+            print(w, k)
+        tmp = self.rect_item
+        new = ResizableRectItem(**self.rect_item.get_kwargs(), copy=self.rect_item)
+
+        new.setPos(tmp.pos())
+        new.setRect(tmp.rect())
+        self.scene.removeItem(self.rect_item)
+        self.scene.addItem(new)
 
     def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:
         super().mouseMoveEvent(event)

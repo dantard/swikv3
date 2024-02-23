@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsRectItem, QA
 
 # import EnhancedPage
 from LayoutManager import LayoutManager
-from Page import Page
+from simplepage import SimplePage
 from SyncDict import SyncDict
 
 
@@ -21,9 +21,9 @@ class GraphView(QGraphicsView):
     ratio_changed = pyqtSignal(float)
     drop_event = pyqtSignal(QtGui.QDropEvent)
     document_ready = pyqtSignal()
-    page_created = pyqtSignal(Page)
+    page_created = pyqtSignal(SimplePage)
 
-    def __init__(self, manager, renderer, mode, page=Page):
+    def __init__(self, manager, renderer, mode, page=SimplePage):
         super().__init__()
         self.previous_state = 0, 0, None
         self.page_object = page
@@ -162,7 +162,7 @@ class GraphView(QGraphicsView):
         self.natural_hscroll = value
 
     def page_processed(self, page):
-        assert (isinstance(page, Page))
+        assert (isinstance(page, SimplePage))
         page.connect_signals()
         page.finish_setup()
         self.scene().addItem(page)
@@ -221,7 +221,7 @@ class GraphView(QGraphicsView):
         # In the Constructor page gets also its size itself
         p = self.page_object(index, self, self.manager, self.renderer, self.get_ratio())
         # print("TYPE", self.page_object, p)
-        assert (isinstance(p, Page))
+        assert (isinstance(p, SimplePage))
 
         self.pages[index] = p
 
@@ -258,7 +258,7 @@ class GraphView(QGraphicsView):
 
     def page_scrolled(self):
         max_area = 0
-        for i, p in self.pages.items():  # type: Page
+        for i, p in self.pages.items():  # type: SimplePage
             area, isec = p.visible_area()
             if area > max_area:
                 max_area = area
@@ -319,13 +319,10 @@ class GraphView(QGraphicsView):
         return item
 
     def get_page_at_pos(self, pos):
-        item = self.itemAt(pos)
-        if item is not None:
-            if not isinstance(item, Page):
-                item = item.parentItem()
-                if not isinstance(item, Page):
-                    item = item.parentItem()
-            return item
+        item = self.items(pos)
+        for i in item:
+            if isinstance(i, SimplePage):
+                return i
         return None
 
     # Get items at specific point, It is possible to filter
@@ -378,8 +375,8 @@ class GraphView(QGraphicsView):
 
     def resize_scene(self):
         bounding_rect = QRectF()
-        for item in reversed([p for p in self.scene().items() if type(p) == Page]):
-            item: Page
+        for item in reversed([p for p in self.scene().items() if type(p) == SimplePage]):
+            item: SimplePage
             bounding_rect = bounding_rect.united(item.mapToScene(item.boundingRect()).boundingRect())
 
         self.scene().setSceneRect(bounding_rect)
@@ -417,7 +414,7 @@ class GraphView(QGraphicsView):
             self.fitting_width = False
             delta = int((event.angleDelta().y() / 1200) * 100) / 100
             mouse_on_scene = self.mapToScene(event.pos())
-            page = self.get_items_at_pos(event.pos(), Page, 0, False)
+            page = self.get_items_at_pos(event.pos(), SimplePage, 0, False)
             print("ababab", self.horizontalScrollBar().value(), self.scene().width())
             self.set_ratio(self.get_ratio() + delta, True)
 
@@ -426,7 +423,7 @@ class GraphView(QGraphicsView):
         print(index, page.scenePos().y(), page.pos().y(), self.mapFromScene(page.scenePos()).y())
 
     def get_page_item(self, index):
-        return self.view.pages[index]
+        return self.pages[index]
 
     # ## SLOTS
     def document_changed(self):
@@ -438,6 +435,22 @@ class GraphView(QGraphicsView):
 
     def set_page(self, index):
         self.move_to_page(index)
+
+    def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
+        super().mousePressEvent(event)
+        self.manager.mouse_pressed(event)
+
+    def mouseReleaseEvent(self, event: QtGui.QMouseEvent) -> None:
+        super().mouseReleaseEvent(event)
+        self.manager.mouse_released(event)
+
+    def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:
+        super().mouseMoveEvent(event)
+        self.manager.mouse_moved(event)
+
+    def contextMenuEvent(self, event: QtGui.QContextMenuEvent) -> None:
+        super().contextMenuEvent(event)
+        self.manager.context_menu(event)
 
 
 class MiniatureView(GraphView):
@@ -461,7 +474,7 @@ class MiniatureView(GraphView):
     def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
         super().mousePressEvent(event)
         if event.button() == QtCore.Qt.LeftButton:
-            page = self.get_items_at_pos(event.pos(), Page, 0, False)
+            page = self.get_items_at_pos(event.pos(), SimplePage, 0, False)
             if page is not None:
                 self.pages[self.page].box.setVisible(False)
                 self.page_clicked.emit(page.index, self.renderer.get_num_of_pages())

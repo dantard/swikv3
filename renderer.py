@@ -2,9 +2,13 @@ import traceback
 
 import fitz
 from PyQt5 import QtCore
-from PyQt5.QtCore import Qt, QRunnable, QThreadPool, pyqtSignal, QMutex
+from PyQt5.QtCore import Qt, QRunnable, QThreadPool, pyqtSignal, QMutex, QRectF
 from PyQt5.QtGui import QPixmap, QImage
 from PyQt5.QtWidgets import QLabel
+from fitz import TEXTFLAGS_DICT, TEXT_PRESERVE_IMAGES
+
+from utils import fitz_rect_to_qrectf
+from word import Word, MetaWord
 
 
 class Image:
@@ -40,7 +44,6 @@ class Image:
 
 
 class MuPDFRenderer(QLabel):
-
     # Signals
     document_changed = pyqtSignal()
     document_about_to_change = pyqtSignal()
@@ -78,7 +81,7 @@ class MuPDFRenderer(QLabel):
 
             # self.document = fitz.open(file, password=password)
             self.set_document(self.document, True)
-            # print("Opened", self.document.metadata)
+            print("Opened", self.document.metadata)
             return self.OPEN_OK
 
         except:
@@ -177,4 +180,19 @@ class MuPDFRenderer(QLabel):
     def get_filename(self):
         return self.filename
 
+    def extract_words(self, page_id):
+        boxes = self.document[page_id].get_text("words", sort=False, flags=TEXTFLAGS_DICT & ~TEXT_PRESERVE_IMAGES)
 
+        word_objs = list()
+
+        for i, w in enumerate(boxes):
+            x1, y1, x2, y2, text, block_no, line_no, word_no = w
+
+            # Compute rectangle taking into account orientation
+            fitz_rect = fitz.Rect(x1, y1, x2, y2) * self.document[page_id].rotation_matrix
+            rect = fitz_rect_to_qrectf(fitz_rect)
+
+            word = Word(page_id, i, text, rect, word_no=word_no, line_no=line_no, block_no=block_no)
+            word_objs.append(word)
+
+        return word_objs

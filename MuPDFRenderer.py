@@ -806,7 +806,7 @@ class MuPDFRenderer:
 
     def search_for(self, needle):
         boxes = list()
-        for i, page in enumerate(self.document):  # type: fitz.Page
+        for i, page in enumerate(self.document):  # type: fitz.SimplePage
             for b in page.search_for(needle):
                 boxes.append((QRectF(b.x0, b.y0, b.x1 - b.x0, b.y1 - b.y0), i, page.get_textbox(b)))
         return boxes
