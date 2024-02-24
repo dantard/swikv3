@@ -7,8 +7,8 @@ from utils import Signals, check_parent_limits
 
 
 class SelectorRectItem(ColoreableRectItem):
-    def __init__(self, parent=None, **kwargs):
-        super().__init__(parent=parent, **kwargs)
+    def __init__(self, limits=None, **kwargs):
+        super().__init__(limits, **kwargs)
         self.signals = Signals()
         self.p1 = None
         self.p2 = None
@@ -17,10 +17,8 @@ class SelectorRectItem(ColoreableRectItem):
         return self.p1
 
     def view_mouse_press_event(self, view, event):
-        if self.parentItem() is None:
-            self.p1 = view.mapToScene(event.pos())
-        else:
-            self.p1 = self.parentItem().mapFromScene(view.mapToScene(event.pos()))
+
+        self.p1 = view.mapToScene(event.pos())
 
         self.setPos(self.p1)
         self.setRect(QRectF(0, 0, 0, 0))
@@ -28,18 +26,10 @@ class SelectorRectItem(ColoreableRectItem):
     def view_mouse_move_event(self, view, event):
         if self.p1 is not None:
             scene_x, scene_y = view.mapToScene(event.pos()).x(), view.mapToScene(event.pos()).y()
-            x, y = check_parent_limits(self.parentItem(), scene_x, scene_y)
-            if self.parentItem() is not None:
-                pose_on_parent = self.parentItem().mapFromScene(x, y)
-                x, y = pose_on_parent.x(), pose_on_parent.y()
+            x, y = check_parent_limits(self.limits, scene_x, scene_y)
 
             self.setRect(QRectF(0, 0, x - self.p1.x(), y - self.p1.y()).normalized())
-
-            if self.parentItem() is None:
-                self.p2 = view.mapToScene(event.pos())
-            else:
-                self.p2 = self.parentItem().mapFromScene(view.mapToScene(event.pos()))
-
+            self.p2 = view.mapToScene(event.pos())
             self.signals.creating.emit(self)
 
     def get_mouse_pos(self):
@@ -47,8 +37,8 @@ class SelectorRectItem(ColoreableRectItem):
 
     def view_mouse_release_event(self, view, event):
         if self.p1 is not None:
+            self.p1 = None
             self.signals.done.emit(self)
-        self.p1 = None
 
 
 class PaintableSelectorRectItem(SelectorRectItem, PaintableRectItem):

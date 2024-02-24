@@ -181,7 +181,7 @@ class MuPDFRenderer(QLabel):
         return self.filename
 
     def extract_words(self, page_id):
-        boxes = self.document[page_id].get_text("words", sort=False, flags=TEXTFLAGS_DICT & ~TEXT_PRESERVE_IMAGES)
+        boxes = self.document[page_id].get_text("words", sort=True, flags=TEXTFLAGS_DICT & ~TEXT_PRESERVE_IMAGES)
 
         word_objs = list()
 

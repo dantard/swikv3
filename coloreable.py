@@ -8,8 +8,8 @@ from rect import SwikRect
 
 
 class ColoreableRectItem(SwikRect):
-    def __init__(self, parent=None, **kwargs):
-        super(ColoreableRectItem, self).__init__(parent, **kwargs)
+    def __init__(self, limits=None, **kwargs):
+        super(ColoreableRectItem, self).__init__(limits, **kwargs)
         self.setPen(kwargs.get("pen", QPen(Qt.black)))
         self.setBrush(kwargs.get("brush", QBrush(Qt.transparent)))
 
@@ -29,7 +29,7 @@ class ColoreableRectItem(SwikRect):
         pen.setWidth(width)
         self.setPen(pen)
 
-    #def populate_menu(self, menu: QMenu):
+    # def populate_menu(self, menu: QMenu):
     #    super().populate_menu(menu)
     #    menu.addAction("Change color", self.change_color)
 

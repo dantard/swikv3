@@ -1,42 +1,109 @@
+import os
 import sys
 
-from PyQt5.QtCore import QObject
-from PyQt5.QtWidgets import QApplication, QGraphicsGridLayout, QGraphicsScene, QGraphicsView, QGraphicsWidget, QPushButton, QMainWindow, QSplitter
-
-from LayoutManager import LayoutManager
-from renderer import MuPDFRenderer
+import pyclip
+from PyQt5.QtGui import QPainter, QIcon
+from PyQt5.QtWidgets import QApplication, QPushButton, QMainWindow, QSplitter
 
 from GraphView import GraphView
-from manager import Manager, Finder
+from LayoutManager import LayoutManager
+from groupbox import GroupBox
+from manager import Manager
+from toolsign import ToolSign
+from tooltextselection import TextSelection
+from navigationtoolbar import NavigationToolbar
 from page import Page
-from rubberband import RubberBand
+from renderer import MuPDFRenderer
+from searchtoolbar import TextSearchToolbar
+from swikconfig import SwikConfig
 
 
 class MainWindow(QMainWindow):
-    def __init__(self):
-        super(MainWindow, self).__init__()
-        self.hsplitter = QSplitter()
 
+    def __init__(self):
+        super().__init__()
+
+        self.config = SwikConfig()
+
+        self.setWindowTitle("Swik")
+        self.setGeometry(100, 100, 640, 480)
+        self.setAcceptDrops(True)
 
         self.renderer = MuPDFRenderer()
         self.manager = Manager(self.renderer)
-        self.view = GraphView(self.manager, self.renderer, LayoutManager.MODE_VERTICAL_MULTIPAGE, page=Page)
-        self.view.setWindowTitle("QGraphicsGridLayout Example")
-        self.view.setGeometry(100, 100, 400, 300)
+        self.view = GraphView(self.manager, self.renderer, self.config.get('mode', LayoutManager.MODE_VERTICAL), page=Page)
         self.manager.set_view(self.view)
 
+        self.manager.add_tool('text_selection', TextSelection(self.view, self.renderer), True)
+        self.manager.add_tool('sign', ToolSign(self.view, self.renderer))
+
+        self.view.setRenderHint(QPainter.Antialiasing)
+        self.view.setRenderHint(QPainter.TextAntialiasing)
+        self.view.set_natural_hscroll(self.config.get('natural_hscroll'))
+
+        menu_bar = self.menuBar()
+        file_menu = menu_bar.addMenu('File')
+        file_menu.addAction('Open', self.open_file)
+        open_recent = file_menu.addMenu("Open Recent")
+        open_recent.aboutToShow.connect(lambda: self.config.fill_recent(self, open_recent))
+        file_menu.addAction('Save', self.save_file)
+        file_menu.addAction('Save as', self.save_file_as)
+        file_menu.addAction('Locate in folder', lambda: os.system(self.config.get("file_browser") + " '" + self.renderer.get_filename() + "' &"))
+        file_menu.addAction('Copy path', lambda: pyclip.copy(self.renderer.filename))
+        command = self.config.get("other_pdf")
+        if command is not None and command != "None":
+            open_wo_odf = file_menu.addMenu('Open with other Viewer')
+            for line in command.split("&&"):
+                data = line.split(" ")
+                if len(data) == 2:
+                    name, cmd = data
+                else:
+                    name = cmd = data[0]
+                open_wo_odf.addAction(name, lambda x=cmd: self.open_with_other(x))
+
+        edit_menu = menu_bar.addMenu('Edit')
+        edit_menu.addSeparator()
+        edit_menu.addAction('Preferences', self.preferences)
+
+        self.toolbar = self.addToolBar('Toolbar')
+        self.toolbar.addAction("Open", self.open_file).setIcon(QIcon(":/icons/open.png"))
+        self.toolbar.addAction("Save", self.save_file).setIcon(QIcon(":/icons/save.png"))
+        self.toolbar.addSeparator()
+
+        self.mode_group = GroupBox()
+        self.mode_group.add(self.select_text, True, icon=":/icons/text_cursor.png", text="Select Text")
+        self.mode_group.add(self.sign, icon=":/icons/sign.png", text="Sign")
+        self.mode_group.append(self.toolbar)
+        self.manager.tool_finished.connect(self.mode_group.reset)
+
+        self.nav_toolbar = NavigationToolbar(self.view, self.toolbar)
+        self.finder_toolbar = TextSearchToolbar(self.view, self.renderer, self.toolbar)
+
+        self.setCentralWidget(self.view)
+
         self.renderer.open_pdf("/home/danilo/Desktop/swik-files/Free_Test_Data_10.5MB_PDF.pdf")
+        # self.renderer.open_pdf("/home/danilo/Desktop/swik-files/view.pdf")
 
-        button1 = QPushButton("Button 1", self.hsplitter)
-        button1.clicked.connect(self.demo_rubberband)
+    def select_text(self):
+        self.manager.use_tool('text_selection')
 
-        self.hsplitter.addWidget(self.view)
-        self.setCentralWidget(self.hsplitter)
-        self.view.show()
+    def sign(self):
+        self.manager.use_tool('sign')
 
-    def demo_rubberband(self):
-        finder = Finder(self.view, self.renderer)
-        finder.find("nam eget sagittis")
+    def open_file(self):
+        pass
+
+    def save_file(self):
+        pass
+
+    def save_file_as(self):
+        pass
+
+    def preferences(self):
+        pass
+
+    def open_with_other(self, command):
+        pass
 
 
 def main():

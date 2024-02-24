@@ -22,6 +22,7 @@ class PaintableRectItem(SwikRect):
         self.text_mode = kwargs.get("text_mode", self.TEXT_MODE_STRETCH)
         self.max_font_size = kwargs.get("max_font_size", 100)
         self.font = kwargs.get("font", QFont("Arial", 12))
+        self.dying = False
 
     def paint(self, painter: QtGui.QPainter, option, widget: typing.Optional[QWidget] = ...) -> None:
         super().paint(painter, option, widget)
@@ -67,3 +68,8 @@ class PaintableRectItem(SwikRect):
             painter.setFont(self.font)
             painter.setPen(Qt.black)
             painter.drawText(self.rect(), 0, self.text)
+
+    def die(self):
+        self.dying = True
+        self.update()
+        super().die()

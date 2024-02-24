@@ -3,6 +3,7 @@ from PyQt5.QtGui import QColor, QBrush
 
 from rect import SwikRect
 
+
 class MetaWord:
     def __init__(self, page_id, order, text, rect, parent=None, **kwargs):
         self.text = text
@@ -18,6 +19,7 @@ class MetaWord:
 
     def join(self, parent):
         pass
+
 
 class Word(SwikRect):
     def __init__(self, page_id, order, text, rect, parent=None, **kwargs):
@@ -48,6 +50,6 @@ class Word(SwikRect):
 
     def set_highlighted(self, selected):
         if selected:
-            self.setBrush(QBrush(QColor(255, 0, 0, 255)))
+            self.setBrush(QBrush(QColor(255, 0, 0, 80)))
         else:
             self.setBrush(Qt.transparent)
