@@ -8,11 +8,12 @@ from word import Word
 class Manager(QObject):
     tool_finished = pyqtSignal()
 
-    def __init__(self, renderer):
+    def __init__(self, renderer, config):
         super(Manager, self).__init__()
         self.tools = {}
         self.default = None
         self.current = None
+        self.config = config
         self.view: QGraphicsRectItem = None
         self.renderer = renderer
 
@@ -22,6 +23,7 @@ class Manager(QObject):
     def add_tool(self, name, tool, default=False):
         self.tools[name] = tool
         tool.finished.connect(self.finished)
+        tool.configure()
         if default:
             self.default = tool
             self.use_tool(name)
@@ -31,22 +33,13 @@ class Manager(QObject):
 
     def use_tool(self, name):
         if self.current is not None:
-            self.current.done()
+            self.current.finish()
         self.current = self.tools[name]
-
-    def top_is(self, pos, check_items):
-        items = self.view.scene().items(self.view.mapToScene(pos))
-        print(items)
-        if len(items) == 0:
-            return False
-        for item in check_items:
-            if isinstance(items[0], item):
-                return True
-        return False
+        self.current.init()
 
     def mouse_pressed(self, event):
-        if not self.top_is(event.pos(), [SimplePage, SimplePage.MyImage, Word]):
-            return
+        # TODO:if not self.top_is(event.pos(), [SimplePage, SimplePage.MyImage, Word]):
+        # return
 
         if self.current is not None:
             self.current.mouse_pressed(event)

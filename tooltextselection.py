@@ -19,8 +19,8 @@ class TextSelection(Tool):
     SELECTION_MODE_NATURAL = 0
     SELECTION_MODE_RECT = 1
 
-    def __init__(self, view, renderer):
-        super(TextSelection, self).__init__(view, renderer)
+    def __init__(self, view, renderer, config):
+        super(TextSelection, self).__init__(view, renderer, config)
         print("Manager created")
         self.rubberband = None
         self.selection_mode = TextSelection.SELECTION_MODE_RECT
@@ -87,6 +87,9 @@ class TextSelection(Tool):
         if event.button() == Qt.RightButton:
             return
 
+        if not self.view.top_is(event.pos(), [SimplePage, SimplePage.MyImage, Word]):
+            return
+
         if self.rubberband is None:
             self.clear_selection()
             if self.selection_mode == TextSelection.SELECTION_MODE_NATURAL:
@@ -97,13 +100,13 @@ class TextSelection(Tool):
                 self.view.setCursor(Qt.CrossCursor)
 
             self.rubberband.signals.creating.connect(self.selecting)
-            self.rubberband.signals.done.connect(self.selecting_done)
             self.view.scene().addItem(self.rubberband)
             self.rubberband.view_mouse_press_event(self.view, event)
 
     def mouse_released(self, event):
         if self.rubberband is not None:
             self.rubberband.view_mouse_release_event(self.view, event)
+            self.selecting_done(self.rubberband)
 
     def mouse_moved(self, event):
         if self.rubberband is not None:
@@ -118,6 +121,6 @@ class TextSelection(Tool):
                 for word in self.selected:
                     print(word.get_text())
 
-    def done(self):
+    def finish(self):
         self.clear_selection()
         self.view.setCursor(Qt.ArrowCursor)

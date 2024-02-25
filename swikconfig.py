@@ -1,15 +1,16 @@
 import os
 import gi
 
-#gi.require_version('Gtk', '3.0')
-#from gi.repository import Gtk, Gio, GLib
+# gi.require_version('Gtk', '3.0')
+# from gi.repository import Gtk, Gio, GLib
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QRect
 
 from easyconfig.EasyConfig import EasyConfig
 
-#from Dialogs import TextDontShowAgainDialog
+
+# from Dialogs import TextDontShowAgainDialog
 
 
 class SwikConfig(EasyConfig):
@@ -46,11 +47,6 @@ class SwikConfig(EasyConfig):
 
         signature = self.root().addSubSection("Image Signature")
         signature.addFile("image_signature", pretty="Signature File", extension=["png", "jpg"], extension_name="Image")
-
-        signature = self.root().addSubSection("Digital Signature")
-        signature.addFile("p12", pretty="Signature File", extension=["p12", "pfx"], extension_name="PKCS#12")
-        signature.addPassword("password", pretty='Password')
-        signature.addString("signed_suffix", pretty="Signed File Suffix", default="-signed")
 
         appearance = signature.addSubSection("Appearance")
         appearance.addInt("signature_border", pretty="Border width", default=0)

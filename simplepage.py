@@ -29,25 +29,37 @@ class SimplePage(QGraphicsRectItem):
         self.renderer: MuPDFRenderer = renderer
         self.ratio = ratio
         self.view = view
-        # self.setAcceptHoverEvents(True)
-        self.setAcceptTouchEvents(True)
-        self.w, self.h = self.renderer.get_page_size(index)
-        self.setRect(QRectF(0, 0, self.w, self.h))
         self.state = SimplePage.STATE_INVALID
+
+        class Shadow(QGraphicsRectItem):
+            pass
+
+        class Box(QGraphicsRectItem):
+            pass
+
+        self.image = self.MyImage(self)
+        self.shadow_right = Shadow(self)
+        self.shadow_bottom = Shadow(self)
+        self.box = Box(self)
+        self.w, self.h = self.renderer.get_page_size(index)
         self.rectangle = None
         self.rubberband = None
         self.rearrange_pickup_pose = None
+        self.init()
 
+    def init(self):
         # self.setAcceptHoverEvents(True)
         self.setAcceptTouchEvents(True)
-        self.shadow_right = QGraphicsRectItem(self)
+        self.setRect(QRectF(0, 0, self.w, self.h))
+        # self.setAcceptHoverEvents(True)
+        self.setAcceptTouchEvents(True)
+
         self.shadow_right.setFlag(QGraphicsItem.ItemIgnoresTransformations)
-        self.shadow_bottom = QGraphicsRectItem(self)
         self.shadow_bottom.setFlag(QGraphicsItem.ItemIgnoresTransformations)
-        self.image = self.MyImage(self)
+
         self.image.setFlag(QGraphicsItem.ItemIgnoresTransformations)
         self.image.setVisible(False)
-        self.box = QGraphicsRectItem(self)
+
         self.box.setFlag(QGraphicsItem.ItemIgnoresTransformations)
         self.setBrush(Qt.white)
         self.setPen(Qt.transparent)
@@ -61,7 +73,7 @@ class SimplePage(QGraphicsRectItem):
         self.box.setVisible(False)
         self.setSelected(False)
         self.setAcceptDrops(True)
-        self.paint_accessories()
+        # self.paint_accessories()
 
     def get_view(self):
         return self.view
@@ -135,6 +147,7 @@ class SimplePage(QGraphicsRectItem):
             self.image.setVisible(True)
 
     def invalidate(self):
+        print('Invalidating page', self.index)
         self.state = self.STATE_INVALID
         self.w, self.h = self.renderer.get_page_size(self.index)
         self.setRect(QRectF(0, 0, self.w, self.h))

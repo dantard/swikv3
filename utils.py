@@ -7,6 +7,7 @@ class Signals(QObject):
     moving = pyqtSignal(QGraphicsRectItem)
     resizing = pyqtSignal(QGraphicsRectItem)
     creating = pyqtSignal(QGraphicsRectItem)
+    action = pyqtSignal(int, object)
 
 
 def check_parent_limits(parent: QGraphicsRectItem, scene_x, scene_y):
@@ -19,7 +20,6 @@ def check_parent_limits(parent: QGraphicsRectItem, scene_x, scene_y):
         y = parent.rect().y() + parent.rect().height() if y > parent.rect().y() + parent.rect().height() else y
         point_on_scene = parent.mapToScene(x, y)
         x, y = point_on_scene.x(), point_on_scene.y()
-        print(scene_x, scene_y, x, y)
     else:
         x, y = scene_x, scene_y
 

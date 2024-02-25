@@ -2,6 +2,7 @@ import os
 import sys
 
 import pyclip
+from PyQt5 import QtGui
 from PyQt5.QtGui import QPainter, QIcon
 from PyQt5.QtWidgets import QApplication, QPushButton, QMainWindow, QSplitter
 
@@ -9,6 +10,7 @@ from GraphView import GraphView
 from LayoutManager import LayoutManager
 from groupbox import GroupBox
 from manager import Manager
+from toolrearranger import ToolRearrange
 from toolsign import ToolSign
 from tooltextselection import TextSelection
 from navigationtoolbar import NavigationToolbar
@@ -30,12 +32,17 @@ class MainWindow(QMainWindow):
         self.setAcceptDrops(True)
 
         self.renderer = MuPDFRenderer()
-        self.manager = Manager(self.renderer)
+        self.renderer.document_changed.connect(self.document_changed)
+
+        self.manager = Manager(self.renderer, self.config)
         self.view = GraphView(self.manager, self.renderer, self.config.get('mode', LayoutManager.MODE_VERTICAL), page=Page)
         self.manager.set_view(self.view)
 
-        self.manager.add_tool('text_selection', TextSelection(self.view, self.renderer), True)
-        self.manager.add_tool('sign', ToolSign(self.view, self.renderer))
+        self.manager.add_tool('text_selection', TextSelection(self.view, self.renderer, self.config), True)
+        self.manager.add_tool('sign', ToolSign(self.view, self.renderer, self.config), False)
+        self.manager.add_tool('rearrange', ToolRearrange(self.view, self.renderer, self.config), False)
+
+        self.config.load("swik.yaml")
 
         self.view.setRenderHint(QPainter.Antialiasing)
         self.view.setRenderHint(QPainter.TextAntialiasing)
@@ -71,8 +78,10 @@ class MainWindow(QMainWindow):
         self.toolbar.addSeparator()
 
         self.mode_group = GroupBox()
-        self.mode_group.add(self.select_text, True, icon=":/icons/text_cursor.png", text="Select Text")
-        self.mode_group.add(self.sign, icon=":/icons/sign.png", text="Sign")
+        self.mode_group.add(self.tool_select_text, True, icon=":/icons/text_cursor.png", text="Select Text")
+        self.mode_group.add(self.tool_sign, icon=":/icons/sign.png", text="Sign")
+        self.mode_group.add(self.tool_rearrange, icon=":/icons/shuffle.png", text="Shuffle Pages")
+
         self.mode_group.append(self.toolbar)
         self.manager.tool_finished.connect(self.mode_group.reset)
 
@@ -84,11 +93,17 @@ class MainWindow(QMainWindow):
         self.renderer.open_pdf("/home/danilo/Desktop/swik-files/Free_Test_Data_10.5MB_PDF.pdf")
         # self.renderer.open_pdf("/home/danilo/Desktop/swik-files/view.pdf")
 
-    def select_text(self):
+    def document_changed(self):
+        self.setWindowTitle("Swik - " + self.renderer.get_filename())
+
+    def tool_select_text(self):
         self.manager.use_tool('text_selection')
 
-    def sign(self):
+    def tool_sign(self):
         self.manager.use_tool('sign')
+
+    def tool_rearrange(self):
+        self.manager.use_tool('rearrange')
 
     def open_file(self):
         pass
@@ -100,10 +115,14 @@ class MainWindow(QMainWindow):
         pass
 
     def preferences(self):
-        pass
+        self.config.exec()
 
     def open_with_other(self, command):
         pass
+
+    def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
+        self.config.save("swik.yaml")
+        super().closeEvent(a0)
 
 
 def main():

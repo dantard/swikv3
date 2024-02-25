@@ -1,5 +1,6 @@
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QFormLayout, QDialogButtonBox, QDialog, QLabel, QVBoxLayout, QGroupBox
+from PyQt5.QtWidgets import QFormLayout, QDialogButtonBox, QDialog, QLabel, QVBoxLayout, QGroupBox, QLineEdit, QCheckBox
+
 
 class ComposableDialog(QDialog):
     def __init__(self):
@@ -34,3 +35,31 @@ class ComposableDialog(QDialog):
 
     def get(self, label):
         return self.rows[label]
+
+
+class PasswordDialog(QDialog):
+    def __init__(self, checkbox=True, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Password")
+        layout = QVBoxLayout(self)
+        self.lb = QLabel("Password")
+        self.le = QLineEdit()
+        self.le.setEchoMode(QLineEdit.Password)
+        self.cb = QCheckBox("Save Password")
+        layout.addWidget(self.lb)
+        layout.addWidget(self.le)
+        if checkbox:
+            layout.addWidget(self.cb)
+        bb = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        layout.addWidget(bb)
+        bb.accepted.connect(self.accept)
+        bb.rejected.connect(self.reject)
+
+    def getText(self):
+        return self.le.text()
+
+    def getCheckBox(self):
+        return self.cb.isChecked()
+
+    def closeEvent(self, a0):
+        pass

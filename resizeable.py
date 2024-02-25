@@ -204,7 +204,6 @@ class ResizableRectItem(PaintableSelectorRectItem):
 
             if self.movable:
                 self.signals.moving.emit(self)
-                print('moving', self, pos)
                 self.setPos(pos)
                 self.update()
 

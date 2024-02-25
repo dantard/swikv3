@@ -1,3 +1,6 @@
+from PyQt5.QtCore import QRectF, Qt
+from PyQt5.QtWidgets import QGraphicsRectItem
+
 from simplepage import SimplePage
 
 
@@ -19,3 +22,4 @@ class Page(SimplePage):
 
     def get_words(self):
         return self.words
+

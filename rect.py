@@ -1,7 +1,9 @@
+from PyQt5.QtCore import pyqtSignal, QObject
 from PyQt5.QtWidgets import QGraphicsRectItem
 
 
 class SwikRect(QGraphicsRectItem):
+
     def __init__(self, limits=None, **kwargs):
         super(SwikRect, self).__init__()
         self.kwargs = kwargs
@@ -10,22 +12,13 @@ class SwikRect(QGraphicsRectItem):
             self.copy(kwargs.get("copy"))
 
     def get_rect_on_scene(self):
-        if self.parentItem() is None:
-            return self.sceneBoundingRect()
-        return self.mapToScene(self.rect()).boundingRect()
+        return self.sceneBoundingRect()
 
-    def get_rect_on_parent(self):
-        if self.parentItem() is None:
+    def get_rect_on_limits(self):
+        if self.limits is None:
             return self.sceneBoundingRect()
         else:
-            return self.parentItem().mapRectFromItem(self, self.rect())
-
-    def get_rect_on(self, item):
-        if self.parentItem() is None:
-            return item.mapFromScene(self.sceneBoundingRect()).boundingRect()
-        else:
-            assert 0
-            # return self.mapToItem(item, self.rect()).boundingRect()
+            return self.limits.mapRectFromItem(self, self.rect())
 
     def copy(self, copy):
         self.setParentItem(copy.parentItem())
@@ -40,3 +33,6 @@ class SwikRect(QGraphicsRectItem):
 
     def die(self):
         self.scene().removeItem(self)
+
+    def get_limits(self):
+        return self.limits

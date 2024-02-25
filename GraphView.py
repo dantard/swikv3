@@ -56,7 +56,9 @@ class GraphView(QGraphicsView):
 
             def removeItem(self, item) -> None:
                 super().removeItem(item)
-                self.signals.item_removed.emit(item)
+                print('removeItem', item)
+                if item is not None:
+                    self.signals.item_removed.emit(item)
 
         self.setScene(MyScene())
         self.scene().setBackgroundBrush(Qt.gray)
@@ -256,6 +258,9 @@ class GraphView(QGraphicsView):
     def get_num_of_pages(self):
         return len(self.pages)
 
+    def get_page_count(self):
+        return self.renderer.get_num_of_pages()
+
     def page_scrolled(self):
         max_area = 0
         for i, p in self.pages.items():  # type: SimplePage
@@ -356,6 +361,15 @@ class GraphView(QGraphicsView):
         pos = self.mapFromGlobal(pos)
         return self.get_page_at_pos(pos).index
 
+    def top_is(self, pos, check_items):
+        items = self.scene().items(self.mapToScene(pos))
+        if len(items) == 0:
+            return False
+        for item in check_items:
+            if isinstance(items[0], item):
+                return True
+        return False
+
     def fully_update_layout(self):
 
         self.m_layout.clear()
@@ -415,12 +429,10 @@ class GraphView(QGraphicsView):
             delta = int((event.angleDelta().y() / 1200) * 100) / 100
             mouse_on_scene = self.mapToScene(event.pos())
             page = self.get_items_at_pos(event.pos(), SimplePage, 0, False)
-            print("ababab", self.horizontalScrollBar().value(), self.scene().width())
             self.set_ratio(self.get_ratio() + delta, True)
 
         index = self.page
         page = self.pages.get(index)
-        print(index, page.scenePos().y(), page.pos().y(), self.mapFromScene(page.scenePos()).y())
 
     def get_page_item(self, index):
         return self.pages[index]

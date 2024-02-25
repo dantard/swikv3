@@ -43,6 +43,44 @@ class Image:
         return self.w, self.h
 
 
+def convert_box_to_upside_down(filename, index, rect):
+    # The signing is not done using PyMuPDF, so we need to compute
+    # the square in the pyhanko page (which to make everything
+    # more complicated uses upside-down coordinates (notice dy))
+    # We need to get some info from the file that is about to be signed
+    # that can be different from the one we are seeing (e.g. flatten + sign)
+
+    # Open the doc to sign
+    doc_to_sign = fitz.open(filename)
+
+    # The projection is necessary to take into account orientation
+    # rot = self.renderer.get_rotation(page.index)
+    rot = doc_to_sign[index].rotation
+
+    # Get page size
+    # w, h = self.renderer.get_page_size(page.index)
+    w, h = doc_to_sign[index].rect[2], doc_to_sign[index].rect[3]
+
+    # Get derotation matrix
+    derot_matrix = doc_to_sign[index].derotation_matrix
+
+    # Close the file, it is not needed anymore
+    doc_to_sign.close()
+
+    # Take into account that pyhanko uses upside-down coordinates
+    dy = w if rot == 90 or rot == 270 else h
+
+    # Rotate according to the orientation and create thw box
+    # r1 = self.renderer.project(fitz.Point(rect.x(), rect.y()), page.index)
+    r1 = fitz.Point(rect.x(), rect.y()) * derot_matrix
+    box = (r1.x,
+           dy - r1.y,
+           r1.x + rect.width(),
+           dy - (r1.y + rect.height())
+           )
+    return box
+
+
 class MuPDFRenderer(QLabel):
     # Signals
     document_changed = pyqtSignal()
@@ -196,3 +234,7 @@ class MuPDFRenderer(QLabel):
             word_objs.append(word)
 
         return word_objs
+
+    def rearrange_pages(self, order, emit):
+        self.document.select(order)
+        # self.set_document(self.document, emit)
