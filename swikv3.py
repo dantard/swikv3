@@ -90,7 +90,7 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(self.view)
 
-        self.renderer.open_pdf("/home/danilo/Downloads/Teoría_Números.pdf")
+        self.renderer.open_pdf("/home/danilo/Documents/ADESIONE_2312235026.pdf")
         # self.renderer.open_pdf("/home/danilo/Desktop/swik-files/view.pdf")
 
     def document_changed(self):

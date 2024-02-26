@@ -25,6 +25,11 @@ def move_numbers(vector, numbers_to_move, position):
 
 
 class ToolRearrange(Tool):
+
+    STATE_RECT_SELECTION = 0
+    STATE_PAGE_SELECTION = 1
+    STATE_PAGE_MOVING = 2
+
     def __init__(self, view, renderer, config):
         super().__init__(view, renderer, config)
         self.selected = []
@@ -32,6 +37,7 @@ class ToolRearrange(Tool):
         self.leader_page = None
         self.collider = None
         self.insert_at_page = None
+        self.state = None
 
     def init(self):
         self.collider = QGraphicsRectItem()
@@ -43,12 +49,14 @@ class ToolRearrange(Tool):
         page = self.view.get_page_at_pos(event.pos())
         print("page", page)
         if page is None:
+            self.state = self.STATE_RECT_SELECTION
             self.rb = SelectorRectItem()
             self.view.scene().addItem(self.rb)
             self.rb.view_mouse_press_event(self.view, event)
             self.rb.signals.creating.connect(self.rect_selection)
 
         elif event.modifiers() & Qt.ControlModifier:
+            self.state = self.STATE_PAGE_SELECTION
             if page.is_selected():
                 page.set_selected(False)
                 if page in self.selected:
@@ -57,17 +65,17 @@ class ToolRearrange(Tool):
                 page.set_selected(True)
                 self.selected.append(page)
         elif page.is_selected():
-
+            self.state = self.STATE_PAGE_MOVING
             self.pickup_point = event.pos()
             self.leader_page = page
             for i, page in enumerate(self.selected):
                 page.setZValue(100 + i)
 
     def mouse_moved(self, event):
-        if self.pickup_point is None:
+        if self.state == self.STATE_RECT_SELECTION:
             self.rb.view_mouse_move_event(self.view, event)
 
-        if self.pickup_point is not None:
+        elif self.state==self.STATE_PAGE_MOVING:
             delta = event.pos() - self.pickup_point
             self.leader_page.moveBy(delta.x(), delta.y())
 
@@ -100,30 +108,46 @@ class ToolRearrange(Tool):
                 self.collider.setVisible(False)
 
     def mouse_released(self, event):
-        self.collider.setVisible(False)
-        for page in self.selected:
-            page.setZValue(0)
-
-        if self.insert_at_page is None:
-            self.view.fully_update_layout()
-        else:
+        if self.state == self.STATE_PAGE_MOVING:
+            self.collider.setVisible(False)
             for page in self.selected:
-                page.set_selected(False)
+                page.setZValue(0)
 
-            selected_index = [page.index for page in self.selected]
-            ids = [i for i in range(self.view.get_page_count())]
-            move_numbers(ids, selected_index, self.insert_at_page)
+            if self.insert_at_page is None:
+                self.view.fully_update_layout()
+            else:
+                for page in self.selected:
+                    page.set_selected(False)
 
-            pages = [self.view.get_page_item(i) for i in range(self.view.get_page_count())]
-            for i, idx in enumerate(ids):
-                self.view.pages[i] = pages[idx]
-                self.view.pages[i].index = i
+                selected_index = [page.index for page in self.selected]
+                ids = [i for i in range(self.view.get_page_count())]
+                move_numbers(ids, selected_index, self.insert_at_page)
 
-            self.renderer.rearrange_pages(ids, False)
-            self.operation_done()
+                pages = [self.view.get_page_item(i) for i in range(self.view.get_page_count())]
+                for i, idx in enumerate(ids):
+                    self.view.pages[i] = pages[idx]
+                    self.view.pages[i].index = i
 
-    def rect_selection(self):
-        pass
+                self.renderer.rearrange_pages(ids, False)
+                self.operation_done()
+        elif self.state == self.STATE_RECT_SELECTION:
+            self.view.scene().removeItem(self.rb)
+            self.rb = None
+
+    def rect_selection(self, rubberband):
+        ci = self.rb.collidingItems()
+        ci = [item for item in ci if isinstance(item, SimplePage)]
+        for page in self.selected:
+            page.set_selected(False)
+
+        self.selected.clear()
+
+        for page in ci:
+            if page not in self.selected:
+                page.set_selected(True)
+                self.selected.append(page)
+        print("rubberband", rubberband, ci)
+
 
     def operation_done(self):
         self.view.fully_update_layout()
