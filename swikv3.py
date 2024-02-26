@@ -96,17 +96,26 @@ class MainWindow(QMainWindow):
 
         x_mode = QShortcut(QKeySequence('Ctrl+C'), self)
         x_mode.activated.connect(self.copy)
+        x_mode = QShortcut(QKeySequence('Ctrl+Z'), self)
+        x_mode.activated.connect(self.undo)
 
-
-        self.renderer.open_pdf("/home/danilo/Documents/ADESIONE_2312235026.pdf")
+        self.renderer.open_pdf("/home/danilo/Documents/Docs/aaa.pdf")
         # self.renderer.open_pdf("/home/danilo/Desktop/swik-files/view.pdf")
+    info = {}
+    def undo(self):
+        selected = self.view.scene().selectedItems()
+        for item in selected:
+            item.deserialize(self.info)
+
     def copy(self):
         selected = self.view.scene().selectedItems()
         for item in selected:
             kind = type(item)
             print("Creating ", kind, " from ", item, " with ", item.get_kwargs())
-            obj = kind(copy=item)
-            obj.setPos(item.pos() + QPointF(20, 20))
+            #obj = kind(copy=item, offset=QPointF(50, 50))
+            obj = kind()
+            info = {}
+            item.serialize(self.info)
 
 
 

@@ -54,8 +54,6 @@ class ResizableRectItem(PaintableSelectorRectItem):
 
     def __init__(self, parent=None, **kwargs):
         super().__init__(parent, **kwargs)
-        print("ResizableRectItem", self.pen().color(), self.brush().color())
-        # super(ColoreableRectItem, self).__init__(parent, **kwargs)
 
         self.signals = Signals()
         self.resizeable = True
@@ -151,7 +149,6 @@ class ResizableRectItem(PaintableSelectorRectItem):
 
             new_pos = self.mapFromScene(x, y)
 
-
             delta = new_pos - self.prev_pos
             rect = self.rect()
 
@@ -227,15 +224,17 @@ class ResizableRectItem(PaintableSelectorRectItem):
     def hoverEnterEvent(self, event) -> None:
         self.set_handle_visibility(True)
 
-    # Only if derived from Paintableselector
-    # def view_mouse_release_event(self, view, event):
-    #    super().view_mouse_release_event(view, event)
-    #    self.update_handles_position()
-    #    self.handles_enabled = True
-
     def populate_menu(self, menu: QMenu):
         super().populate_menu(menu)
         menu.addAction("Delete", lambda: self.scene().removeItem(self))
+
+    def serialize(self, info):
+        super().serialize(info)
+        info["movable"] = self.movable
+
+    def deserialize(self, info):
+        super().deserialize(info)
+        self.movable = info["movable"]
 
 
 class MainWindow(QGraphicsView):

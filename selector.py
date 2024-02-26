@@ -60,8 +60,15 @@ class PaintableSelectorRectItem(SelectorRectItem):
     IMAGE_MODE_MAINTAIN_SIZE = 2
 
     def __init__(self, parent=None, **kwargs):
+        # Do NOT change the order of the super() call
+        # because it apply_kwargs() and copy() methods would be
+        # called before the initialization of the attributes
+        self.image_mode, self.image, self.text = None, None, None
+        self.text_mode, self.max_font_size, self.font = None, None, None
         super().__init__(parent, **kwargs)
 
+    def apply_kwargs(self, **kwargs):
+        super().apply_kwargs(**kwargs)
         self.image_mode = kwargs.get("image_mode", self.IMAGE_MODE_MAINTAIN_RATIO)
         self.image = kwargs.get("image", None)
         self.text = kwargs.get("text", "")
@@ -69,8 +76,60 @@ class PaintableSelectorRectItem(SelectorRectItem):
         self.max_font_size = kwargs.get("max_font_size", 100)
         self.font = kwargs.get("font", QFont("Arial", 12))
 
+    def copy(self, item, **kwargs):
+        super().copy(item, **kwargs)
+        self.image_mode = item.get_image_mode()
+        self.image = item.get_image()
+        self.text = item.get_text()
+        self.text_mode = item.get_text_mode()
+        self.max_font_size = item.get_max_font_size()
+        self.font = item.get_font()
+
+    def get_image_mode(self):
+        return self.image_mode
+
+    def set_image_mode(self, mode):
+        self.image_mode = mode
+        self.update()
+
+    def get_image(self):
+        return self.image
+
+    def set_image(self, image):
+        self.image = image
+        self.update()
+
+    def get_text(self):
+        return self.text
+
+    def set_text(self, text):
+        self.text = text
+        self.update()
+
+    def get_text_mode(self):
+        return self.text_mode
+
+    def set_text_mode(self, mode):
+        self.text_mode = mode
+        self.update()
+
+    def get_max_font_size(self):
+        return self.max_font_size
+
+    def set_max_font_size(self, size):
+        self.max_font_size = size
+        self.update()
+
+    def get_font(self):
+        return self.font
+
+    def set_font(self, font):
+        self.font = font
+        self.update()
+
     def paint(self, painter: QtGui.QPainter, option, widget: typing.Optional[QWidget] = ...) -> None:
         super().paint(painter, option, widget)
+
 
         if self.image is not None:
             if self.image_mode == self.IMAGE_MODE_MAINTAIN_RATIO:
@@ -95,6 +154,9 @@ class PaintableSelectorRectItem(SelectorRectItem):
                 painter.drawImage(QRectF(self.rect().x(), self.rect().y(), w, h), img)
 
         if self.text is not None:
+
+            print("paint PaintableSelectorRectItem")
+
             font_size = self.max_font_size  # * self.init_pos_item.get_scaling_ratio()
             if self.text_mode == self.TEXT_MODE_STRETCH:
                 while True:
@@ -113,3 +175,39 @@ class PaintableSelectorRectItem(SelectorRectItem):
             painter.setFont(self.font)
             painter.setPen(Qt.black)
             painter.drawText(self.rect(), 0, self.text)
+
+    def serialize(self, info):
+        super().serialize(info)
+        info["image_mode"] = self.image_mode
+        info["image"] = self.image
+        info["text"] = self.text
+        info["text_mode"] = self.text_mode
+        info["max_font_size"] = self.max_font_size
+        info["font"] = self.font
+
+    def deserialize(self, info):
+        super().deserialize(info)
+        self.image_mode = info["image_mode"]
+        self.image = info["image"]
+        self.text = info["text"]
+        self.text_mode = info["text_mode"]
+        self.max_font_size = info["max_font_size"]
+        self.font = info["font"]
+        self.update()
+
+    def to_yaml(self, info):
+        super().to_yaml(info)
+        info["image_mode"] = self.image_mode
+        info["image"] = self.image
+        info["text"] = self.text
+        info["text_mode"] = self.text_mode
+        info["max_font_size"] = self.max_font_size
+
+    def from_yaml(self, info):
+        super().from_yaml(info)
+        self.image_mode = info["image_mode"]
+        self.image = info["image"]
+        self.text = info["text"]
+        self.text_mode = info["text_mode"]
+        self.max_font_size = info["max_font_size"]
+        self.update()

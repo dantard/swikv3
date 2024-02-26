@@ -27,9 +27,12 @@ class ToolRedactAnnotation(Tool):
             return
 
         if self.rubberband is None:
-            self.rubberband = RedactAnnotation(page, pen=Qt.black, brush=Qt.black, event=(self.view, event))
+            self.rubberband = RedactAnnotation(page, pen=Qt.black, brush=Qt.transparent, event=(self.view, event), text="hola")
             #self.rubberband.view_mouse_press_event(self.view, event)
             self.view.setCursor(Qt.CrossCursor)
+            info = {}
+            self.rubberband.serialize(info)
+            print("serialize", info)
 
     def mouse_moved(self, event):
         if self.rubberband is not None:
