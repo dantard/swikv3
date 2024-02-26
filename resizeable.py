@@ -50,14 +50,11 @@ class HandleItem(QGraphicsRectItem):
         super().paint(painter, option, widget)
 
 
-class SelectorPaintableRectItem(SelectorRectItem, PaintableRectItem):
-    pass
-
-
 class ResizableRectItem(PaintableSelectorRectItem):
 
     def __init__(self, parent=None, **kwargs):
         super().__init__(parent, **kwargs)
+        print("ResizableRectItem", self.pen().color(), self.brush().color())
         # super(ColoreableRectItem, self).__init__(parent, **kwargs)
 
         self.signals = Signals()
@@ -237,12 +234,8 @@ class ResizableRectItem(PaintableSelectorRectItem):
     #    self.handles_enabled = True
 
     def populate_menu(self, menu: QMenu):
+        super().populate_menu(menu)
         menu.addAction("Delete", lambda: self.scene().removeItem(self))
-
-    def contextMenuEvent(self, event: 'QGraphicsSceneContextMenuEvent') -> None:
-        menu = QMenu()
-        self.populate_menu(menu)
-        menu.exec(event.screenPos())
 
 
 class MainWindow(QGraphicsView):

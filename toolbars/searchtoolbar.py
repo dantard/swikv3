@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import QToolBar, QShortcut, QLineEdit, QLabel, QApplication
 from GraphView import GraphView
 from MuPDFRenderer import MuPDFRenderer, extract_text_process
 from finder import Finder
-from toolbar import Toolbar
+from toolbars.toolbar import Toolbar
 
 
 class ProgressLineEdit(QLineEdit):

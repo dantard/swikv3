@@ -16,6 +16,8 @@ class SelectorRectItem(ColoreableRectItem):
         self.signals = Signals()
         self.p1 = None
         self.p2 = None
+        if (event := kwargs.get("event", None)) is not None:
+            self.view_mouse_press_event(event[0], event[1])
 
     def get_click_pos(self):
         return self.p1
@@ -58,7 +60,8 @@ class PaintableSelectorRectItem(SelectorRectItem):
     IMAGE_MODE_MAINTAIN_SIZE = 2
 
     def __init__(self, parent=None, **kwargs):
-        super(ColoreableRectItem, self).__init__(parent, **kwargs)
+        super().__init__(parent, **kwargs)
+
         self.image_mode = kwargs.get("image_mode", self.IMAGE_MODE_MAINTAIN_RATIO)
         self.image = kwargs.get("image", None)
         self.text = kwargs.get("text", "")

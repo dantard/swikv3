@@ -1,5 +1,5 @@
 from PyQt5.QtCore import pyqtSignal, QObject
-from PyQt5.QtWidgets import QGraphicsRectItem
+from PyQt5.QtWidgets import QGraphicsRectItem, QMenu
 
 
 class SwikRect(QGraphicsRectItem):
@@ -9,6 +9,14 @@ class SwikRect(QGraphicsRectItem):
         self.kwargs = kwargs
         if kwargs.get("copy", None) is not None:
             self.copy(kwargs.get("copy"))
+
+    def contextMenuEvent(self, event: 'QGraphicsSceneContextMenuEvent') -> None:
+        menu = QMenu()
+        self.populate_menu(menu)
+        menu.exec(event.screenPos())
+
+    def populate_menu(self, menu: QMenu):
+        pass
 
     def get_rect_on_scene(self):
         return self.sceneBoundingRect()

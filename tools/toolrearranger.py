@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import QGraphicsRectItem, QMenu
 
 from selector import SelectorRectItem
 from simplepage import SimplePage
-from tool import Tool
+from tools.tool import Tool
 
 
 def move_numbers(vector, numbers_to_move, position):

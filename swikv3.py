@@ -3,20 +3,22 @@ import sys
 
 import pyclip
 from PyQt5 import QtGui
-from PyQt5.QtGui import QPainter, QIcon
-from PyQt5.QtWidgets import QApplication, QPushButton, QMainWindow, QSplitter
+from PyQt5.QtCore import QPointF
+from PyQt5.QtGui import QPainter, QIcon, QKeySequence
+from PyQt5.QtWidgets import QApplication, QMainWindow, QShortcut
 
 from GraphView import GraphView
 from LayoutManager import LayoutManager
 from groupbox import GroupBox
 from manager import Manager
-from toolrearranger import ToolRearrange
-from toolsign import ToolSign
-from tooltextselection import TextSelection
-from navigationtoolbar import NavigationToolbar
+from tools.toolrearranger import ToolRearrange
+from tools.toolredactannotation import ToolRedactAnnotation
+from tools.toolsign import ToolSign
+from tools.tooltextselection import TextSelection
+from toolbars.navigationtoolbar import NavigationToolbar
 from page import Page
 from renderer import MuPDFRenderer
-from searchtoolbar import TextSearchToolbar
+from toolbars.searchtoolbar import TextSearchToolbar
 from swikconfig import SwikConfig
 
 
@@ -41,6 +43,7 @@ class MainWindow(QMainWindow):
         self.manager.add_tool('text_selection', TextSelection(self.view, self.renderer, self.config), True)
         self.manager.add_tool('sign', ToolSign(self.view, self.renderer, self.config), False)
         self.manager.add_tool('rearrange', ToolRearrange(self.view, self.renderer, self.config), False)
+        self.manager.add_tool('redact_annot', ToolRedactAnnotation(self.view, self.renderer, self.config), False)
 
         self.config.load("swik.yaml")
 
@@ -78,9 +81,10 @@ class MainWindow(QMainWindow):
         self.toolbar.addSeparator()
 
         self.mode_group = GroupBox()
-        self.mode_group.add(self.tool_select_text, True, icon=":/icons/text_cursor.png", text="Select Text")
-        self.mode_group.add(self.tool_sign, icon=":/icons/sign.png", text="Sign")
-        self.mode_group.add(self.tool_rearrange, icon=":/icons/shuffle.png", text="Shuffle Pages")
+        self.mode_group.add(self.manage_tool, True, icon=":/icons/text_cursor.png", text="Select Text", tool="text_selection")
+        self.mode_group.add(self.manage_tool, icon=":/icons/sign.png", text="Sign", tool="sign")
+        self.mode_group.add(self.manage_tool, icon=":/icons/white.png", text="Anonymize", tool="redact_annot")
+        self.mode_group.add(self.manage_tool, icon=":/icons/shuffle.png", text="Shuffle Pages", tool="rearrange")
 
         self.mode_group.append(self.toolbar)
         self.manager.tool_finished.connect(self.mode_group.reset)
@@ -90,20 +94,29 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(self.view)
 
+        x_mode = QShortcut(QKeySequence('Ctrl+C'), self)
+        x_mode.activated.connect(self.copy)
+
+
         self.renderer.open_pdf("/home/danilo/Documents/ADESIONE_2312235026.pdf")
         # self.renderer.open_pdf("/home/danilo/Desktop/swik-files/view.pdf")
+    def copy(self):
+        selected = self.view.scene().selectedItems()
+        for item in selected:
+            kind = type(item)
+            print("Creating ", kind, " from ", item, " with ", item.get_kwargs())
+            obj = kind(copy=item)
+            obj.setPos(item.pos() + QPointF(20, 20))
+
+
 
     def document_changed(self):
         self.setWindowTitle("Swik - " + self.renderer.get_filename())
 
-    def tool_select_text(self):
-        self.manager.use_tool('text_selection')
-
-    def tool_sign(self):
-        self.manager.use_tool('sign')
-
-    def tool_rearrange(self):
-        self.manager.use_tool('rearrange')
+    def manage_tool(self):
+        button = self.sender()
+        if button is not None:
+            self.manager.use_tool(button.get_tool())
 
     def open_file(self):
         pass

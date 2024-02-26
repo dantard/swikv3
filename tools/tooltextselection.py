@@ -11,7 +11,7 @@ from selector import SelectorRectItem
 
 import resources
 from simplepage import SimplePage
-from tool import Tool
+from tools.tool import Tool
 from word import Word
 
 

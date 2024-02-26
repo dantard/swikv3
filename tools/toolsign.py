@@ -8,7 +8,7 @@ from dialogs import PasswordDialog
 from renderer import convert_box_to_upside_down
 from resizeable import ResizableRectItem
 from signer import P12Signer
-from tool import Tool
+from tools.tool import Tool
 
 
 class SignerRectItem(ResizableRectItem):

@@ -1,9 +1,9 @@
 from PyQt5.QtCore import pyqtSignal, Qt
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QToolBar, QApplication, QLineEdit, QLabel
+from PyQt5.QtWidgets import QToolBar, QLineEdit, QLabel
 
 from GraphView import GraphView
-from toolbar import Toolbar
+from toolbars.toolbar import Toolbar
 
 
 class NavigationToolbar(Toolbar):

@@ -10,8 +10,13 @@ from rect import SwikRect
 class ColoreableRectItem(SwikRect):
     def __init__(self, parent=None, **kwargs):
         super(ColoreableRectItem, self).__init__(parent, **kwargs)
-        self.setPen(kwargs.get("pen", QPen(Qt.black)))
-        self.setBrush(kwargs.get("brush", QBrush(Qt.transparent)))
+        if (copy:=kwargs.get("copy", None)) is None:
+            self.setPen(kwargs.get("pen", QPen(Qt.black)))
+            self.setBrush(kwargs.get("brush", QBrush(Qt.transparent)))
+        else:
+            #self.setPen(kwargs.get("pen", copy.get_kwargs("pen", QPen(Qt.black))))
+            #self.setBrush(kwargs.get("brush", copy.get_kwargs("brush",QBrush(Qt.transparent)))
+            pass
 
     def set_border_color(self, color: QColor, alpha=255):
         color = QColor(color)
@@ -29,9 +34,9 @@ class ColoreableRectItem(SwikRect):
         pen.setWidth(width)
         self.setPen(pen)
 
-    # def populate_menu(self, menu: QMenu):
-    #    super().populate_menu(menu)
-    #    menu.addAction("Change color", self.change_color)
+    def populate_menu(self, menu: QMenu):
+        super().populate_menu(menu)
+        menu.addAction("Change color", self.change_color)
 
     def change_color(self):
         color = ComposableDialog()

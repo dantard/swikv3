@@ -2,6 +2,12 @@ from PyQt5.QtCore import QSize
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QButtonGroup, QPushButton, QToolBar, QAction
 
+class GroupButton(QPushButton):
+    def __init__(self, tool=None):
+        super().__init__()
+        self.tool = tool
+    def get_tool(self):
+        return self.tool
 
 class GroupBox:
     def __init__(self):
@@ -19,8 +25,8 @@ class GroupBox:
     def on_any_button_clicked(self, callback):
         self.group.buttonClicked.connect(callback)
 
-    def add(self, callback, default=False, text="", icon=None):
-        btn = QPushButton()
+    def add(self, callback, default=False, text="", icon=None, tool=None):
+        btn = GroupButton(tool)
         btn.setContentsMargins(0, 0, 0, 0)
         btn.setIconSize(QSize(24, 24))
         btn.setFlat(True)
