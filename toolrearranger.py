@@ -1,6 +1,7 @@
 from PyQt5.QtCore import QPointF, Qt
 from PyQt5.QtWidgets import QGraphicsRectItem, QMenu
 
+from selector import SelectorRectItem
 from simplepage import SimplePage
 from tool import Tool
 
@@ -42,8 +43,12 @@ class ToolRearrange(Tool):
         page = self.view.get_page_at_pos(event.pos())
         print("page", page)
         if page is None:
-            return
-        if event.modifiers() & Qt.ControlModifier:
+            self.rb = SelectorRectItem()
+            self.view.scene().addItem(self.rb)
+            self.rb.view_mouse_press_event(self.view, event)
+            self.rb.signals.creating.connect(self.rect_selection)
+
+        elif event.modifiers() & Qt.ControlModifier:
             if page.is_selected():
                 page.set_selected(False)
                 if page in self.selected:
@@ -58,37 +63,10 @@ class ToolRearrange(Tool):
             for i, page in enumerate(self.selected):
                 page.setZValue(100 + i)
 
-    def mouse_released(self, event):
-        self.collider.setVisible(False)
-        for page in self.selected:
-            page.setZValue(0)
-
-        if self.insert_at_page is None:
-            self.view.fully_update_layout()
-        else:
-            for page in self.selected:
-                page.set_selected(False)
-
-            selected_index = [page.index for page in self.selected]
-            ids = [i for i in range(self.view.get_page_count())]
-            move_numbers(ids, selected_index, self.insert_at_page)
-
-            pages = [self.view.get_page_item(i) for i in range(self.view.get_page_count())]
-            for i, idx in enumerate(ids):
-                self.view.pages[i] = pages[idx]
-                self.view.pages[i].index = i
-
-            self.renderer.rearrange_pages(ids, False)
-            self.operation_done()
-
-    def operation_done(self):
-        self.view.fully_update_layout()
-        self.leader_page = None
-        self.insert_at_page = None
-        self.pickup_point = None
-        self.selected.clear()
-
     def mouse_moved(self, event):
+        if self.pickup_point is None:
+            self.rb.view_mouse_move_event(self.view, event)
+
         if self.pickup_point is not None:
             delta = event.pos() - self.pickup_point
             self.leader_page.moveBy(delta.x(), delta.y())
@@ -120,6 +98,39 @@ class ToolRearrange(Tool):
             else:
                 self.insert_at_page = None
                 self.collider.setVisible(False)
+
+    def mouse_released(self, event):
+        self.collider.setVisible(False)
+        for page in self.selected:
+            page.setZValue(0)
+
+        if self.insert_at_page is None:
+            self.view.fully_update_layout()
+        else:
+            for page in self.selected:
+                page.set_selected(False)
+
+            selected_index = [page.index for page in self.selected]
+            ids = [i for i in range(self.view.get_page_count())]
+            move_numbers(ids, selected_index, self.insert_at_page)
+
+            pages = [self.view.get_page_item(i) for i in range(self.view.get_page_count())]
+            for i, idx in enumerate(ids):
+                self.view.pages[i] = pages[idx]
+                self.view.pages[i].index = i
+
+            self.renderer.rearrange_pages(ids, False)
+            self.operation_done()
+
+    def rect_selection(self):
+        pass
+
+    def operation_done(self):
+        self.view.fully_update_layout()
+        self.leader_page = None
+        self.insert_at_page = None
+        self.pickup_point = None
+        self.selected.clear()
 
     def context_menu(self, event):
         menu = QMenu()
