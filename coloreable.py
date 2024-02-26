@@ -8,8 +8,8 @@ from rect import SwikRect
 
 
 class ColoreableRectItem(SwikRect):
-    def __init__(self, limits=None, **kwargs):
-        super(ColoreableRectItem, self).__init__(limits, **kwargs)
+    def __init__(self, parent=None, **kwargs):
+        super(ColoreableRectItem, self).__init__(parent, **kwargs)
         self.setPen(kwargs.get("pen", QPen(Qt.black)))
         self.setBrush(kwargs.get("brush", QBrush(Qt.transparent)))
 

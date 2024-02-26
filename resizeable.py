@@ -139,6 +139,7 @@ class ResizableRectItem(PaintableSelectorRectItem):
                 break
         else:
             super().mousePressEvent(event)
+
             self.point = self.mapFromScene(event.scenePos())
 
     def mouseMoveEvent(self, event):
@@ -148,10 +149,11 @@ class ResizableRectItem(PaintableSelectorRectItem):
 
         if self.handle_pressed:
             x, y = event.scenePos().x(), event.scenePos().y()
-            if self.limits is not None:
-                x, y = check_parent_limits(self.limits, x, y)
+            if self.parentItem() is not None:
+                x, y = check_parent_limits(self.parentItem(), x, y)
 
             new_pos = self.mapFromScene(x, y)
+
 
             delta = new_pos - self.prev_pos
             rect = self.rect()
@@ -173,12 +175,12 @@ class ResizableRectItem(PaintableSelectorRectItem):
             elif self.handle_pressed == self.handles[7]:
                 rect.setLeft(rect.left() + delta.x())
 
-            if self.limits is not None:
+            if self.parentItem() is not None:
                 rect = self.mapRectToScene(rect)
                 x1, y1, x2, y2 = rect.x(), rect.y(), rect.x() + rect.width(), rect.y() + rect.height()
 
-                x1, y1 = check_parent_limits(self.limits, x1, y1)
-                x2, y2 = check_parent_limits(self.limits, x2, y2)
+                x1, y1 = check_parent_limits(self.parentItem(), x1, y1)
+                x2, y2 = check_parent_limits(self.parentItem(), x2, y2)
 
                 rect = self.mapFromScene(QRectF(x1, y1, x2 - x1, y2 - y1).normalized()).boundingRect()
 
@@ -189,16 +191,16 @@ class ResizableRectItem(PaintableSelectorRectItem):
 
         else:
             scene_pos = event.scenePos() - self.point
-            if self.limits is not None:
+            if self.parentItem() is not None:
 
                 x1, y1 = (scene_pos + self.rect().topLeft()).x(), (scene_pos + self.rect().topLeft()).y()
-                x1, y1 = check_parent_limits(self.limits, x1, y1)
+                x1, y1 = check_parent_limits(self.parentItem(), x1, y1)
 
                 x2, y2 = x1 + self.rect().bottomRight().x(), y1 + self.rect().bottomRight().y()
-                x2, y2 = check_parent_limits(self.limits, x2, y2)
+                x2, y2 = check_parent_limits(self.parentItem(), x2, y2)
                 x, y = x2 - self.rect().width(), y2 - self.rect().height()
 
-                pos = QPointF(x, y)
+                pos = self.parentItem().mapFromScene(x, y)
             else:
                 pos = scene_pos
 

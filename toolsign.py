@@ -140,5 +140,5 @@ class ToolSign(Tool):
 
     def actions(self, action, rubberband):
         if action == SignerRectItem.ACTION_SIGN:
-            self.sign(rubberband.get_limits().index,
-                      rubberband.get_rect_on_limits())
+            self.sign(rubberband.get_parent().index,
+                      rubberband.get_rect_on_parent())
