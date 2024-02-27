@@ -1,5 +1,5 @@
 from PyQt5.QtCore import QObject, pyqtSignal, QRectF
-from PyQt5.QtWidgets import QGraphicsRectItem
+from PyQt5.QtWidgets import QGraphicsRectItem, QGraphicsItem
 
 
 class Signals(QObject):
@@ -8,6 +8,10 @@ class Signals(QObject):
     resizing = pyqtSignal(QGraphicsRectItem)
     creating = pyqtSignal(QGraphicsRectItem)
     action = pyqtSignal(int, object)
+    item_added = pyqtSignal(QGraphicsItem)
+    item_removed = pyqtSignal(QGraphicsItem)
+    item_changed = pyqtSignal(QGraphicsItem)
+    mierda_changed = pyqtSignal(int)
 
 
 def check_parent_limits(parent: QGraphicsRectItem, scene_x, scene_y):

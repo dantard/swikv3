@@ -32,7 +32,6 @@ class ToolRedactAnnotation(Tool):
             self.view.setCursor(Qt.CrossCursor)
             info = {}
             self.rubberband.serialize(info)
-            print("serialize", info)
 
     def mouse_moved(self, event):
         if self.rubberband is not None:

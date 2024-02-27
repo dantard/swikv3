@@ -1,12 +1,18 @@
 from PyQt5.QtCore import pyqtSignal, QObject, QPointF, QRectF
 from PyQt5.QtWidgets import QGraphicsRectItem, QMenu
 
+from utils import Signals
+
 
 class SwikRect(QGraphicsRectItem):
 
     def __init__(self, parent=None, **kwargs):
-        super(SwikRect, self).__init__(parent)
+
+        super(SwikRect, self).__init__()
+        self.signals = Signals()
+        self.setParentItem(parent)
         self.kwargs = None
+        self.serialization = {}
 
         if (item := kwargs.get("copy", None)) is not None:
             self.copy(item, **kwargs)
@@ -70,3 +76,8 @@ class SwikRect(QGraphicsRectItem):
     def from_yaml(self, info):
         self.setPos(QPointF(info["pose"]["x"], info["pose"]["y"]))
         self.setRect(QRectF(info["rect"]["x"], info["rect"]["y"], info["rect"]["w"], info["rect"]["h"]))
+
+    def get_serialization(self):
+        info = {}
+        self.serialize(info)
+        return info

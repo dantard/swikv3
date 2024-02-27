@@ -9,8 +9,10 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QShortcut
 
 from GraphView import GraphView
 from LayoutManager import LayoutManager
+from changestracker import ChangesTracker
 from groupbox import GroupBox
 from manager import Manager
+from scene import Scene
 from tools.toolrearranger import ToolRearrange
 from tools.toolredactannotation import ToolRedactAnnotation
 from tools.toolsign import ToolSign
@@ -36,8 +38,13 @@ class MainWindow(QMainWindow):
         self.renderer = MuPDFRenderer()
         self.renderer.document_changed.connect(self.document_changed)
 
+        self.changes_tracker = ChangesTracker()
+        self.scene = Scene()
+        self.scene.signals.item_added.connect(self.changes_tracker.item_added)
+        self.scene.signals.item_removed.connect(self.changes_tracker.item_removed)
+
         self.manager = Manager(self.renderer, self.config)
-        self.view = GraphView(self.manager, self.renderer, self.config.get('mode', LayoutManager.MODE_VERTICAL), page=Page)
+        self.view = GraphView(self.manager, self.renderer, self.scene, page=Page, mode=self.config.get('mode', LayoutManager.MODE_VERTICAL))
         self.manager.set_view(self.view)
 
         self.manager.add_tool('text_selection', TextSelection(self.view, self.renderer, self.config), True)
@@ -97,7 +104,9 @@ class MainWindow(QMainWindow):
         x_mode = QShortcut(QKeySequence('Ctrl+C'), self)
         x_mode.activated.connect(self.copy)
         x_mode = QShortcut(QKeySequence('Ctrl+Z'), self)
-        x_mode.activated.connect(self.undo)
+        x_mode.activated.connect(self.changes_tracker.undo)
+        x_mode = QShortcut(QKeySequence('Ctrl+Shift+Z'), self)
+        x_mode.activated.connect(self.changes_tracker.redo)
 
         self.renderer.open_pdf("/home/danilo/Documents/Docs/aaa.pdf")
         # self.renderer.open_pdf("/home/danilo/Desktop/swik-files/view.pdf")

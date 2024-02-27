@@ -155,8 +155,6 @@ class PaintableSelectorRectItem(SelectorRectItem):
 
         if self.text is not None:
 
-            print("paint PaintableSelectorRectItem")
-
             font_size = self.max_font_size  # * self.init_pos_item.get_scaling_ratio()
             if self.text_mode == self.TEXT_MODE_STRETCH:
                 while True:

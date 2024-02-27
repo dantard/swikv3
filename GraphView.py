@@ -23,7 +23,7 @@ class GraphView(QGraphicsView):
     document_ready = pyqtSignal()
     page_created = pyqtSignal(SimplePage)
 
-    def __init__(self, manager, renderer, mode, page=SimplePage):
+    def __init__(self, manager, renderer, scene, page=SimplePage, mode=LayoutManager.MODE_VERTICAL_MULTIPAGE):
         super().__init__()
         self.previous_state = 0, 0, None
         self.page_object = page
@@ -41,26 +41,7 @@ class GraphView(QGraphicsView):
         self.pages = SyncDict()
         self.futures = list()
 
-        class MyScene(QGraphicsScene):
-            class Signals(QtCore.QObject):
-                item_added = pyqtSignal(QGraphicsItem)
-                item_removed = pyqtSignal(QGraphicsItem)
-
-            def __init__(self):
-                super().__init__()
-                self.signals = self.Signals()
-
-            def addItem(self, item) -> None:
-                super().addItem(item)
-                self.signals.item_added.emit(item)
-
-            def removeItem(self, item) -> None:
-                super().removeItem(item)
-                print('removeItem', item)
-                if item is not None:
-                    self.signals.item_removed.emit(item)
-
-        self.setScene(MyScene())
+        self.setScene(scene)
         self.scene().setBackgroundBrush(Qt.gray)
         self.setRenderHint(QPainter.Antialiasing)
         self.setRenderHint(QPainter.SmoothPixmapTransform)

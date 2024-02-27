@@ -10,6 +10,7 @@ from PyQt5.QtCore import Qt, QPointF, QRectF, QTimer, QObject, pyqtSignal
 from coloreable import ColoreableRectItem
 from colorwidget import ColorWidget, ColorAndAlpha, ColorAlphaWidth
 from dialogs import ComposableDialog
+from interfaces import Undoable, Serializable
 from paintable import PaintableRectItem
 from selector import SelectorRectItem, PaintableSelectorRectItem
 from utils import Signals, check_parent_limits
@@ -50,12 +51,12 @@ class HandleItem(QGraphicsRectItem):
         super().paint(painter, option, widget)
 
 
-class ResizableRectItem(PaintableSelectorRectItem):
+class ResizableRectItem(PaintableSelectorRectItem, Undoable):
 
     def __init__(self, parent=None, **kwargs):
         super().__init__(parent, **kwargs)
+        super(Undoable, self).__init__()
 
-        self.signals = Signals()
         self.resizeable = True
         self.movable = True
         self.setFlags(QGraphicsRectItem.ItemIsSelectable | QGraphicsRectItem.ItemSendsGeometryChanges)
@@ -127,6 +128,9 @@ class ResizableRectItem(PaintableSelectorRectItem):
             self.setCursor(Qt.ArrowCursor)
 
     def mousePressEvent(self, event):
+
+        self.serialization = self.get_serialization()
+
         for handle in self.handles:
             if handle.contains(handle.mapFromScene(event.scenePos())):
                 self.handle_pressed: HandleItem = handle
@@ -134,7 +138,6 @@ class ResizableRectItem(PaintableSelectorRectItem):
                 break
         else:
             super().mousePressEvent(event)
-
             self.point = self.mapFromScene(event.scenePos())
 
     def mouseMoveEvent(self, event):
@@ -213,6 +216,9 @@ class ResizableRectItem(PaintableSelectorRectItem):
         self.handle_pressed = None
         self.timer.start()
 
+        if self.serialization != self.get_serialization():
+            self.notify_change(self.serialization, self.get_serialization())
+
     def view_mouse_release_event(self, view, event):
         super(ResizableRectItem, self).view_mouse_release_event(view, event)
         self.update_handles_position()
@@ -227,6 +233,12 @@ class ResizableRectItem(PaintableSelectorRectItem):
     def populate_menu(self, menu: QMenu):
         super().populate_menu(menu)
         menu.addAction("Delete", lambda: self.scene().removeItem(self))
+
+    def undo(self, info):
+        self.deserialize(info)
+
+    def redo(self, info):
+        self.deserialize(info)
 
     def serialize(self, info):
         super().serialize(info)

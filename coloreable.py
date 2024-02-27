@@ -43,6 +43,8 @@ class ColoreableRectItem(SwikRect):
         menu.addAction("Change color", self.change_color)
 
     def change_color(self):
+        self.serialization = self.get_serialization()
+
         color = ComposableDialog()
         color.add_row("Border", ColorAlphaWidth(self.pen().color()))
         color.add_row("Fill", ColorAndAlpha(self.brush().color()))
@@ -50,6 +52,10 @@ class ColoreableRectItem(SwikRect):
         if color.exec() == QDialog.Accepted:
             self.set_border_color(color.get("Border").get_color())
             self.set_fill_color(color.get("Fill").get_color())
+
+            if self.serialization != self.get_serialization():
+                print("changed")
+                self.signals.changed.emit(self)
 
     def serialize(self, info):
         super().serialize(info)
