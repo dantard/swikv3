@@ -2,14 +2,17 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPen, QBrush, QColor
 from PyQt5.QtWidgets import QMenu, QDialog, QGraphicsRectItem
 
-from colorwidget import ColorAlphaWidth, ColorAndAlpha
+from action import Action
+from colorwidget import ColorAlphaAndWidth, ColorAndAlpha
 from dialogs import ComposableDialog
+from interfaces import Undoable
 from rect import SwikRect
 
 
-class ColoreableRectItem(SwikRect):
+class ColoreableRectItem(SwikRect, Undoable):
     def __init__(self, parent=None, **kwargs):
         super(ColoreableRectItem, self).__init__(parent, **kwargs)
+        super(Undoable, self).__init__()
 
     def apply_kwargs(self, **kwargs):
         super().apply_kwargs(**kwargs)
@@ -22,20 +25,21 @@ class ColoreableRectItem(SwikRect):
         self.setPen(item.pen())
         self.setBrush(item.brush())
 
-    def set_border_color(self, color: QColor, alpha=255):
+    def set_border_color(self, color: QColor):
         color = QColor(color)
         pen = self.pen()
-        pen.setColor(QColor(color.red(), color.green(), color.blue(), alpha))
+        pen.setColor(color)
         self.setPen(pen)
 
-    def set_fill_color(self, color: QColor, alpha=255):
+    def set_fill_color(self, color: QColor):
         color = QColor(color)
-        brush = QBrush(QColor(color.red(), color.green(), color.blue(), alpha))
+        brush = QBrush(color)
         self.setBrush(brush)
 
     def set_border_width(self, width: int):
+        print("set border width", width)
         pen = self.pen()
-        pen.setWidth(width)
+        pen.setWidth(int(width))
         self.setPen(pen)
 
     def populate_menu(self, menu: QMenu):
@@ -46,16 +50,19 @@ class ColoreableRectItem(SwikRect):
         self.serialization = self.get_serialization()
 
         color = ComposableDialog()
-        color.add_row("Border", ColorAlphaWidth(self.pen().color()))
+        color.add_row("Border", ColorAlphaAndWidth(self.pen()))
         color.add_row("Fill", ColorAndAlpha(self.brush().color()))
 
         if color.exec() == QDialog.Accepted:
             self.set_border_color(color.get("Border").get_color())
+            self.set_border_width(color.get("Border").get_width())
+            c1 = color.get("Fill").get_color()
+            print("C1", c1.red(), c1.green(), c1.blue(), c1.alpha())
             self.set_fill_color(color.get("Fill").get_color())
 
-            if self.serialization != self.get_serialization():
-                print("changed")
-                self.signals.changed.emit(self)
+        if self.serialization != self.get_serialization():
+            print("color changed")
+        self.notify_change(Action.ACTION_FULL_STATE, self.serialization, self.get_serialization())
 
     def serialize(self, info):
         super().serialize(info)
@@ -74,5 +81,7 @@ class ColoreableRectItem(SwikRect):
 
     def to_yaml(self, info):
         super().to_yaml(info)
-        info["pen"] = {"r": self.pen().color().red(), "g": self.pen().color().green(), "b": self.pen().color().blue(), "a": self.pen().color().alpha(), "w": self.pen().width()}
-        info["brush"] = {"r": self.brush().color().red(), "g": self.brush().color().green(), "b": self.brush().color().blue(), "a": self.brush().color().alpha()}
+        info["pen"] = {"r": self.pen().color().red(), "g": self.pen().color().green(), "b": self.pen().color().blue(), "a": self.pen().color().alpha(),
+                       "w": self.pen().width()}
+        info["brush"] = {"r": self.brush().color().red(), "g": self.brush().color().green(), "b": self.brush().color().blue(),
+                         "a": self.brush().color().alpha()}

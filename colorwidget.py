@@ -24,6 +24,10 @@ class ColorWidget(QPushButton):
     def get_color(self):
         return self.color
 
+    def get_color_with_alpha(self):
+        print(self.color.red(), self.color.green(), self.color.blue(), self.opacity)
+        return QColor(self.color.red(), self.color.green(), self.color.blue(), self.opacity)
+
     def set_order(self, order):
         self.order = order
 
@@ -58,33 +62,35 @@ class ColorWidget(QPushButton):
 
 
 class ColorAndAlpha(QWidget):
-    def __init__(self, color, opacity=255):
+    def __init__(self, color):
         super().__init__()
+        r, g, b, a = color.getRgb()
+        print(r, g, b, a, "color")
         self.color_widget = ColorWidget(color)
         self.color_widget.set_order(2)
         self.slider = QSlider(Qt.Horizontal)
         self.slider.setRange(0, 255)
-        self.slider.setValue(opacity)
         self.layout = QFormLayout()
         self.layout.addRow("Color", self.color_widget)
         self.layout.addRow("Opacity", self.slider)
         self.slider.valueChanged.connect(self.color_widget.set_opacity)
+        self.slider.setValue(a)
         self.setLayout(self.layout)
 
     def get_color(self):
-        return self.color_widget.get_color()
+        return self.color_widget.get_color_with_alpha()
 
     def get_opacity(self):
         return self.slider.value() / 100
 
 
-class ColorAlphaWidth(ColorAndAlpha):
-    def __init__(self, color, opacity=255, width=1):
-        super().__init__(color, opacity)
+class ColorAlphaAndWidth(ColorAndAlpha):
+    def __init__(self, pen, width=1):
+        super().__init__(pen.color())
         self.slider2 = QSlider(Qt.Horizontal)
         self.slider2.setRange(0, 10)
-        self.slider2.setValue(width)
+        self.slider2.setValue(pen.width())
         self.layout.addRow("Width", self.slider2)
 
     def get_width(self):
-        return self.slider.value() / 100
+        return self.slider2.value()

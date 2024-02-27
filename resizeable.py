@@ -7,8 +7,9 @@ from PyQt5.QtGui import QImage, QFont, QFontMetrics, QColor, QBrush, QPen
 from PyQt5.QtWidgets import QApplication, QGraphicsView, QGraphicsScene, QGraphicsRectItem, QWidget, QStyle, QMenu, QDialog, QSlider
 from PyQt5.QtCore import Qt, QPointF, QRectF, QTimer, QObject, pyqtSignal
 
+from action import Action
 from coloreable import ColoreableRectItem
-from colorwidget import ColorWidget, ColorAndAlpha, ColorAlphaWidth
+from colorwidget import ColorWidget, ColorAndAlpha, ColorAlphaAndWidth
 from dialogs import ComposableDialog
 from interfaces import Undoable, Serializable
 from paintable import PaintableRectItem
@@ -51,11 +52,10 @@ class HandleItem(QGraphicsRectItem):
         super().paint(painter, option, widget)
 
 
-class ResizableRectItem(PaintableSelectorRectItem, Undoable):
+class ResizableRectItem(PaintableSelectorRectItem):
 
     def __init__(self, parent=None, **kwargs):
         super().__init__(parent, **kwargs)
-        super(Undoable, self).__init__()
 
         self.resizeable = True
         self.movable = True
@@ -217,7 +217,7 @@ class ResizableRectItem(PaintableSelectorRectItem, Undoable):
         self.timer.start()
 
         if self.serialization != self.get_serialization():
-            self.notify_change(self.serialization, self.get_serialization())
+            self.notify_change(Action.ACTION_FULL_STATE, self.serialization, self.get_serialization())
 
     def view_mouse_release_event(self, view, event):
         super(ResizableRectItem, self).view_mouse_release_event(view, event)
@@ -234,10 +234,10 @@ class ResizableRectItem(PaintableSelectorRectItem, Undoable):
         super().populate_menu(menu)
         menu.addAction("Delete", lambda: self.scene().removeItem(self))
 
-    def undo(self, info):
+    def undo(self, kind, info):
         self.deserialize(info)
 
-    def redo(self, info):
+    def redo(self, kind, info):
         self.deserialize(info)
 
     def serialize(self, info):

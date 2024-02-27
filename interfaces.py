@@ -1,5 +1,7 @@
 from PyQt5.QtCore import QObject, pyqtSignal
 
+from action import Action
+
 
 class Undoable:
 
@@ -9,15 +11,16 @@ class Undoable:
     def set_callback(self, callback):
         self.callback = callback
 
-    def notify_change(self, old, new):
+    def notify_change(self, kind, old, new):
         if self.callback is not None:
-            self.callback(self, old, new)
+            self.callback(Action(self, kind, old, new))
 
-    def undo(self, info):
+    def undo(self, kind, info):
         raise NotImplementedError
 
-    def redo(self, info):
+    def redo(self, kind, info):
         pass
+
 
 class Serializable:
 

@@ -38,14 +38,15 @@ class MainWindow(QMainWindow):
         self.renderer = MuPDFRenderer()
         self.renderer.document_changed.connect(self.document_changed)
 
-        self.changes_tracker = ChangesTracker()
         self.scene = Scene()
-        self.scene.signals.item_added.connect(self.changes_tracker.item_added)
-        self.scene.signals.item_removed.connect(self.changes_tracker.item_removed)
 
         self.manager = Manager(self.renderer, self.config)
         self.view = GraphView(self.manager, self.renderer, self.scene, page=Page, mode=self.config.get('mode', LayoutManager.MODE_VERTICAL))
         self.manager.set_view(self.view)
+
+        self.changes_tracker = ChangesTracker(self.view)
+        self.scene.signals.item_added.connect(self.changes_tracker.item_added)
+        self.scene.signals.item_removed.connect(self.changes_tracker.item_removed)
 
         self.manager.add_tool('text_selection', TextSelection(self.view, self.renderer, self.config), True)
         self.manager.add_tool('sign', ToolSign(self.view, self.renderer, self.config), False)
@@ -108,9 +109,11 @@ class MainWindow(QMainWindow):
         x_mode = QShortcut(QKeySequence('Ctrl+Shift+Z'), self)
         x_mode.activated.connect(self.changes_tracker.redo)
 
-        self.renderer.open_pdf("/home/danilo/Documents/Docs/aaa.pdf")
-        # self.renderer.open_pdf("/home/danilo/Desktop/swik-files/view.pdf")
+        # self.renderer.open_pdf("/home/danilo/Documents/Docs/aaa.pdf")
+        self.renderer.open_pdf("/home/danilo/Desktop/swik-files/view.pdf")
+
     info = {}
+
     def undo(self):
         selected = self.view.scene().selectedItems()
         for item in selected:
@@ -121,12 +124,10 @@ class MainWindow(QMainWindow):
         for item in selected:
             kind = type(item)
             print("Creating ", kind, " from ", item, " with ", item.get_kwargs())
-            #obj = kind(copy=item, offset=QPointF(50, 50))
+            # obj = kind(copy=item, offset=QPointF(50, 50))
             obj = kind()
             info = {}
             item.serialize(self.info)
-
-
 
     def document_changed(self):
         self.setWindowTitle("Swik - " + self.renderer.get_filename())
