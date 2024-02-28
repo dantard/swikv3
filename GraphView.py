@@ -293,10 +293,12 @@ class GraphView(QGraphicsView):
         self.viewport().setCursor(Qt.ArrowCursor)
 
     def page_updated(self, index):
+        self.pages[index].page_updated(index)
         v, h = self.verticalScrollBar().value(), self.horizontalScrollBar().value()
         self.fully_update_layout()
         self.verticalScrollBar().setValue(v)
         self.horizontalScrollBar().setValue(h)
+
 
     # ## UTILITY METHODS
 

@@ -52,10 +52,11 @@ class HandleItem(QGraphicsRectItem):
         super().paint(painter, option, widget)
 
 
-class ResizableRectItem(PaintableSelectorRectItem):
+class ResizableRectItem(PaintableSelectorRectItem, Undoable):
 
     def __init__(self, parent=None, **kwargs):
         super().__init__(parent, **kwargs)
+        super(Undoable).__init__()
 
         self.resizeable = True
         self.movable = True
@@ -230,8 +231,28 @@ class ResizableRectItem(PaintableSelectorRectItem):
     def hoverEnterEvent(self, event) -> None:
         self.set_handle_visibility(True)
 
+    def change_color(self):
+        self.serialization = self.get_serialization()
+
+        color = ComposableDialog()
+        color.add_row("Border", ColorAlphaAndWidth(self.pen()))
+        color.add_row("Fill", ColorAndAlpha(self.brush().color()))
+
+        if color.exec() == QDialog.Accepted:
+            self.set_border_color(color.get("Border").get_color())
+            self.set_border_width(color.get("Border").get_width())
+            c1 = color.get("Fill").get_color()
+            print("C1", c1.red(), c1.green(), c1.blue(), c1.alpha())
+            self.set_fill_color(color.get("Fill").get_color())
+
+        if self.serialization != self.get_serialization():
+            print("color changed")
+        self.notify_change(Action.ACTION_FULL_STATE, self.serialization, self.get_serialization())
+
     def populate_menu(self, menu: QMenu):
         super().populate_menu(menu)
+        menu.addAction("Change color", self.change_color)
+        menu.addSeparator()
         menu.addAction("Delete", lambda: self.scene().removeItem(self))
 
     def undo(self, kind, info):

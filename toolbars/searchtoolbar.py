@@ -7,8 +7,8 @@ from PyQt5.QtGui import QKeySequence, QBrush, QColor, QPainter, QIcon
 from PyQt5.QtWidgets import QToolBar, QShortcut, QLineEdit, QLabel, QApplication, QGraphicsRectItem, QProgressDialog, QStyle
 
 from GraphView import GraphView
-from MuPDFRenderer import MuPDFRenderer, extract_text_process
 from finder import Finder
+from renderer import MuPDFRenderer
 from toolbars.toolbar import Toolbar
 
 

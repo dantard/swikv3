@@ -1,18 +1,20 @@
 import os
 import sys
-
+import resources
 import pyclip
 from PyQt5 import QtGui
 from PyQt5.QtCore import QPointF
 from PyQt5.QtGui import QPainter, QIcon, QKeySequence
-from PyQt5.QtWidgets import QApplication, QMainWindow, QShortcut
+from PyQt5.QtWidgets import QApplication, QMainWindow, QShortcut, QFileDialog, QDialog, QMessageBox
 
 from GraphView import GraphView
 from LayoutManager import LayoutManager
 from changestracker import ChangesTracker
+from dialogs import PasswordDialog
 from groupbox import GroupBox
 from manager import Manager
 from scene import Scene
+from tools.toolcrop import ToolCrop
 from tools.toolrearranger import ToolRearrange
 from tools.toolredactannotation import ToolRedactAnnotation
 from tools.toolsign import ToolSign
@@ -52,6 +54,9 @@ class MainWindow(QMainWindow):
         self.manager.add_tool('sign', ToolSign(self.view, self.renderer, self.config), False)
         self.manager.add_tool('rearrange', ToolRearrange(self.view, self.renderer, self.config), False)
         self.manager.add_tool('redact_annot', ToolRedactAnnotation(self.view, self.renderer, self.config), False)
+        tool = ToolCrop(self.view, self.renderer, self.config)
+        tool.set_callback(self.changes_tracker.item_changed)
+        self.manager.add_tool('crop', tool, False)
 
         self.config.load("swik.yaml")
 
@@ -91,6 +96,7 @@ class MainWindow(QMainWindow):
         self.mode_group = GroupBox()
         self.mode_group.add(self.manage_tool, True, icon=":/icons/text_cursor.png", text="Select Text", tool="text_selection")
         self.mode_group.add(self.manage_tool, icon=":/icons/sign.png", text="Sign", tool="sign")
+        self.mode_group.add(self.manage_tool, icon=":/icons/crop.png", text="Crop", tool="crop")
         self.mode_group.add(self.manage_tool, icon=":/icons/white.png", text="Anonymize", tool="redact_annot")
         self.mode_group.add(self.manage_tool, icon=":/icons/shuffle.png", text="Shuffle Pages", tool="rearrange")
 
@@ -137,8 +143,24 @@ class MainWindow(QMainWindow):
         if button is not None:
             self.manager.use_tool(button.get_tool())
 
-    def open_file(self):
-        pass
+    def open_file(self, filename=None):
+        if filename is None:
+            last_dir_for_open = self.config.get('last_dir_for_open', None)
+            filename, _ = QFileDialog.getOpenFileName(self, 'Open file', last_dir_for_open, 'PDF (*.pdf)')
+
+        if filename:
+            self.mode_group.reset()
+            res = self.renderer.open_pdf(filename)
+            if res == MuPDFRenderer.OPEN_REQUIRES_PASSWORD:
+                dialog = PasswordDialog(False, parent=self)
+                if dialog.exec() == QDialog.Accepted:
+                    res = self.renderer.open_pdf(filename, dialog.getText())
+
+            if res == MuPDFRenderer.OPEN_OK:
+                self.config.set('last', self.renderer.get_filename())
+                self.config.flush()
+            else:
+                QMessageBox.warning(self, "Error", "Error opening file")
 
     def save_file(self):
         pass

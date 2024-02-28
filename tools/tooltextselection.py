@@ -1,15 +1,7 @@
-import queue
-import threading
-import time
-from multiprocessing.pool import ThreadPool
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QMenu
 
-from PyQt5.QtCore import QObject, Qt, pyqtSignal
-from PyQt5.QtWidgets import QMenu, QGraphicsRectItem
-
-from renderer import MuPDFRenderer
 from selector import SelectorRectItem
-
-import resources
 from simplepage import SimplePage
 from tools.tool import Tool
 from word import Word

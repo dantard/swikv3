@@ -2,10 +2,11 @@ import traceback
 
 import fitz
 from PyQt5 import QtCore
-from PyQt5.QtCore import Qt, QRunnable, QThreadPool, pyqtSignal, QMutex, QRectF
+from PyQt5.QtCore import Qt, QRunnable, QThreadPool, pyqtSignal, QMutex, QRectF, QRect
 from PyQt5.QtGui import QPixmap, QImage
 from PyQt5.QtWidgets import QLabel
 from fitz import TEXTFLAGS_DICT, TEXT_PRESERVE_IMAGES
+from fitz.mupdf import PDF_ENCRYPT_KEEP
 
 from utils import fitz_rect_to_qrectf
 from word import Word, MetaWord
@@ -126,6 +127,18 @@ class MuPDFRenderer(QLabel):
             traceback.print_exc()
             return self.OPEN_ERROR
 
+    def save_pdf(self, filename):
+        self.sync_requested.emit()
+
+        if filename != self.get_filename():
+            self.document.save(filename, encryption=PDF_ENCRYPT_KEEP, deflate=True, garbage=3)
+            return 0
+        elif self.document.can_save_incrementally():
+            self.document.save(filename, encryption=PDF_ENCRYPT_KEEP, incremental=True, deflate=True)
+            return 1
+        else:
+            print("fuck")
+
     def get_page_size(self, index):
         return self.document[index].rect[2], self.document[index].rect[3]
 
@@ -238,3 +251,32 @@ class MuPDFRenderer(QLabel):
     def rearrange_pages(self, order, emit):
         self.document.select(order)
         # self.set_document(self.document, emit)
+
+    def set_cropbox(self, page, rect: QRect, ratio, absolute=False):
+
+        x, y, w, h = int(rect.x() / ratio), int(rect.y() / ratio), int(rect.width() / ratio), int(rect.height() / ratio)
+
+        if not absolute:
+            # in this case the square is relative to the current cropbox
+            cx, cy = self.document[page].cropbox.x0, self.document[page].cropbox.y0
+        else:
+            cx, cy = 0, 0
+
+        print(x, y, w, h, cx, cy, "cropbox")
+
+        self.document[page].set_cropbox(fitz.Rect(x + cx,
+                                                  y + cy,
+                                                  x + cx + w,
+                                                  y + cy + h) * self.document[
+                                            page].derotation_matrix)
+
+        w, h = self.get_page_size(page)
+        self.images[page].update(w, h)
+        self.page_updated.emit(page)
+
+        return True
+
+    def get_cropbox(self, page):
+        x0, y0 = self.document[page].cropbox.x0, self.document[page].cropbox.y0
+        x1, y1 = self.document[page].cropbox.x1, self.document[page].cropbox.y1
+        return QRectF(x0, y0, x1 - x0, y1 - y0)

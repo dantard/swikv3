@@ -9,10 +9,10 @@ from interfaces import Undoable
 from rect import SwikRect
 
 
-class ColoreableRectItem(SwikRect, Undoable):
+class ColoreableRectItem(SwikRect):
     def __init__(self, parent=None, **kwargs):
         super(ColoreableRectItem, self).__init__(parent, **kwargs)
-        super(Undoable, self).__init__()
+        #super(Undoable, self).__init__()
 
     def apply_kwargs(self, **kwargs):
         super().apply_kwargs(**kwargs)
@@ -41,28 +41,6 @@ class ColoreableRectItem(SwikRect, Undoable):
         pen = self.pen()
         pen.setWidth(int(width))
         self.setPen(pen)
-
-    def populate_menu(self, menu: QMenu):
-        super().populate_menu(menu)
-        menu.addAction("Change color", self.change_color)
-
-    def change_color(self):
-        self.serialization = self.get_serialization()
-
-        color = ComposableDialog()
-        color.add_row("Border", ColorAlphaAndWidth(self.pen()))
-        color.add_row("Fill", ColorAndAlpha(self.brush().color()))
-
-        if color.exec() == QDialog.Accepted:
-            self.set_border_color(color.get("Border").get_color())
-            self.set_border_width(color.get("Border").get_width())
-            c1 = color.get("Fill").get_color()
-            print("C1", c1.red(), c1.green(), c1.blue(), c1.alpha())
-            self.set_fill_color(color.get("Fill").get_color())
-
-        if self.serialization != self.get_serialization():
-            print("color changed")
-        self.notify_change(Action.ACTION_FULL_STATE, self.serialization, self.get_serialization())
 
     def serialize(self, info):
         super().serialize(info)
