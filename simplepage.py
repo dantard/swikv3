@@ -23,7 +23,7 @@ class SimplePage(QGraphicsRectItem):
         self.number = None
         self.index = index
         self.manager = manager
-        self.renderer: MuPDFRenderer = renderer
+        self.renderer = renderer
         self.ratio = ratio
         self.view = view
         self.state = SimplePage.STATE_INVALID
@@ -129,7 +129,8 @@ class SimplePage(QGraphicsRectItem):
     def paint(self, painter, option, widget: typing.Optional[QWidget] = ...) -> None:
         super().paint(painter, option, widget)
         if self.state == SimplePage.STATE_INVALID:
-            image, final = self.renderer.request_image(self.index, self.ratio, 0)
+            print("requesting ", self.index)
+            image, final = self.renderer.request_image(self.index, self.ratio, 0, True)
             self.state = SimplePage.STATE_FINAL if final else SimplePage.STATE_WAITING_FINAL
             self.image.setVisible(True)
             self.image.setPixmap(image)
@@ -138,7 +139,9 @@ class SimplePage(QGraphicsRectItem):
             self.state = SimplePage.STATE_FINAL
 
     def image_ready(self, index, ratio, key, pixmap):
+        print("image ready", self.index)
         if index == self.index and key == 0 and ratio == self.ratio:
+            print("applying")
             self.image.setScale(1)
             self.image.setPixmap(pixmap)
             self.image.setVisible(True)

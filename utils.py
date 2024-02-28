@@ -1,3 +1,4 @@
+import fitz
 from PyQt5.QtCore import QObject, pyqtSignal, QRectF, QRect, Qt
 from PyQt5.QtGui import QImage, QColor
 from PyQt5.QtWidgets import QGraphicsRectItem, QGraphicsItem
@@ -35,7 +36,12 @@ def fitz_rect_to_qrectf(rect):
     return QRectF(rect.x0, rect.y0, rect.x1 - rect.x0, rect.y1 - rect.y0)
 
 
+def qrectf_to_fitz_rect(rect):
+    return fitz.Rect(rect.x(), rect.y(), rect.x() + rect.width(), rect.y() + rect.height())
 
+
+def qcolor_to_fitz_color(color: QColor):
+    return color.red() / 255, color.green() / 255, color.blue() / 255
 
 
 def adjust_crop(image: QImage) -> QRect:

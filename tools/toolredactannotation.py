@@ -27,7 +27,7 @@ class ToolRedactAnnotation(Tool):
             return
 
         if self.rubberband is None:
-            self.rubberband = RedactAnnotation(page, pen=Qt.black, brush=Qt.black, event=(self.view, event))
+            self.rubberband = RedactAnnotation(page, pen=Qt.transparent, brush=Qt.black, event=(self.view, event))
             # self.rubberband.view_mouse_press_event(self.view, event)
             self.view.setCursor(Qt.CrossCursor)
             info = {}

@@ -9,7 +9,7 @@ class ColorWidget(QPushButton):
         super().__init__()
         self.color = color
         self.has_text = text
-        self.opacity = 1
+        self.opacity = 255
         self.order = 0
         self.clicked.connect(self.choose_color)
 
@@ -61,21 +61,30 @@ class ColorWidget(QPushButton):
             draw_color()
 
 
-class ColorAndAlpha(QWidget):
+class Color(QWidget):
     def __init__(self, color):
         super().__init__()
         r, g, b, a = color.getRgb()
         print(r, g, b, a, "color")
         self.color_widget = ColorWidget(color)
         self.color_widget.set_order(2)
-        self.slider = QSlider(Qt.Horizontal)
-        self.slider.setRange(0, 255)
         self.layout = QFormLayout()
         self.layout.addRow("Color", self.color_widget)
+        self.setLayout(self.layout)
+
+    def get_color(self):
+        return self.color_widget.get_color()
+
+
+class ColorAndAlpha(Color):
+    def __init__(self, color):
+        super().__init__(color)
+        r, g, b, a = color.getRgb()
+        self.slider = QSlider(Qt.Horizontal)
         self.layout.addRow("Opacity", self.slider)
+        self.slider.setRange(0, 255)
         self.slider.valueChanged.connect(self.color_widget.set_opacity)
         self.slider.setValue(a)
-        self.setLayout(self.layout)
 
     def get_color(self):
         return self.color_widget.get_color_with_alpha()

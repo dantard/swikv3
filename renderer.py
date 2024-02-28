@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import QLabel
 from fitz import TEXTFLAGS_DICT, TEXT_PRESERVE_IMAGES
 from fitz.mupdf import PDF_ENCRYPT_KEEP
 
+import utils
 from utils import fitz_rect_to_qrectf
 from word import Word, MetaWord
 
@@ -175,9 +176,9 @@ class MuPDFRenderer(QLabel):
         ratio = width / w
         return self.request_image(index, ratio)
 
-    def request_image(self, index, ratio, key=None):
-        if not self.images[index].loaded or self.images[index].ratio != ratio:
-            self.load(index, ratio, key)
+    def request_image(self, index, ratio, key=None, force=False):
+        if not self.images[index].loaded or self.images[index].ratio != ratio or force:
+            self.load(index, ratio, key, force)
             return self.get_image(index, ratio), False  # self.get_blank(index, ratio), False
         else:
             return self.images[index].get_image(ratio), True
@@ -194,7 +195,7 @@ class MuPDFRenderer(QLabel):
 
         return self.blanks[ratio]
 
-    def load(self, index, ratio, key):
+    def load(self, index, ratio, key, force):
         class Loader(QRunnable):
             def __init__(self, renderer: MuPDFRenderer, index, ratio, key, mutex):
                 super().__init__()
@@ -202,13 +203,14 @@ class MuPDFRenderer(QLabel):
                 self.index = index
                 self.ratio = ratio
                 self.key = key
+                self.force = force
 
             def run(self):
                 image = self.renderer.images[self.index]
-                if image.ratio == self.ratio and image.loaded:
+                if image.ratio == self.ratio and image.loaded and not self.force:
                     # print("As is ", self.index, self.key)
                     self.renderer.image_ready.emit(self.index, self.ratio, self.key, image.image)
-                elif image.ratio > self.ratio and image.loaded:
+                elif image.ratio > self.ratio and image.loaded and not self.force:
                     # print("Scaling down ", self.index, self.key)
                     pixmap = image.image.scaledToWidth(int(image.w * ratio), QtCore.Qt.SmoothTransformation)
                     self.renderer.image_ready.emit(self.index, self.ratio, self.key, pixmap)
@@ -280,3 +282,11 @@ class MuPDFRenderer(QLabel):
         x0, y0 = self.document[page].cropbox.x0, self.document[page].cropbox.y0
         x1, y1 = self.document[page].cropbox.x1, self.document[page].cropbox.y1
         return QRectF(x0, y0, x1 - x0, y1 - y0)
+
+    def add_redact_annot(self, index, rect, color):
+        print("applying", index, rect, color)
+        page = self.document[index]
+        rect = utils.qrectf_to_fitz_rect(rect)
+        color = utils.qcolor_to_fitz_color(color)
+        page.add_redact_annot(rect, "", fill=color)
+        page.apply_redactions()

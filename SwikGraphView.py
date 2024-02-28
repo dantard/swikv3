@@ -1,5 +1,7 @@
 from GraphView import GraphView
 from LayoutManager import LayoutManager
+from annotations.redactannotation import RedactAnnotation
+from page import Page
 from simplepage import SimplePage
 
 
@@ -9,6 +11,20 @@ class SwikGraphView(GraphView):
         super(SwikGraphView, self).__init__(manager, renderer, scene, page, mode)
         self.renderer.sync_requested.connect(self.sync_requested)
 
-
     def sync_requested(self):
-        print("sync requested")
+        items = self.scene().items()
+        pages_to_refresh = set()
+
+        redact_annot = [item for item in items if type(item) == RedactAnnotation]
+        for annot in redact_annot:  # type: RedactAnnotation
+            page: Page = annot.parentItem()
+            self.renderer.add_redact_annot(page.index, annot.get_rect_on_parent(), annot.brush().color())
+            pages_to_refresh.add(page.index)
+            self.scene().removeItem(annot)
+
+        for index in pages_to_refresh:
+            self.pages[index].invalidate()
+
+    def page_processed(self, page):
+        super().page_processed(page)
+        # TODO: self.renderer.get_annotations(page.index)

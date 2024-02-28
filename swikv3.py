@@ -9,6 +9,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QShortcut, QFileDialog, Q
 
 from GraphView import GraphView
 from LayoutManager import LayoutManager
+from SwikGraphView import SwikGraphView
 from changestracker import ChangesTracker
 from dialogs import PasswordDialog
 from groupbox import GroupBox
@@ -43,7 +44,7 @@ class MainWindow(QMainWindow):
         self.scene = Scene()
 
         self.manager = Manager(self.renderer, self.config)
-        self.view = GraphView(self.manager, self.renderer, self.scene, page=Page, mode=self.config.get('mode', LayoutManager.MODE_VERTICAL))
+        self.view = SwikGraphView(self.manager, self.renderer, self.scene, page=Page, mode=self.config.get('mode', LayoutManager.MODE_VERTICAL))
         self.manager.set_view(self.view)
 
         self.changes_tracker = ChangesTracker(self.view)
@@ -163,7 +164,7 @@ class MainWindow(QMainWindow):
                 QMessageBox.warning(self, "Error", "Error opening file")
 
     def save_file(self):
-        pass
+        self.renderer.save_pdf("kakka.pdf")
 
     def save_file_as(self):
         pass

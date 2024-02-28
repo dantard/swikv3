@@ -29,3 +29,7 @@ class Page(SimplePage):
         if change == QGraphicsItem.ItemChildAddedChange:
             self.signals.item_added.emit(value)
         return super().itemChange(change, value)
+
+    def invalidate(self):
+        super().invalidate()
+        self.words = None
