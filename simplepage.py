@@ -6,6 +6,7 @@ from PyQt5.QtGui import QBrush, QColor, QFontMetrics, QTransform, QPen
 from PyQt5.QtWidgets import QWidget, QGraphicsPixmapItem, \
     QGraphicsView, QGraphicsRectItem, QGraphicsItem, QGraphicsTextItem, QMenu
 
+
 class SimplePage(QGraphicsRectItem):
     STATE_BLANK = 0
     STATE_WAITING_FINAL = 1
@@ -72,6 +73,9 @@ class SimplePage(QGraphicsRectItem):
         self.setAcceptDrops(True)
         # self.paint_accessories()
 
+    def get_index(self):
+        return self.index
+
     def get_view(self):
         return self.view
 
@@ -101,7 +105,7 @@ class SimplePage(QGraphicsRectItem):
 
     def connect_signals(self):
         self.renderer.image_ready.connect(self.image_ready)
-        #self.renderer.page_updated.connect(self.page_updated)
+        # self.renderer.page_updated.connect(self.page_updated)
 
     def finish_setup(self):
         if self.view.is_fitting_width():

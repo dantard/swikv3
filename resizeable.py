@@ -2,7 +2,7 @@ import random
 import sys
 
 import typing
-from PyQt5 import QtGui
+from PyQt5 import QtGui, QtCore
 from PyQt5.QtGui import QImage, QFont, QFontMetrics, QColor, QBrush, QPen
 from PyQt5.QtWidgets import QApplication, QGraphicsView, QGraphicsScene, QGraphicsRectItem, QWidget, QStyle, QMenu, QDialog, QSlider
 from PyQt5.QtCore import Qt, QPointF, QRectF, QTimer, QObject, pyqtSignal
@@ -81,6 +81,10 @@ class ResizableRectItem(PaintableSelectorRectItem, Undoable):
             handle.setVisible(False)
             self.handles.append(handle)
 
+        self.update_handles_position()
+
+    def setRect(self, rect: QtCore.QRectF) -> None:
+        super(ResizableRectItem, self).setRect(rect)
         self.update_handles_position()
 
     def set_movable(self, movable):
@@ -212,7 +216,7 @@ class ResizableRectItem(PaintableSelectorRectItem, Undoable):
     def mouseReleaseEvent(self, event):
         super().mouseReleaseEvent(event)
         self.setPos(self.pos().x() + self.rect().x(), self.pos().y() + self.rect().y())
-        self.setRect(0, 0, self.rect().width(), self.rect().height())
+        self.setRect(QRectF(0, 0, self.rect().width(), self.rect().height()))
         self.update_handles_position()
         self.handle_pressed = None
         self.timer.start()

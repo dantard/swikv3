@@ -117,7 +117,7 @@ class MainWindow(QMainWindow):
         x_mode.activated.connect(self.changes_tracker.redo)
 
         # self.renderer.open_pdf("/home/danilo/Documents/Docs/aaa.pdf")
-        self.renderer.open_pdf("/home/danilo/Desktop/swik-files/view.pdf")
+        self.renderer.open_pdf("kakka.pdf")
 
     info = {}
 
@@ -164,7 +164,7 @@ class MainWindow(QMainWindow):
                 QMessageBox.warning(self, "Error", "Error opening file")
 
     def save_file(self):
-        self.renderer.save_pdf("kakka.pdf")
+        self.renderer.save_pdf("kakka2.pdf")
 
     def save_file_as(self):
         pass

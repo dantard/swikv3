@@ -6,7 +6,7 @@ from PyQt5.QtCore import Qt, QRunnable, QThreadPool, pyqtSignal, QMutex, QRectF,
 from PyQt5.QtGui import QPixmap, QImage, QBrush, QPen
 from PyQt5.QtWidgets import QLabel
 from fitz import TEXTFLAGS_DICT, TEXT_PRESERVE_IMAGES
-from fitz.mupdf import PDF_ENCRYPT_KEEP, PDF_ANNOT_SQUARE, PDF_ANNOT_IS_LOCKED
+from fitz import PDF_ENCRYPT_KEEP, PDF_ANNOT_SQUARE, PDF_ANNOT_IS_LOCKED
 
 import utils
 from annotations.squareannotation import SquareAnnotation
@@ -134,12 +134,14 @@ class MuPDFRenderer(QLabel):
 
         if filename != self.get_filename():
             self.document.save(filename, encryption=PDF_ENCRYPT_KEEP, deflate=True, garbage=3)
+            self.set_document(self.document, True)
             return 0
         elif self.document.can_save_incrementally():
             self.document.save(filename, encryption=PDF_ENCRYPT_KEEP, incremental=True, deflate=True)
+            self.set_document(self.document, True)
             return 1
         else:
-            print("fuck")
+            assert (0)
 
     def get_page_size(self, index):
         return self.document[index].rect[2], self.document[index].rect[3]
@@ -298,16 +300,16 @@ class MuPDFRenderer(QLabel):
         for annot in self.document[page.index].annots():  # type: fitz.Annot
             print("one")
             if annot.type[0] == PDF_ANNOT_SQUARE:
-                print("two", annot.type)
+                print("two", annot.colors)
                 opacity = annot.opacity if 1 > annot.opacity > 0 else 0.999
-                color = utils.fitz_color_to_qcolor(annot.colors['stroke'], opacity) if annot.colors['stroke'] is not None else Qt.transparent
+                stroke = utils.fitz_color_to_qcolor(annot.colors['stroke'], opacity) if annot.colors['stroke'] is not None else Qt.transparent
+                fill = utils.fitz_color_to_qcolor(annot.colors['fill'], opacity) if annot.colors['fill'] is not None else Qt.transparent
                 border_width = annot.border['width']
-                pen = QPen(color, border_width)
+                pen = QPen(stroke, border_width)
 
-                swik_annot = SquareAnnotation(page, brush=color, pen=pen)
+                swik_annot = SquareAnnotation(page, brush=fill, pen=pen)
 
                 annot.set_rect(annot.rect * self.document[page.index].rotation_matrix)
-
 
                 swik_annot.setRect(QRectF(0, 0, annot.rect[2] - annot.rect[0], annot.rect[3] - annot.rect[1]))
                 swik_annot.set_content(annot.info["content"])
@@ -355,3 +357,16 @@ class MuPDFRenderer(QLabel):
                 self.document[index].delete_annot(a)
             '''
         return annots
+
+    def add_annot(self, index, annot):
+        if type(annot) == SquareAnnotation:
+            print("adding", index, annot.rect(), annot.pos())
+            page = self.document[index]
+            fitz_rect = utils.qrectf_and_pos_to_fitz_rect(annot.rect(), annot.pos())
+            pen: QPen = annot.pen()
+            brush: QBrush = annot.brush()
+            annot = page.add_rect_annot(fitz_rect)  # 'Square'
+            annot.set_border(width=pen.width())
+            annot.set_colors(stroke=utils.qcolor_to_fitz_color(pen.color()), fill=utils.qcolor_to_fitz_color(brush.color()))
+            opacity = min(brush.color().alpha() / 255, 0.999)
+            annot.update(opacity=opacity)
