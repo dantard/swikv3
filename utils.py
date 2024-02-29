@@ -43,6 +43,9 @@ def qrectf_to_fitz_rect(rect):
 def qcolor_to_fitz_color(color: QColor):
     return color.red() / 255, color.green() / 255, color.blue() / 255
 
+def fitz_color_to_qcolor(color, opacity=1):
+    color = QColor(int(color[0]*255), int(color[1]*255), int(color[2]*255), int(opacity*255))
+    return color
 
 def adjust_crop(image: QImage) -> QRect:
     # Create a QColor object to represent white

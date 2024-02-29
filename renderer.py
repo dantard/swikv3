@@ -3,12 +3,13 @@ import traceback
 import fitz
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt, QRunnable, QThreadPool, pyqtSignal, QMutex, QRectF, QRect
-from PyQt5.QtGui import QPixmap, QImage
+from PyQt5.QtGui import QPixmap, QImage, QBrush, QPen
 from PyQt5.QtWidgets import QLabel
 from fitz import TEXTFLAGS_DICT, TEXT_PRESERVE_IMAGES
-from fitz.mupdf import PDF_ENCRYPT_KEEP
+from fitz.mupdf import PDF_ENCRYPT_KEEP, PDF_ANNOT_SQUARE, PDF_ANNOT_IS_LOCKED
 
 import utils
+from annotations.squareannotation import SquareAnnotation
 from utils import fitz_rect_to_qrectf
 from word import Word, MetaWord
 
@@ -290,3 +291,67 @@ class MuPDFRenderer(QLabel):
         color = utils.qcolor_to_fitz_color(color)
         page.add_redact_annot(rect, "", fill=color)
         page.apply_redactions()
+
+    def get_annotations(self, page):
+        annots = list()
+        print("get annotatioons")
+        for annot in self.document[page.index].annots():  # type: fitz.Annot
+            print("one")
+            if annot.type[0] == PDF_ANNOT_SQUARE:
+                print("two", annot.type)
+                opacity = annot.opacity if 1 > annot.opacity > 0 else 0.999
+                color = utils.fitz_color_to_qcolor(annot.colors['stroke'], opacity) if annot.colors['stroke'] is not None else Qt.transparent
+                border_width = annot.border['width']
+                pen = QPen(color, border_width)
+
+                swik_annot = SquareAnnotation(page, brush=color, pen=pen)
+
+                annot.set_rect(annot.rect * self.document[page.index].rotation_matrix)
+
+
+                swik_annot.setRect(QRectF(0, 0, annot.rect[2] - annot.rect[0], annot.rect[3] - annot.rect[1]))
+                swik_annot.set_content(annot.info["content"])
+                swik_annot.setToolTip(swik_annot.get_content())
+                locked = annot.flags & PDF_ANNOT_IS_LOCKED
+                swik_annot.set_movable(not locked)
+                swik_annot.setPos(annot.rect[0], annot.rect[1])
+                annots.append(swik_annot)
+                self.document[page.index].delete_annot(annot)
+
+            '''
+            elif a.type[0] == fitz.PDF_ANNOT_HIGHLIGHT:
+                annot = HighlightAnnotation()
+                annot.fromHighlight(a, self.document[index])
+                # print("--------------->", a.colors["stroke"], a.opacity)
+                annot.setBrush(utils.qcolor_from_stroke(a.colors["stroke"]))
+                annot.setOpacity(a.opacity)
+                annots.append(annot)
+                self.document[index].delete_annot(a)
+            elif a.type[0] == fitz.PDF_ANNOT_FREE_TEXT:
+                a.set_rect(a.rect * self.document[index].rotation_matrix)
+                annot = FreeTextAnnot()
+                # print(self.document.xref_object(a.xref))
+                annot.fromFitzAnnot(a)
+                fields = self.document.xref_get_key(a.xref, "DA")[1].strip().split(" ")
+
+                r, g, b = 0, 0, 0
+                font, font_size = "/Helv", 11
+                for i, f in enumerate(fields):
+                    if f == "rg":
+                        r, g, b = float(fields[i - 3]), float(fields[i - 2]), float(fields[i - 1])
+                    elif f == "g":
+                        r, g, b = float(fields[i - 1]), float(fields[i - 1]), float(fields[i - 1])
+                    elif f == "Tf":
+                        font = fields[i - 2]
+                        font_size = float(fields[i - 1])
+
+                pen = annot.pen()
+                pen.setColor(QColor(Qt.transparent))
+                annot.setPen(pen)
+                annot.set_font(font, font_size, QColor(int(r * 255), int(g * 255), int(b * 255)))
+                annot.set_border_color(QColor(int(r * 255), int(g * 255), int(b * 255)))
+
+                annots.append(annot)
+                self.document[index].delete_annot(a)
+            '''
+        return annots

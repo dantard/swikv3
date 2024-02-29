@@ -27,4 +27,4 @@ class SwikGraphView(GraphView):
 
     def page_processed(self, page):
         super().page_processed(page)
-        # TODO: self.renderer.get_annotations(page.index)
+        self.renderer.get_annotations(page)
