@@ -4,6 +4,7 @@ from annotations.redactannotation import RedactAnnotation
 from annotations.squareannotation import SquareAnnotation
 from page import Page
 from simplepage import SimplePage
+from swiktext import SwikText
 
 
 class SwikGraphView(GraphView):
@@ -27,6 +28,13 @@ class SwikGraphView(GraphView):
         for annot in square_annot:  # type: RedactAnnotation
             page: Page = annot.parentItem()
             self.renderer.add_annot(page.get_index(), annot)
+
+        swik_text = [item for item in items if type(item) == SwikText]
+        for text in swik_text:
+            page: Page = annot.parentItem()
+            self.renderer.add_text(page.get_index(), text)
+
+
 
         for index in pages_to_refresh:
             self.pages[index].invalidate()

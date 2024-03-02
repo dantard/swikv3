@@ -19,6 +19,7 @@ from tools.toolcrop import ToolCrop
 from tools.toolrearranger import ToolRearrange
 from tools.toolredactannotation import ToolRedactAnnotation
 from tools.toolsign import ToolSign
+from tools.toolsquareannotation import ToolSquareAnnotation
 from tools.tooltextselection import TextSelection
 from toolbars.navigationtoolbar import NavigationToolbar
 from page import Page
@@ -47,17 +48,14 @@ class MainWindow(QMainWindow):
         self.view = SwikGraphView(self.manager, self.renderer, self.scene, page=Page, mode=self.config.get('mode', LayoutManager.MODE_VERTICAL))
         self.manager.set_view(self.view)
 
-        self.changes_tracker = ChangesTracker(self.view)
-        self.scene.signals.item_added.connect(self.changes_tracker.item_added)
-        self.scene.signals.item_removed.connect(self.changes_tracker.item_removed)
+        ChangesTracker.set_view(self.view)
 
-        self.manager.add_tool('text_selection', TextSelection(self.view, self.renderer, self.config), True)
-        self.manager.add_tool('sign', ToolSign(self.view, self.renderer, self.config), False)
-        self.manager.add_tool('rearrange', ToolRearrange(self.view, self.renderer, self.config), False)
-        self.manager.add_tool('redact_annot', ToolRedactAnnotation(self.view, self.renderer, self.config), False)
-        tool = ToolCrop(self.view, self.renderer, self.config)
-        tool.set_callback(self.changes_tracker.item_changed)
-        self.manager.add_tool('crop', tool, False)
+        self.manager.register_tool('text_selection', TextSelection(self.view, self.renderer, self.config), True)
+        self.manager.register_tool('sign', ToolSign(self.view, self.renderer, self.config), False)
+        self.manager.register_tool('rearrange', ToolRearrange(self.view, self.renderer, self.config), False)
+        self.manager.register_tool('redact_annot', ToolRedactAnnotation(self.view, self.renderer, self.config), False)
+        self.manager.register_tool('square_annot', ToolSquareAnnotation(self.view, self.renderer, self.config), False)
+        self.manager.register_tool('crop', ToolCrop(self.view, self.renderer, self.config), False)
 
         self.config.load("swik.yaml")
 
@@ -98,6 +96,7 @@ class MainWindow(QMainWindow):
         self.mode_group.add(self.manage_tool, True, icon=":/icons/text_cursor.png", text="Select Text", tool="text_selection")
         self.mode_group.add(self.manage_tool, icon=":/icons/sign.png", text="Sign", tool="sign")
         self.mode_group.add(self.manage_tool, icon=":/icons/crop.png", text="Crop", tool="crop")
+        self.mode_group.add(self.manage_tool, icon=":/icons/annotate.png", text="Annotate", tool="square_annot")
         self.mode_group.add(self.manage_tool, icon=":/icons/white.png", text="Anonymize", tool="redact_annot")
         self.mode_group.add(self.manage_tool, icon=":/icons/shuffle.png", text="Shuffle Pages", tool="rearrange")
 
@@ -112,13 +111,14 @@ class MainWindow(QMainWindow):
         x_mode = QShortcut(QKeySequence('Ctrl+C'), self)
         x_mode.activated.connect(self.copy)
         x_mode = QShortcut(QKeySequence('Ctrl+Z'), self)
-        x_mode.activated.connect(self.changes_tracker.undo)
+        x_mode.activated.connect(ChangesTracker.undo)
         x_mode = QShortcut(QKeySequence('Ctrl+Shift+Z'), self)
-        x_mode.activated.connect(self.changes_tracker.redo)
+        x_mode.activated.connect(ChangesTracker.redo)
 
-        # self.renderer.open_pdf("/home/danilo/Documents/Docs/aaa.pdf")
-        self.renderer.open_pdf("kakka.pdf")
-
+        if self.config.get("open_last"):
+            last = self.config.get('last', None)
+            if last is not None:
+                self.renderer.open_pdf(last)
     info = {}
 
     def undo(self):
@@ -164,7 +164,7 @@ class MainWindow(QMainWindow):
                 QMessageBox.warning(self, "Error", "Error opening file")
 
     def save_file(self):
-        self.renderer.save_pdf("kakka2.pdf")
+        self.renderer.save_pdf(self.renderer.get_filename())
 
     def save_file_as(self):
         pass

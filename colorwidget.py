@@ -1,7 +1,7 @@
 from PyQt5 import QtGui
 from PyQt5.QtCore import QRectF, Qt
 from PyQt5.QtGui import QPainter, QPixmap, QColor
-from PyQt5.QtWidgets import QPushButton, QColorDialog, QWidget, QSlider, QVBoxLayout, QHBoxLayout, QFormLayout
+from PyQt5.QtWidgets import QPushButton, QColorDialog, QWidget, QSlider, QVBoxLayout, QHBoxLayout, QFormLayout, QLineEdit
 
 
 class ColorWidget(QPushButton):
@@ -103,3 +103,15 @@ class ColorAlphaAndWidth(ColorAndAlpha):
 
     def get_width(self):
         return self.slider2.value()
+
+
+class TextLineEdit(QLineEdit):
+    def __init__(self, text, editable=True):
+        super().__init__()
+        self.setText(text)
+        self.setReadOnly(not editable)
+
+    def set_text(self, text):
+        self.setText(text)
+    def get_text(self):
+        return self.text()

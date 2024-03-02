@@ -1,15 +1,21 @@
+import os
+import shutil
+import tempfile
+import time
 import traceback
+from os.path import exists
 
 import fitz
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt, QRunnable, QThreadPool, pyqtSignal, QMutex, QRectF, QRect
 from PyQt5.QtGui import QPixmap, QImage, QBrush, QPen
 from PyQt5.QtWidgets import QLabel
-from fitz import TEXTFLAGS_DICT, TEXT_PRESERVE_IMAGES
+from fitz import TEXTFLAGS_DICT, TEXT_PRESERVE_IMAGES, Font
 from fitz import PDF_ENCRYPT_KEEP, PDF_ANNOT_SQUARE, PDF_ANNOT_IS_LOCKED
 
 import utils
 from annotations.squareannotation import SquareAnnotation
+from swiktext import SwikText
 from utils import fitz_rect_to_qrectf
 from word import Word, MetaWord
 
@@ -141,7 +147,18 @@ class MuPDFRenderer(QLabel):
             self.set_document(self.document, True)
             return 1
         else:
-            assert (0)
+            tmp_dir = tempfile.gettempdir() + os.sep
+            temp_filename = tmp_dir + "swik_{}.tmp".format(int(time.time()))
+
+            self.document.save(temp_filename, encryption=PDF_ENCRYPT_KEEP, deflate=True, garbage=3)
+            self.document.close()
+
+            shutil.copy2(temp_filename, filename)
+
+            if exists(temp_filename):
+                os.remove(temp_filename)
+            self.open_pdf(filename)
+            return 2
 
     def get_page_size(self, index):
         return self.document[index].rect[2], self.document[index].rect[3]
@@ -365,8 +382,25 @@ class MuPDFRenderer(QLabel):
             fitz_rect = utils.qrectf_and_pos_to_fitz_rect(annot.rect(), annot.pos())
             pen: QPen = annot.pen()
             brush: QBrush = annot.brush()
-            annot = page.add_rect_annot(fitz_rect)  # 'Square'
-            annot.set_border(width=pen.width())
-            annot.set_colors(stroke=utils.qcolor_to_fitz_color(pen.color()), fill=utils.qcolor_to_fitz_color(brush.color()))
+            fitz_annot = page.add_rect_annot(fitz_rect)  # 'Square'
+            fitz_annot.set_border(width=pen.width())
+            fitz_annot.set_colors(stroke=utils.qcolor_to_fitz_color(pen.color()), fill=utils.qcolor_to_fitz_color(brush.color()))
             opacity = min(brush.color().alpha() / 255, 0.999)
-            annot.update(opacity=opacity)
+            fitz_annot.set_opacity(opacity)
+            fitz_annot.set_info(None, annot.get_content(), "", "", "", "")
+            fitz_annot.update()
+
+    def add_text(self, index, item: SwikText):
+        color = utils.qcolor_to_fitz_color(item.defaultTextColor())
+        tw = fitz.TextWriter(self.document[index].rect, color=color)
+        x, y, h = item.pos().x(), item.pos().y(), item.sceneBoundingRect().height()
+        font = Font(fontfile=item.get_ttf_filename())
+
+        #tw.append((x,y + h), item.get_text(), font=font, fontsize=item.font().pointSizeF()*1.32)
+        rect = utils.qrectf_and_pos_to_fitz_rect(item.get_rect_on_parent(), item.pos())
+        rect.x1 = rect.x1 + 100
+        rect.y0 += item.font().pointSize()/3.5
+        rect.y1 += item.font().pointSize()/3.5
+        tw.fill_textbox(rect, item.get_text(), font=font, fontsize=item.font().pointSizeF()*1.325)
+        tw.write_text(self.document[index])
+

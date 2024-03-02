@@ -1,22 +1,20 @@
 from PyQt5.QtCore import QObject, pyqtSignal
 
 from action import Action
+from changestracker import ChangesTracker
 
 
 class Undoable:
 
-    def __init__(self):
-        self.callback = None
-
-    def set_callback(self, callback):
-        self.callback = callback
+    def notify_creation(self, item=None):
+        ChangesTracker.item_added(item if item is not None else self)
 
     def notify_change(self, kind, old, new):
-        if self.callback is not None:
-            self.callback(Action(self, kind, old, new))
+        if old != new:
+            ChangesTracker.item_changed(Action(self, kind, old, new))
 
     def undo(self, kind, info):
-        raise NotImplementedError
+        pass
 
     def redo(self, kind, info):
         pass

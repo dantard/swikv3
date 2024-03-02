@@ -1,5 +1,5 @@
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QDialog
+from PyQt5.QtWidgets import QDialog, QMenu
 
 from action import Action
 from annotations.annotation import Annotation
@@ -9,8 +9,13 @@ from resizeable import ResizableRectItem
 
 
 class RedactAnnotation(ResizableRectItem):
+
+    def populate_menu(self, menu: QMenu):
+        menu.addAction("Change Color", self.change_color)
+        super().populate_menu(menu)
+
     def change_color(self):
-        self.serialization = self.get_serialization()
+        before = self.brush().color()
 
         color = ComposableDialog()
         color.add_row("Fill", Color(self.brush().color()))
@@ -18,8 +23,15 @@ class RedactAnnotation(ResizableRectItem):
         if color.exec() == QDialog.Accepted:
             self.set_fill_color(color.get("Fill").get_color())
 
-        if self.serialization != self.get_serialization():
-            print("color changed")
-        self.notify_change(Action.ACTION_FULL_STATE, self.serialization, self.get_serialization())
+            if before != self.brush().color():
+                self.notify_change(Action.ACTION_COLOR_CHANGED, before, self.brush().color())
 
+    def undo(self, kind, info):
+        super().undo(kind, info)
+        if kind == Action.ACTION_COLOR_CHANGED:
+            self.set_fill_color(info)
 
+    def redo(self, kind, info):
+        super().redo(kind, info)
+        if kind == Action.ACTION_COLOR_CHANGED:
+            self.set_fill_color(info)

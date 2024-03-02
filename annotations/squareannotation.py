@@ -4,4 +4,7 @@ from annotations.annotation import Annotation
 
 
 class SquareAnnotation(Annotation):
-    pass
+    def __init__(self, parent=None, **kwargs):
+        super().__init__(parent, **kwargs)
+
+

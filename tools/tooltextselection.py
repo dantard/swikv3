@@ -1,8 +1,10 @@
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QMenu
+from PyQt5.QtCore import Qt, QPointF, QRectF
+from PyQt5.QtGui import QFont, QFontDatabase
+from PyQt5.QtWidgets import QMenu, QGraphicsRectItem, QGraphicsScene
 
 from selector import SelectorRectItem
 from simplepage import SimplePage
+from swiktext import SwikText
 from tools.tool import Tool
 from word import Word
 
@@ -105,13 +107,27 @@ class TextSelection(Tool):
             self.rubberband.view_mouse_move_event(self.view, event)
 
     def context_menu(self, event):
+        menu = QMenu()
+        add_text = menu.addAction("Add Text")
         if len(self.selected) > 0:
-            menu = QMenu()
-            action = menu.addAction("Copy")
-            res = menu.exec(event.globalPos())
-            if res == action:
-                for word in self.selected:
-                    print(word.get_text())
+            copy = menu.addAction("Copy")
+            anon = menu.addAction("Anonymyze")
+
+        res = menu.exec(event.globalPos())
+        if res is None:
+            pass
+
+        if res == add_text:
+
+            st = SwikText("New Text", self.view.pages[0])
+            on_scene = self.view.mapToScene(event.pos())
+            st.setPos(st.mapFromScene(on_scene))
+            font3 = "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf"
+            st.set_ttf_font(font3, 24)
+
+        elif res == copy:
+            for word in self.selected:
+                print(word.get_text())
 
     def finish(self):
         self.clear_selection()

@@ -10,7 +10,8 @@ class Action(list):
     ACTION_CREATE = 0
     ACTION_REMOVE = 1
     ACTION_CHANGED = 2
-    ACTION_FULL_STATE = 3
+    ACTION_COLOR_CHANGED = 3
+    ACTION_ANNOT_CHANGED = 4
 
     def __init__(self, item, kind, old=None, new=None):
         super().__init__()

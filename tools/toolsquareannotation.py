@@ -1,10 +1,11 @@
 import base64
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QImage
+from PyQt5.QtGui import QImage, QColor
 from PyQt5.QtWidgets import QMenu, QDialog, QMessageBox
 
 from annotations.redactannotation import RedactAnnotation
+from annotations.squareannotation import SquareAnnotation
 from dialogs import PasswordDialog
 from renderer import convert_box_to_upside_down
 from resizeable import ResizableRectItem
@@ -12,7 +13,7 @@ from signer import P12Signer
 from tools.tool import Tool
 
 
-class ToolRedactAnnotation(Tool):
+class ToolSquareAnnotation(Tool):
     def __init__(self, view, renderer, config):
         super().__init__(view, renderer, config)
         self.rubberband = None
@@ -27,7 +28,8 @@ class ToolRedactAnnotation(Tool):
             return
 
         if self.rubberband is None:
-            self.rubberband = RedactAnnotation(page, pen=Qt.transparent, brush=Qt.black)
+            color = QColor(255, 0, 0, 127)
+            self.rubberband = SquareAnnotation(page, pen=color, brush=color)
             self.rubberband.view_mouse_press_event(self.view, event)
             self.rubberband.notify_creation()
             self.view.setCursor(Qt.CrossCursor)

@@ -20,7 +20,7 @@ class Manager(QObject):
     def set_view(self, view):
         self.view = view
 
-    def add_tool(self, name, tool, default=False):
+    def register_tool(self, name, tool, default=False):
         self.tools[name] = tool
         tool.finished.connect(self.finished)
         tool.configure()
