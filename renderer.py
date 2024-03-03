@@ -8,12 +8,13 @@ from os.path import exists
 import fitz
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt, QRunnable, QThreadPool, pyqtSignal, QMutex, QRectF, QRect
-from PyQt5.QtGui import QPixmap, QImage, QBrush, QPen
+from PyQt5.QtGui import QPixmap, QImage, QBrush, QPen, QColor
 from PyQt5.QtWidgets import QLabel
 from fitz import TEXTFLAGS_DICT, TEXT_PRESERVE_IMAGES, Font
 from fitz import PDF_ENCRYPT_KEEP, PDF_ANNOT_SQUARE, PDF_ANNOT_IS_LOCKED
 
 import utils
+from annotations.highlight_annotation import HighlightAnnotation
 from annotations.squareannotation import SquareAnnotation
 from swiktext import SwikText
 from utils import fitz_rect_to_qrectf
@@ -311,6 +312,25 @@ class MuPDFRenderer(QLabel):
         page.add_redact_annot(rect, "", fill=color)
         page.apply_redactions()
 
+    annoting =None
+    def add_highlight_annot(self, index, annot):
+        annoting = self.document[index]
+        quads = []
+        for r in annot.get_quads():  # type: QRectF
+            q = fitz.Quad((r.x(), r.y()),
+                          (r.x() + r.width(), r.y()),
+                          (r.x(), r.y() + r.height()),
+                          (r.x() + r.width(), r.y() + r.height()))
+            quads.append(q)
+        fitz_annot: fitz.Annot = annoting.add_highlight_annot(quads=quads)
+#        fitz_annot.set_info(None, annot.content, "", None, None, "")
+        # print("stroke", annot.stroke_from_qcolor(annot.brush().color()))
+        stroke = utils.qcolor_to_fitz_color(annot.brush().color())
+        fitz_annot.set_colors(stroke=stroke)
+        fitz_annot.set_opacity(annot.opacity() if stroke is not None else 0.0)
+#        fitz_annot.update()
+
+
     def get_annotations(self, page):
         annots = list()
         print("get annotatioons")
@@ -336,6 +356,20 @@ class MuPDFRenderer(QLabel):
                 swik_annot.setPos(annot.rect[0], annot.rect[1])
                 annots.append(swik_annot)
                 self.document[page.index].delete_annot(annot)
+            elif annot.type[0] == fitz.PDF_ANNOT_HIGHLIGHT:
+                swik_annot = HighlightAnnotation(QColor(255, 0, 0, 80), page)
+                swik_annot.setRect(QRectF(0, 0, annot.rect[2] - annot.rect[0], annot.rect[3] - annot.rect[1]))
+                swik_annot.setPos(annot.rect[0], annot.rect[1])
+                points = annot.vertices
+                if points is not None:
+                    quad_count = int(len(points) / 4)
+                    for i in range(quad_count):
+                        rect = fitz.Quad(points[i * 4: i * 4 + 4]).rect
+                        rect = rect * self.document[page.index].rotation_matrix
+                        quad = utils.fitz_rect_to_qrectf(rect)
+                        swik_annot.add_quad(quad)
+                self.document[page.index].delete_annot(annot)
+                annots.append(swik_annot)
 
             '''
             elif a.type[0] == fitz.PDF_ANNOT_HIGHLIGHT:
@@ -396,11 +430,10 @@ class MuPDFRenderer(QLabel):
         x, y, h = item.pos().x(), item.pos().y(), item.sceneBoundingRect().height()
         font = Font(fontfile=item.get_ttf_filename())
 
-        #tw.append((x,y + h), item.get_text(), font=font, fontsize=item.font().pointSizeF()*1.32)
+        # tw.append((x,y + h), item.get_text(), font=font, fontsize=item.font().pointSizeF()*1.32)
         rect = utils.qrectf_and_pos_to_fitz_rect(item.get_rect_on_parent(), item.pos())
         rect.x1 = rect.x1 + 100
-        rect.y0 += item.font().pointSize()/3.5
-        rect.y1 += item.font().pointSize()/3.5
-        tw.fill_textbox(rect, item.get_text(), font=font, fontsize=item.font().pointSizeF()*1.325)
+        rect.y0 += item.font().pointSize() / 3.5
+        rect.y1 += item.font().pointSize() / 3.5
+        tw.fill_textbox(rect, item.get_text(), font=font, fontsize=item.font().pointSizeF() * 1.325)
         tw.write_text(self.document[index])
-

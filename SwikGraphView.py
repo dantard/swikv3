@@ -1,5 +1,6 @@
 from GraphView import GraphView
 from LayoutManager import LayoutManager
+from annotations.highlight_annotation import HighlightAnnotation
 from annotations.redactannotation import RedactAnnotation
 from annotations.squareannotation import SquareAnnotation
 from page import Page
@@ -31,8 +32,13 @@ class SwikGraphView(GraphView):
 
         swik_text = [item for item in items if type(item) == SwikText]
         for text in swik_text:
-            page: Page = annot.parentItem()
+            page: Page = text.parentItem()
             self.renderer.add_text(page.get_index(), text)
+
+        swik_text = [item for item in items if type(item) == HighlightAnnotation]
+        for text in swik_text:
+            page: Page = text.parentItem()
+            self.renderer.add_highlight_annot(page.index, text)
 
 
 

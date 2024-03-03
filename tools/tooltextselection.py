@@ -112,12 +112,14 @@ class TextSelection(Tool):
         if len(self.selected) > 0:
             copy = menu.addAction("Copy")
             anon = menu.addAction("Anonymyze")
+            highlight = menu.addAction("Highlight Annotation")
 
         res = menu.exec(event.globalPos())
         if res is None:
             pass
-
-        if res == add_text:
+        elif res == highlight:
+            pass
+        elif res == add_text:
 
             st = SwikText("New Text", self.view.pages[0])
             on_scene = self.view.mapToScene(event.pos())
