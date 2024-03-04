@@ -4,8 +4,9 @@ import sys
 import typing
 from PyQt5 import QtGui, QtCore
 from PyQt5.QtGui import QImage, QFont, QFontMetrics, QColor, QBrush, QPen
-from PyQt5.QtWidgets import QApplication, QGraphicsView, QGraphicsScene, QGraphicsRectItem, QWidget, QStyle, QMenu, QDialog, QSlider
+from PyQt5.QtWidgets import QApplication, QGraphicsView, QGraphicsScene, QGraphicsRectItem, QWidget, QStyle, QMenu, QDialog, QSlider, QGraphicsItem
 from PyQt5.QtCore import Qt, QPointF, QRectF, QTimer, QObject, pyqtSignal
+from pyqtgraph import GraphicsItem
 
 from action import Action
 from coloreable import ColoreableRectItem
@@ -24,6 +25,7 @@ class HandleItem(QGraphicsRectItem):
         self.setPen(Qt.black)
         self.setFlags(QGraphicsRectItem.ItemIsMovable | QGraphicsRectItem.ItemIsSelectable | QGraphicsRectItem.ItemSendsGeometryChanges)
         self.setAcceptHoverEvents(True)
+        self.setFlag(QGraphicsItem.ItemIgnoresTransformations, True)
 
     def hoverEnterEvent(self, event):
         self.setBrush(Qt.black)
@@ -60,7 +62,8 @@ class ResizableRectItem(PaintableSelectorRectItem, Undoable):
 
         self.resizeable = True
         self.movable = True
-        self.setFlags(QGraphicsRectItem.ItemIsSelectable | QGraphicsRectItem.ItemSendsGeometryChanges)
+        self.setFlags(QGraphicsRectItem.ItemIsSelectable | QGraphicsRectItem.ItemSendsGeometryChanges | QGraphicsRectItem.ItemIsMovable)
+        self.setFlag(QGraphicsRectItem.ItemSendsGeometryChanges)
         self.setAcceptHoverEvents(True)
         self.handle_size = 10  # Size of resize handles
         self.handle_pressed = None
@@ -143,7 +146,6 @@ class ResizableRectItem(PaintableSelectorRectItem, Undoable):
                 break
         else:
             super().mousePressEvent(event)
-            self.point = self.mapFromScene(event.scenePos())
 
     def mouseMoveEvent(self, event):
         super().mouseMoveEvent(event)
@@ -192,37 +194,17 @@ class ResizableRectItem(PaintableSelectorRectItem, Undoable):
             self.signals.resizing.emit(self)
 
         else:
-            scene_pos = event.scenePos() - self.point
-            if self.parentItem() is not None:
-
-                x1, y1 = (scene_pos + self.rect().topLeft()).x(), (scene_pos + self.rect().topLeft()).y()
-                x1, y1 = check_parent_limits(self.parentItem(), x1, y1)
-
-                x2, y2 = x1 + self.rect().bottomRight().x(), y1 + self.rect().bottomRight().y()
-                x2, y2 = check_parent_limits(self.parentItem(), x2, y2)
-                x, y = x2 - self.rect().width(), y2 - self.rect().height()
-
-                pos = self.parentItem().mapFromScene(x, y)
-            else:
-                pos = scene_pos
-
-            if self.movable:
-                self.signals.moving.emit(self)
-                self.setPos(pos)
-                self.update()
-
+            self.setFlag(QGraphicsItem.ItemIsMovable, True)
             self.timer.start()
 
     def mouseReleaseEvent(self, event):
         super().mouseReleaseEvent(event)
+        self.setFlag(QGraphicsItem.ItemIsMovable, False)
         self.setPos(self.pos().x() + self.rect().x(), self.pos().y() + self.rect().y())
         self.setRect(QRectF(0, 0, self.rect().width(), self.rect().height()))
         self.update_handles_position()
         self.handle_pressed = None
         self.timer.start()
-
-        if self.serialization != self.get_serialization():
-            self.notify_change(Action.ACTION_FULL_STATE, self.serialization, self.get_serialization())
 
     def view_mouse_release_event(self, view, event):
         super(ResizableRectItem, self).view_mouse_release_event(view, event)
@@ -246,6 +228,20 @@ class ResizableRectItem(PaintableSelectorRectItem, Undoable):
     def deserialize(self, info):
         super().deserialize(info)
         self.movable = info["movable"]
+
+    def itemChange(self, change: 'QGraphicsItem.GraphicsItemChange', value: typing.Any) -> typing.Any:
+        if self.parentItem() is not None and change == QGraphicsItem.ItemPositionChange:
+            if value.x() < 0:
+                value = QPointF(0, value.y())
+            elif value.x() + self.rect().width() > self.parentItem().rect().width():
+                value = QPointF(self.parentItem().rect().width() - self.rect().width(), value.y())
+
+            if value.y() < 0:
+                value = QPointF(value.x(), 0)
+            elif value.y() + self.rect().height() > self.parentItem().rect().height():
+                value = QPointF(value.x(), self.parentItem().rect().height() - self.rect().height())
+
+        return super().itemChange(change, value)
 
 
 class MainWindow(QGraphicsView):

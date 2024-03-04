@@ -33,4 +33,7 @@ class Tool(BasicTool):
     def mouse_moved(self, event):
         pass
 
+    def mouse_double_clicked(self, event):
+        pass
+
 

@@ -1,4 +1,4 @@
-from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt5.QtCore import QObject, pyqtSignal, Qt
 from PyQt5.QtWidgets import QGraphicsRectItem
 
 from simplepage import SimplePage
@@ -40,6 +40,9 @@ class Manager(QObject):
     def mouse_pressed(self, event):
         # TODO:if not self.top_is(event.pos(), [SimplePage, SimplePage.MyImage, Word]):
         # return
+        #if event.modifiers() & Qt.ShiftModifier:
+
+
 
         if self.current is not None:
             self.current.mouse_pressed(event)
@@ -51,6 +54,10 @@ class Manager(QObject):
     def mouse_moved(self, event):
         if self.current is not None:
             self.current.mouse_moved(event)
+
+    def mouse_double_clicked(self, event):
+        if self.current is not None:
+            self.current.mouse_double_clicked(event)
 
     def context_menu(self, event):
         if self.current is not None:

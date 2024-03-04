@@ -87,6 +87,12 @@ class MainWindow(QMainWindow):
         edit_menu.addSeparator()
         edit_menu.addAction('Preferences', self.preferences)
 
+        tool_menu = menu_bar.addMenu('Tools')
+        tool_menu.addAction('Flatten', lambda : self.flatten(False))
+        tool_menu.addAction('Flatten and Open', lambda : self.flatten(True))
+        tool_menu.addSeparator()
+        tool_menu.addAction('Extract Fonts', self.extract_fonts)
+
         self.toolbar = self.addToolBar('Toolbar')
         self.toolbar.addAction("Open", self.open_file).setIcon(QIcon(":/icons/open.png"))
         self.toolbar.addAction("Save", self.save_file).setIcon(QIcon(":/icons/save.png"))
@@ -120,6 +126,16 @@ class MainWindow(QMainWindow):
             if last is not None:
                 self.renderer.open_pdf(last)
     info = {}
+
+    def flatten(self, open=True):
+        filename = self.renderer.get_filename().replace(".pdf", "-flat.pdf")
+        self.renderer.flatten(filename)
+        if open:
+            self.open_file(filename)
+
+    def extract_fonts(self):
+        fonts = self.renderer.save_fonts(".")
+        QMessageBox.information(self, "Fonts extracted", "Extracted " + str(len(fonts)) + "fonts")
 
     def undo(self):
         selected = self.view.scene().selectedItems()

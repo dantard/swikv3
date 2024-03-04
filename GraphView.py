@@ -447,6 +447,9 @@ class GraphView(QGraphicsView):
         super().contextMenuEvent(event)
         self.manager.context_menu(event)
 
+    def mouseDoubleClickEvent(self, event: QtGui.QMouseEvent) -> None:
+        super().mouseDoubleClickEvent(event)
+        self.manager.mouse_double_clicked(event)
 
 class MiniatureView(GraphView):
     page_clicked = pyqtSignal(int, int)

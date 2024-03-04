@@ -21,6 +21,9 @@ class HighlightAnnotation(QGraphicsRectItem):
         self.setBrush(Qt.transparent)
         self.setPen(Qt.transparent)
 
+    def get_color(self):
+        return self.color
+
     def quad_double_click(self, event):
         print("quad double click")
 

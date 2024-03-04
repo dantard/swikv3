@@ -1,7 +1,8 @@
 from PyQt5.QtCore import Qt, QPointF, QRectF
-from PyQt5.QtGui import QFont, QFontDatabase
+from PyQt5.QtGui import QFont, QFontDatabase, QColor
 from PyQt5.QtWidgets import QMenu, QGraphicsRectItem, QGraphicsScene
 
+from annotations.highlight_annotation import HighlightAnnotation
 from selector import SelectorRectItem
 from simplepage import SimplePage
 from swiktext import SwikText
@@ -118,7 +119,12 @@ class TextSelection(Tool):
         if res is None:
             pass
         elif res == highlight:
-            pass
+            for word in self.selected: # type: Word
+                r = word.get_rect_on_parent()
+                annot = HighlightAnnotation(QColor(255,0,0, 80), word.parentItem())
+                annot.add_quad(r)
+            self.clear_selection()
+
         elif res == add_text:
 
             st = SwikText("New Text", self.view.pages[0])
@@ -130,6 +136,14 @@ class TextSelection(Tool):
         elif res == copy:
             for word in self.selected:
                 print(word.get_text())
+
+    def mouse_double_clicked(self, event):
+        scene_pos = self.view.mapToScene(event.pos())
+        items = self.view.scene().items(scene_pos)
+        if len(items) > 0 and type(items[0]) == Word:
+            word = items[0]
+            word.set_selected(True)
+            self.selected.append(word)
 
     def finish(self):
         self.clear_selection()

@@ -10,7 +10,7 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import Qt, QRunnable, QThreadPool, pyqtSignal, QMutex, QRectF, QRect
 from PyQt5.QtGui import QPixmap, QImage, QBrush, QPen, QColor
 from PyQt5.QtWidgets import QLabel
-from fitz import TEXTFLAGS_DICT, TEXT_PRESERVE_IMAGES, Font
+from fitz import TEXTFLAGS_DICT, TEXT_PRESERVE_IMAGES, Font, PDF_WIDGET_TYPE_TEXT, PDF_WIDGET_TYPE_COMBOBOX, PDF_WIDGET_TYPE_CHECKBOX
 from fitz import PDF_ENCRYPT_KEEP, PDF_ANNOT_SQUARE, PDF_ANNOT_IS_LOCKED
 
 import utils
@@ -18,6 +18,7 @@ from annotations.highlight_annotation import HighlightAnnotation
 from annotations.squareannotation import SquareAnnotation
 from swiktext import SwikText
 from utils import fitz_rect_to_qrectf
+from widgets.pdf_widget import PdfTextWidget, MultiLinePdfTextWidget, PdfCheckboxWidget, PdfComboboxWidget, PdfWidget
 from word import Word, MetaWord
 
 
@@ -312,7 +313,8 @@ class MuPDFRenderer(QLabel):
         page.add_redact_annot(rect, "", fill=color)
         page.apply_redactions()
 
-    annoting =None
+    annoting = None
+
     def add_highlight_annot(self, index, annot):
         annoting = self.document[index]
         quads = []
@@ -323,13 +325,13 @@ class MuPDFRenderer(QLabel):
                           (r.x() + r.width(), r.y() + r.height()))
             quads.append(q)
         fitz_annot: fitz.Annot = annoting.add_highlight_annot(quads=quads)
-#        fitz_annot.set_info(None, annot.content, "", None, None, "")
+        #        fitz_annot.set_info(None, annot.content, "", None, None, "")
         # print("stroke", annot.stroke_from_qcolor(annot.brush().color()))
-        stroke = utils.qcolor_to_fitz_color(annot.brush().color())
+        stroke = utils.qcolor_to_fitz_color(annot.get_color())
         fitz_annot.set_colors(stroke=stroke)
         fitz_annot.set_opacity(annot.opacity() if stroke is not None else 0.0)
-#        fitz_annot.update()
 
+        fitz_annot.update()
 
     def get_annotations(self, page):
         annots = list()
@@ -437,3 +439,88 @@ class MuPDFRenderer(QLabel):
         rect.y1 += item.font().pointSize() / 3.5
         tw.fill_textbox(rect, item.get_text(), font=font, fontsize=item.font().pointSizeF() * 1.325)
         tw.write_text(self.document[index])
+
+    def get_widgets(self, page):
+        pdf_widgets = list()
+        for i, field in enumerate(self.document[page.index].widgets()):
+
+            if field.field_type == PDF_WIDGET_TYPE_TEXT:
+                rect = QRectF(field.rect[0], field.rect[1], field.rect[2] - field.rect[0],
+                              field.rect[3] - field.rect[1])
+                if field.field_flags & 4096:
+                    text_field = MultiLinePdfTextWidget(page, field.field_value, rect, field.text_fontsize)
+                else:
+                    text_field = PdfTextWidget(page, field.field_value, rect, field.text_fontsize)
+
+                text_field.set_info(field.field_name, field.field_flags)
+                pdf_widgets.append(text_field)
+                self.document[page.index].delete_widget(field)
+
+            elif field.field_type == PDF_WIDGET_TYPE_CHECKBOX:
+                rect = QRectF(field.rect[0], field.rect[1], field.rect[2] - field.rect[0],
+                              field.rect[3] - field.rect[1])
+                cb_field = PdfCheckboxWidget(page, field.field_value, rect, field.text_fontsize)
+                cb_field.set_info(field.field_name, field.field_flags)
+                pdf_widgets.append(cb_field)
+                self.document[page.index].delete_widget(field)
+
+            elif field.field_type == PDF_WIDGET_TYPE_COMBOBOX:
+                rect = QRectF(field.rect[0], field.rect[1], field.rect[2] - field.rect[0],
+                              field.rect[3] - field.rect[1])
+                combo_field = PdfComboboxWidget(page, field.field_value, rect, field.text_fontsize, field.choice_values)
+                combo_field.set_info(field.field_name, field.field_flags)
+                pdf_widgets.append(combo_field)
+                self.document[page.index].delete_widget(field)
+
+        return pdf_widgets
+
+    def add_widget(self, index, swik_widget: PdfWidget):
+        page = self.document[index]
+        name, flags = swik_widget.get_info()
+
+        widget = fitz.Widget()
+        widget.field_name = name
+        widget.field_flags = flags
+        widget.rect = utils.qrectf_to_fitz_rect(swik_widget.get_rect())
+        widget.field_value = swik_widget.get_value()
+
+        if type(swik_widget) == PdfTextWidget:
+            widget.field_type = fitz.PDF_WIDGET_TYPE_TEXT
+        if type(swik_widget) == MultiLinePdfTextWidget:
+            widget.field_type = fitz.PDF_WIDGET_TYPE_TEXT
+        elif type(swik_widget) == PdfCheckboxWidget:
+            widget.field_type = fitz.PDF_WIDGET_TYPE_CHECKBOX
+        elif type(swik_widget) == PdfComboboxWidget:
+            widget.field_type = fitz.PDF_WIDGET_TYPE_COMBOBOX
+            widget.choice_values = swik_widget.get_items()
+
+        print("Adding widget", widget.field_name, widget.field_flags, widget.rect, widget.field_value)
+
+        page.add_widget(widget)
+
+    def flatten(self, filename):
+        self.sync_requested.emit()
+        pdfbytes = self.document.convert_to_pdf()
+        with open(filename, "wb") as f:
+            f.write(pdfbytes)
+
+    def save_fonts(self, out_dir):
+        font_xrefs = set()
+        font_names = set()
+        for pno in range(self.get_num_of_pages()):
+            itemlist = self.document.get_page_fonts(pno - 1)
+            for item in itemlist:
+                xref = item[0]
+                if xref not in font_xrefs:
+                    font_xrefs.add(xref)
+                    fontname, ext, _, buffer = self.document.extract_font(xref)
+                    font_names.add(fontname)
+                    if ext == "n/a" or not buffer:
+                        continue
+                    outname = os.path.join(
+                        out_dir, f"{fontname.replace(' ', '-')}-{xref}.{ext}"
+                    )
+                    outfile = open(outname, "wb")
+                    outfile.write(buffer)
+                    outfile.close()
+        return font_names

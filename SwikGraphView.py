@@ -6,6 +6,7 @@ from annotations.squareannotation import SquareAnnotation
 from page import Page
 from simplepage import SimplePage
 from swiktext import SwikText
+from widgets.pdf_widget import PdfWidget
 
 
 class SwikGraphView(GraphView):
@@ -40,6 +41,11 @@ class SwikGraphView(GraphView):
             page: Page = text.parentItem()
             self.renderer.add_highlight_annot(page.index, text)
 
+        widgets = [item for item in items if isinstance(item,PdfWidget)]
+        for widget in widgets:
+            page: Page = widget.parentItem()
+            self.renderer.add_widget(page.get_index(), widget)
+
 
 
         for index in pages_to_refresh:
@@ -48,3 +54,4 @@ class SwikGraphView(GraphView):
     def page_processed(self, page):
         super().page_processed(page)
         self.renderer.get_annotations(page)
+        self.renderer.get_widgets(page)
