@@ -69,6 +69,7 @@ class ResizableRectItem(PaintableSelectorRectItem, Undoable):
         self.handle_pressed = None
         self.handles_enabled = True
         self.handles = []
+        self.pos_before = None
 
         self.timer = QTimer()
         self.timer.setSingleShot(True)
@@ -136,8 +137,7 @@ class ResizableRectItem(PaintableSelectorRectItem, Undoable):
             self.setCursor(Qt.ArrowCursor)
 
     def mousePressEvent(self, event):
-
-        self.serialization = self.get_serialization()
+        self.pos_before = (self.rect(), self.pos())
 
         for handle in self.handles:
             if handle.contains(handle.mapFromScene(event.scenePos())):
@@ -205,6 +205,8 @@ class ResizableRectItem(PaintableSelectorRectItem, Undoable):
         self.update_handles_position()
         self.handle_pressed = None
         self.timer.start()
+        if (self.rect, self.pos()) != self.pos_before:
+            self.notify_change(Action.POSE_SHAPE_CHANGED, self.pos_before, (self.rect(), self.pos()))
 
     def view_mouse_release_event(self, view, event):
         super(ResizableRectItem, self).view_mouse_release_event(view, event)
@@ -242,6 +244,18 @@ class ResizableRectItem(PaintableSelectorRectItem, Undoable):
                 value = QPointF(value.x(), self.parentItem().rect().height() - self.rect().height())
 
         return super().itemChange(change, value)
+
+    def undo(self, kind, info):
+        super().undo(kind, info)
+        if kind == Action.POSE_SHAPE_CHANGED:
+            self.setRect(info[0])
+            self.setPos(info[1])
+
+    def redo(self, kind, info):
+        super().redo(kind, info)
+        if kind == Action.POSE_SHAPE_CHANGED:
+            self.setRect(info[0])
+            self.setPos(info[1])
 
 
 class MainWindow(QGraphicsView):

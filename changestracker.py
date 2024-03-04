@@ -46,6 +46,7 @@ class ChangesTracker(QObject):
         if len(ChangesTracker.redo_stack) > 0:
             action = ChangesTracker.redo_stack.pop()
             for atom in action:
+                print("item redo", atom.item, atom.kind, atom.old, atom.new)
                 if atom.kind == Action.ACTION_CREATE:
                     if atom.old is not None:
                         atom.item.setParentItem(atom.old)
@@ -60,11 +61,14 @@ class ChangesTracker(QObject):
     @staticmethod
     def item_added(item):
         ChangesTracker.undo_stack.append(Action(item, Action.ACTION_CREATE, item.parentItem()))
+        print("item added", item)
 
     @staticmethod
     def item_removed(item):
         ChangesTracker.undo_stack.append(Action(item, Action.ACTION_REMOVE, item.parentItem()))
+        print("item removed", item)
 
     @staticmethod
     def item_changed(action):
+        print("item changed", action[0].item, action[0].kind, action[0].old, action[0].new)
         ChangesTracker.undo_stack.append(action)

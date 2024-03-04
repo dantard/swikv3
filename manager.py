@@ -63,5 +63,14 @@ class Manager(QObject):
         if self.current is not None:
             self.current.context_menu(event)
 
+    def key_pressed(self, event):
+        print("pressed", event.key())
+
+    def key_released(self, event):
+        print("released", event.key(), Qt.Key_Escape, Qt.Key_Escape == event.key())
+
+        if event.key() == Qt.Key_Escape:
+           self.finished()
+
     def finished(self):
         self.tool_finished.emit()

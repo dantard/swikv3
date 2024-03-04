@@ -21,6 +21,9 @@ class TextSelection(Tool):
         self.selection_mode = TextSelection.SELECTION_MODE_RECT
         self.selected = []
 
+    def iterate_selection_mode(self):
+        self.selection_mode = (self.selection_mode + 1) % 2
+
     def set_view(self, view):
         self.view = view
 

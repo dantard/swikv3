@@ -3,7 +3,7 @@ import sys
 import resources
 import pyclip
 from PyQt5 import QtGui
-from PyQt5.QtCore import QPointF
+from PyQt5.QtCore import QPointF, Qt
 from PyQt5.QtGui import QPainter, QIcon, QKeySequence
 from PyQt5.QtWidgets import QApplication, QMainWindow, QShortcut, QFileDialog, QDialog, QMessageBox
 
@@ -13,8 +13,10 @@ from SwikGraphView import SwikGraphView
 from changestracker import ChangesTracker
 from dialogs import PasswordDialog
 from groupbox import GroupBox
+from keyboard_manager import KeyboardManager
 from manager import Manager
 from scene import Scene
+from tools.tool_drag import ToolDrag
 from tools.toolcrop import ToolCrop
 from tools.toolrearranger import ToolRearrange
 from tools.toolredactannotation import ToolRedactAnnotation
@@ -43,7 +45,7 @@ class MainWindow(QMainWindow):
         self.renderer.document_changed.connect(self.document_changed)
 
         self.scene = Scene()
-
+        self.key_manager = KeyboardManager(self)
         self.manager = Manager(self.renderer, self.config)
         self.view = SwikGraphView(self.manager, self.renderer, self.scene, page=Page, mode=self.config.get('mode', LayoutManager.MODE_VERTICAL))
         self.manager.set_view(self.view)
@@ -56,6 +58,13 @@ class MainWindow(QMainWindow):
         self.manager.register_tool('redact_annot', ToolRedactAnnotation(self.view, self.renderer, self.config), False)
         self.manager.register_tool('square_annot', ToolSquareAnnotation(self.view, self.renderer, self.config), False)
         self.manager.register_tool('crop', ToolCrop(self.view, self.renderer, self.config), False)
+        self.manager.register_tool('drag', ToolDrag(self.view, self.renderer, self.config), False)
+
+        self.key_manager.register_action(Qt.Key_Shift, lambda: self.manager.use_tool("drag"), self.manager.finished)
+        self.key_manager.register_combination_action('Ctrl+A', self.manager.get_tool("text_selection").iterate_selection_mode)
+        self.key_manager.register_combination_action('Ctrl+M', self.iterate_mode)
+        self.key_manager.register_combination_action('Ctrl+Z', ChangesTracker.undo)
+        self.key_manager.register_combination_action('Ctrl+Shift+Z', ChangesTracker.redo)
 
         self.config.load("swik.yaml")
 
@@ -88,8 +97,8 @@ class MainWindow(QMainWindow):
         edit_menu.addAction('Preferences', self.preferences)
 
         tool_menu = menu_bar.addMenu('Tools')
-        tool_menu.addAction('Flatten', lambda : self.flatten(False))
-        tool_menu.addAction('Flatten and Open', lambda : self.flatten(True))
+        tool_menu.addAction('Flatten', lambda: self.flatten(False))
+        tool_menu.addAction('Flatten and Open', lambda: self.flatten(True))
         tool_menu.addSeparator()
         tool_menu.addAction('Extract Fonts', self.extract_fonts)
 
@@ -111,21 +120,20 @@ class MainWindow(QMainWindow):
 
         self.nav_toolbar = NavigationToolbar(self.view, self.toolbar)
         self.finder_toolbar = TextSearchToolbar(self.view, self.renderer, self.toolbar)
-
+        self.statusBar().show()
         self.setCentralWidget(self.view)
-
-        x_mode = QShortcut(QKeySequence('Ctrl+C'), self)
-        x_mode.activated.connect(self.copy)
-        x_mode = QShortcut(QKeySequence('Ctrl+Z'), self)
-        x_mode.activated.connect(ChangesTracker.undo)
-        x_mode = QShortcut(QKeySequence('Ctrl+Shift+Z'), self)
-        x_mode.activated.connect(ChangesTracker.redo)
 
         if self.config.get("open_last"):
             last = self.config.get('last', None)
             if last is not None:
                 self.renderer.open_pdf(last)
+
     info = {}
+    def iterate_mode(self):
+        mode = (self.view.get_mode() + 1) % len(LayoutManager.modes)
+        self.view.set_mode(mode)
+        self.statusBar().showMessage("Mode " + LayoutManager.modes[mode], 2000)
+
 
     def flatten(self, open=True):
         filename = self.renderer.get_filename().replace(".pdf", "-flat.pdf")
@@ -154,6 +162,7 @@ class MainWindow(QMainWindow):
 
     def document_changed(self):
         self.setWindowTitle("Swik - " + self.renderer.get_filename())
+
 
     def manage_tool(self):
         button = self.sender()
@@ -194,6 +203,17 @@ class MainWindow(QMainWindow):
     def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
         self.config.save("swik.yaml")
         super().closeEvent(a0)
+
+    def keyPressEvent(self, a0: QtGui.QKeyEvent) -> None:
+        super().keyPressEvent(a0)
+        if not self.key_manager.key_pressed(a0):
+            self.manager.key_pressed(a0)
+
+    def keyReleaseEvent(self, a0: QtGui.QKeyEvent) -> None:
+        super().keyReleaseEvent(a0)
+        if not self.key_manager.key_released(a0):
+            self.manager.key_released(a0)
+
 
 
 def main():

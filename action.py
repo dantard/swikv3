@@ -12,6 +12,7 @@ class Action(list):
     ACTION_CHANGED = 2
     ACTION_COLOR_CHANGED = 3
     ACTION_ANNOT_CHANGED = 4
+    POSE_SHAPE_CHANGED = 5
 
     def __init__(self, item, kind, old=None, new=None):
         super().__init__()

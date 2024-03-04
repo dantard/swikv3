@@ -299,7 +299,6 @@ class GraphView(QGraphicsView):
         self.verticalScrollBar().setValue(v)
         self.horizontalScrollBar().setValue(h)
 
-
     # ## UTILITY METHODS
 
     def get_item_at_pos(self, pos):
@@ -425,7 +424,7 @@ class GraphView(QGraphicsView):
         self.previous_state = (self.horizontalScrollBar().value(),
                                self.verticalScrollBar().value(),
                                self.renderer.get_filename())
-
+        self.page_changed.emit(0, self.renderer.get_num_of_pages())
         self.process()
 
     def set_page(self, index):
@@ -450,6 +449,7 @@ class GraphView(QGraphicsView):
     def mouseDoubleClickEvent(self, event: QtGui.QMouseEvent) -> None:
         super().mouseDoubleClickEvent(event)
         self.manager.mouse_double_clicked(event)
+
 
 class MiniatureView(GraphView):
     page_clicked = pyqtSignal(int, int)
