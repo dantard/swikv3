@@ -198,7 +198,10 @@ class MainWindow(QMainWindow):
         self.config.exec()
 
     def open_with_other(self, command):
-        pass
+        if command is not None:
+            os.system(command + " '" + self.renderer.get_filename() + "' &")
+        else:
+            self.config.edit()
 
     def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
         self.config.save("swik.yaml")

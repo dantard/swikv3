@@ -122,9 +122,10 @@ class TextSelection(Tool):
         if res is None:
             pass
         elif res == highlight:
+            print("creating")
+            annot = HighlightAnnotation(QColor(255, 0, 0, 80), self.selected[0].parentItem())
             for word in self.selected: # type: Word
                 r = word.get_rect_on_parent()
-                annot = HighlightAnnotation(QColor(255,0,0, 80), word.parentItem())
                 annot.add_quad(r)
             self.clear_selection()
 
@@ -146,7 +147,8 @@ class TextSelection(Tool):
         if len(items) > 0 and type(items[0]) == Word:
             word = items[0]
             word.set_selected(True)
-            self.selected.append(word)
+            if not word in self.selected:
+                self.selected.append(word)
 
     def finish(self):
         self.clear_selection()

@@ -315,21 +315,22 @@ class MuPDFRenderer(QLabel):
 
     annoting = None
 
-    def add_highlight_annot(self, index, annot):
+    def add_highlight_annot(self, index, swik_annot):
+        # For some reason, the annoting page must be stored
         annoting = self.document[index]
         quads = []
-        for r in annot.get_quads():  # type: QRectF
+        for r in swik_annot.get_quads():  # type: QRectF
             q = fitz.Quad((r.x(), r.y()),
                           (r.x() + r.width(), r.y()),
                           (r.x(), r.y() + r.height()),
                           (r.x() + r.width(), r.y() + r.height()))
             quads.append(q)
         fitz_annot: fitz.Annot = annoting.add_highlight_annot(quads=quads)
-        #        fitz_annot.set_info(None, annot.content, "", None, None, "")
-        # print("stroke", annot.stroke_from_qcolor(annot.brush().color()))
-        stroke = utils.qcolor_to_fitz_color(annot.get_color())
+        color = swik_annot.get_color()
+        stroke = utils.qcolor_to_fitz_color(color)
+        fitz_annot.set_info(None, swik_annot.get_content(), "", "", "", "")
         fitz_annot.set_colors(stroke=stroke)
-        fitz_annot.set_opacity(annot.opacity() if stroke is not None else 0.0)
+        fitz_annot.set_opacity(color.alpha()/255 if stroke is not None else 0.0)
 
         fitz_annot.update()
 
@@ -359,7 +360,10 @@ class MuPDFRenderer(QLabel):
                 annots.append(swik_annot)
                 self.document[page.index].delete_annot(annot)
             elif annot.type[0] == fitz.PDF_ANNOT_HIGHLIGHT:
-                swik_annot = HighlightAnnotation(QColor(255, 0, 0, 80), page)
+                color = utils.fitz_color_to_qcolor(annot.colors["stroke"], annot.opacity)
+                print(annot.colors, annot.opacity)
+                swik_annot = HighlightAnnotation(color, page)
+                swik_annot.set_content(annot.info["content"])
                 swik_annot.setRect(QRectF(0, 0, annot.rect[2] - annot.rect[0], annot.rect[3] - annot.rect[1]))
                 swik_annot.setPos(annot.rect[0], annot.rect[1])
                 points = annot.vertices

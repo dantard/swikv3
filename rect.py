@@ -28,14 +28,6 @@ class SwikRect(QGraphicsRectItem):
         self.setPos(item.pos() + kwargs.get("offset", QPointF(0, 0)))
         self.kwargs = item.get_kwargs()
 
-    def contextMenuEvent(self, event) -> None:
-        menu = QMenu()
-        self.populate_menu(menu)
-        menu.exec(event.screenPos())
-
-    def populate_menu(self, menu: QMenu):
-        pass
-
     def get_rect_on_scene(self):
         return self.sceneBoundingRect()
 

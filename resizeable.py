@@ -109,6 +109,15 @@ class ResizableRectItem(PaintableSelectorRectItem, Undoable):
     def get_handles_enabled(self):
         return self.handles_enabled
 
+    def contextMenuEvent(self, event) -> None:
+        print("AAAAAAAAAAAAAAAAAAAAAAAAAAAa")
+        menu = QMenu()
+        self.populate_menu(menu)
+        menu.exec(event.screenPos())
+
+    def populate_menu(self, menu: QMenu):
+        pass
+
     def update_handles_position(self):
         bounds = self.rect()
         handle_positions = [
@@ -218,10 +227,6 @@ class ResizableRectItem(PaintableSelectorRectItem, Undoable):
 
     def hoverEnterEvent(self, event) -> None:
         self.set_handle_visibility(True)
-
-    def populate_menu(self, menu: QMenu):
-        super().populate_menu(menu)
-        menu.addAction("Delete", lambda: self.scene().removeItem(self))
 
     def serialize(self, info):
         super().serialize(info)

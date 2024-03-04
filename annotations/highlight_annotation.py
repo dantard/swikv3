@@ -1,8 +1,13 @@
 from PyQt5.QtCore import QRectF, Qt, QPointF
-from PyQt5.QtWidgets import QGraphicsRectItem, QGraphicsItem
+from PyQt5.QtWidgets import QGraphicsRectItem, QGraphicsItem, QDialog
+
+from action import Action
+from colorwidget import Color, ColorAndAlpha, TextLineEdit
+from dialogs import ComposableDialog
+from interfaces import Undoable
 
 
-class HighlightAnnotation(QGraphicsRectItem):
+class HighlightAnnotation(QGraphicsRectItem, Undoable):
     class Quad(QGraphicsRectItem):
 
         def __init__(self, parent):
@@ -20,12 +25,33 @@ class HighlightAnnotation(QGraphicsRectItem):
         self.color = color
         self.setBrush(Qt.transparent)
         self.setPen(Qt.transparent)
+        self.content = str()
 
     def get_color(self):
         return self.color
 
+    def set_content(self, text):
+        self.content = text
+
+    def get_content(self):
+        return self.content
+
+    def set_color(self, color):
+        self.color = color
+        for quad in self.quads:
+            quad.setBrush(color)
+
     def quad_double_click(self, event):
-        print("quad double click")
+        before = self.get_color()
+        color = ComposableDialog()
+        color.add_row("Content", TextLineEdit(self.content))
+        color.add_row("Color", ColorAndAlpha(self.get_color()))
+
+        if color.exec() == QDialog.Accepted:
+            self.set_color(color.get("Color").get_color())
+            self.set_content(color.get("Content").get_text())
+            if before != self.get_color():
+                self.notify_change(Action.ACTION_COLOR_CHANGED, before, self.get_color())
 
     def add_quad(self, rect):
         quad = self.Quad(self)
@@ -33,11 +59,11 @@ class HighlightAnnotation(QGraphicsRectItem):
         quad.setPen(Qt.transparent)
         x, y = rect.x(), rect.y()
         w, h = rect.width(), rect.height()
-        quad.setZValue(1)
-
         quad.setRect(QRectF(0, 0, w, h))
         pos = self.mapFromParent(QPointF(x, y))
         quad.setPos(pos)
+        quad.setZValue(1)
+        print("Quad added")
         self.quads.append(quad)
 
     def get_quads(self):
