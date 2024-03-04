@@ -443,8 +443,11 @@ class GraphView(QGraphicsView):
         self.manager.mouse_moved(event)
 
     def contextMenuEvent(self, event: QtGui.QContextMenuEvent) -> None:
+        print("Context menu0", self)
         super().contextMenuEvent(event)
-        self.manager.context_menu(event)
+        print("Context menu1", self)
+        if not event.isAccepted():
+            self.manager.context_menu(event)
 
     def mouseDoubleClickEvent(self, event: QtGui.QMouseEvent) -> None:
         super().mouseDoubleClickEvent(event)

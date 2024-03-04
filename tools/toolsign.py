@@ -14,10 +14,11 @@ from tools.tool import Tool
 class SignerRectItem(ResizableRectItem):
     ACTION_SIGN = 0
 
-    def populate_menu(self, menu: QMenu):
+    def contextMenuEvent(self, event: 'QGraphicsSceneContextMenuEvent') -> None:
+        menu = QMenu()
         menu.addAction("Sign", lambda: self.signals.action.emit(SignerRectItem.ACTION_SIGN, self))
         menu.addSeparator()
-        super(SignerRectItem, self).populate_menu(menu)
+        menu.exec(event.screenPos())
 
 
 class ToolSign(Tool):

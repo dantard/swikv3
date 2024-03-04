@@ -3,6 +3,7 @@ from PyQt5.QtGui import QFont, QFontDatabase, QColor
 from PyQt5.QtWidgets import QMenu, QGraphicsRectItem, QGraphicsScene
 
 from annotations.highlight_annotation import HighlightAnnotation
+from annotations.redactannotation import RedactAnnotation
 from selector import SelectorRectItem
 from simplepage import SimplePage
 from swiktext import SwikText
@@ -117,10 +118,19 @@ class TextSelection(Tool):
             copy = menu.addAction("Copy")
             anon = menu.addAction("Anonymyze")
             highlight = menu.addAction("Highlight Annotation")
+        else:
+            anon, highlight, copy = None, None, None
+
 
         res = menu.exec(event.globalPos())
         if res is None:
             pass
+        elif res == anon:
+            for word in self.selected: # type: Word
+                r = RedactAnnotation(word.parentItem(), brush=Qt.black)
+                r.setRect(word.get_rect_on_parent())
+            self.clear_selection()
+
         elif res == highlight:
             print("creating")
             annot = HighlightAnnotation(QColor(255, 0, 0, 80), self.selected[0].parentItem())

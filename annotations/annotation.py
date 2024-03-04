@@ -18,11 +18,9 @@ class Annotation(ResizableRectItem):
     def get_content(self):
         return self.content
 
-    def populate_menu(self, menu: QMenu):
-        menu.addAction("Change Color", self.change_color)
-        super().populate_menu(menu)
-
-    CHANGE_ANNOT = 127
+    def mouseDoubleClickEvent(self, event: 'QGraphicsSceneMouseEvent') -> None:
+        super().mouseDoubleClickEvent(event)
+        self.change_color()
 
     def change_color(self):
         before = [self.brush().color(), self.pen().color(), self.pen().width(), self.content]

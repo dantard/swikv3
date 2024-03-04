@@ -10,10 +10,6 @@ from resizeable import ResizableRectItem
 
 class RedactAnnotation(ResizableRectItem):
 
-    def populate_menu(self, menu: QMenu):
-        menu.addAction("Change Color", self.change_color)
-        super().populate_menu(menu)
-
     def change_color(self):
         before = self.brush().color()
 

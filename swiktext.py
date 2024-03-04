@@ -19,13 +19,13 @@ class SwikText(QGraphicsTextItem):
         self.setFlag(QGraphicsTextItem.ItemIsSelectable, True)
 
     def contextMenuEvent(self, event: 'QGraphicsSceneContextMenuEvent') -> None:
-        # WARNING: DO NOT change the order of the following two lines
+        # WARNING: This must be the first line of the method
         self.setTextInteractionFlags(Qt.NoTextInteraction)
-        super().contextMenuEvent(event)
-        # Until here
+        # This Line specifies that the event has been already handled
+        event.accept()
 
         menu = QMenu()
-        action = menu.addAction("Edit Font")
+        action = menu.addAction("Edit Fontass")
         menu.exec(event.screenPos())
 
     def mouseDoubleClickEvent(self, event: 'QGraphicsSceneMouseEvent') -> None:
@@ -58,7 +58,7 @@ class SwikText(QGraphicsTextItem):
 
     def set_ttf_font(self, filename, size=None):
         document = self.document()
-        document.setDocumentMargin(9/34*size)
+        document.setDocumentMargin(9 / 34 * size)
         self.setDocument(document)
 
         self.ttf_filename = filename
@@ -68,6 +68,7 @@ class SwikText(QGraphicsTextItem):
 
     def get_ttf_filename(self):
         return self.ttf_filename
+
     def set_font(self, font, size=None):
         super().setFont(font)
         if size is not None:
