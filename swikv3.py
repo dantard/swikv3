@@ -1,12 +1,17 @@
 import os
+import subprocess
 import sys
+
+from PyQt5.QtNetwork import QUdpSocket, QHostAddress
+
 import resources
 import pyclip
 from PyQt5 import QtGui
 from PyQt5.QtCore import QPointF, Qt
 from PyQt5.QtGui import QPainter, QIcon, QKeySequence
-from PyQt5.QtWidgets import QApplication, QMainWindow, QShortcut, QFileDialog, QDialog, QMessageBox
+from PyQt5.QtWidgets import QApplication, QMainWindow, QShortcut, QFileDialog, QDialog, QMessageBox, QHBoxLayout
 
+import utils
 from GraphView import GraphView
 from LayoutManager import LayoutManager
 from SwikGraphView import SwikGraphView
@@ -129,11 +134,29 @@ class MainWindow(QMainWindow):
                 self.renderer.open_pdf(last)
 
     info = {}
+
+    def should_open_here(self, filename):
+        msg_box = QMessageBox(self)
+        msg_box.setIcon(QMessageBox.Question)
+        msg_box.setText("Open file {} in this window?".format(os.path.basename(filename)))
+        msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
+        lay: QHBoxLayout = msg_box.findChild(QHBoxLayout)
+        w = lay.takeAt(3)
+        lay.insertWidget(1, w.widget())
+        w = lay.takeAt(2)
+        lay.insertWidget(3, w.widget())
+        user_choice = msg_box.exec()
+        if user_choice == QMessageBox.Yes:
+            return True
+        elif user_choice == QMessageBox.No:
+            return False
+        else:
+            return True
+
     def iterate_mode(self):
         mode = (self.view.get_mode() + 1) % len(LayoutManager.modes)
         self.view.set_mode(mode)
         self.statusBar().showMessage("Mode " + LayoutManager.modes[mode], 2000)
-
 
     def flatten(self, open=True):
         filename = self.renderer.get_filename().replace(".pdf", "-flat.pdf")
@@ -162,7 +185,6 @@ class MainWindow(QMainWindow):
 
     def document_changed(self):
         self.setWindowTitle("Swik - " + self.renderer.get_filename())
-
 
     def manage_tool(self):
         button = self.sender()
@@ -218,12 +240,46 @@ class MainWindow(QMainWindow):
             self.manager.key_released(a0)
 
 
-
 def main():
     app = QApplication(sys.argv)
-
     window = MainWindow()
+
+    socket = QUdpSocket()
+    socket.bind(QHostAddress.LocalHost, 0)
+    socket.open(QUdpSocket.ReadWrite)
+
+    if len(sys.argv) > 1 and window.config.get("open_other_pdf_in") != 1:
+        udp_port = utils.are_other_instances_running()
+        if udp_port > 0:
+            print("Another instance is running, sending filename to it")
+            socket.writeDatagram(" ".join(sys.argv[1:]).encode(), QHostAddress.LocalHost, udp_port)
+            if socket.waitForReadyRead(1000):
+                datagram, host, port = socket.readDatagram(socket.pendingDatagramSize())
+                socket.waitForReadyRead()
+                datagram, host, port = socket.readDatagram(socket.pendingDatagramSize())
+                if datagram.decode() == "QUIT":
+                    sys.exit(0)
+
+    def received():
+        while socket.hasPendingDatagrams():
+            datagram, host, port = socket.readDatagram(socket.pendingDatagramSize())
+            socket.writeDatagram("OK".encode(), QHostAddress.LocalHost, port)
+
+            if window.config.get("open_other_pdf_in") == 0 or window.should_open_here(datagram.decode()):
+                socket.writeDatagram("QUIT".encode(), QHostAddress.LocalHost, port)
+                window.hide()
+                window.show()
+                window.open_file(datagram.decode())
+
+            else:
+                socket.writeDatagram("OPEN".encode(), QHostAddress.LocalHost, port)
+
+    socket.readyRead.connect(received)
     window.show()
+
+    if len(sys.argv) > 1:
+        window.open_file(sys.argv[1])
+
     app.exec_()
 
 

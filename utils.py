@@ -1,4 +1,9 @@
+import os
+import socket
+import sys
+
 import fitz
+import psutil
 from PyQt5.QtCore import QObject, pyqtSignal, QRectF, QRect, Qt
 from PyQt5.QtGui import QImage, QColor, QFont
 from PyQt5.QtWidgets import QGraphicsRectItem, QGraphicsItem
@@ -104,3 +109,23 @@ def get_qfont_from_ttf(filename, size=12):
     font_info = get_font_info(filename)
     font = QFont(font_info['family'], size, font_info['weight'], font_info['italic'])
     return font
+
+
+def are_other_instances_running():
+    swiks = [p for p in psutil.process_iter() if len(p.cmdline()) > 1 and "swik" in p.cmdline()[1]]
+    # And their PID
+    pids = [p.pid for p in swiks]
+    # Remove my PID
+    pids.remove(os.getpid())
+    # Remove all the swiks that are children (worker for the real swik)
+    for swik in swiks:
+        for p in swik.children():
+            if p.pid in pids:
+                pids.remove(p.pid)
+
+    if len(pids) == 0:
+        return -1
+    else:
+        swik = psutil.Process(pids[-1])
+        # Get other instance port
+        return swik.connections()[0][3][1]
