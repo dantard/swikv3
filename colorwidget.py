@@ -2,7 +2,7 @@ from PyQt5 import QtGui
 from PyQt5.QtCore import QRectF, Qt, pyqtSignal, QItemSelectionModel
 from PyQt5.QtGui import QPainter, QPixmap, QColor, QFont
 from PyQt5.QtWidgets import QPushButton, QColorDialog, QWidget, QSlider, QVBoxLayout, QHBoxLayout, QFormLayout, QLineEdit, QListWidget, QListWidgetItem, QLabel, \
-    QGroupBox, QTreeWidget, QTreeWidgetItem, QAbstractItemView
+    QGroupBox, QTreeWidget, QTreeWidgetItem, QAbstractItemView, QApplication
 
 import utils
 from font_manager import FontManager
@@ -135,7 +135,7 @@ class FontPicker(QWidget):
 
         def selectionCommand(self, index, event=None):
             item = self.itemFromIndex(index)
-            if self.indexOfTopLevelItem(item)>0:  # Check if it's a top-level item
+            if self.indexOfTopLevelItem(item) > 0:  # Check if it's a top-level item
                 return QItemSelectionModel.NoUpdate
             elif item.path is None:
                 return QItemSelectionModel.NoUpdate
@@ -151,11 +151,11 @@ class FontPicker(QWidget):
         layout.addWidget(self.list_widget)
         size_layout = QHBoxLayout()
         pb = QPushButton("Show System Fonts")
-        pb.clicked.connect(lambda: self.add_fonts_section("System", FontManager.get_system_fonts()))
+        pb.clicked.connect(self.show_system_fonts)
         layout.addWidget(pb)
         layout.addLayout(size_layout)
         self.size = QSlider(Qt.Horizontal)
-        self.size.setRange(8, 72)
+        self.size.setRange(4, 72)
         self.size.valueChanged.connect(self.set_font_size)
         self.size_label = QLabel("")
         self.size_label.setMinimumWidth(30)
@@ -174,12 +174,17 @@ class FontPicker(QWidget):
         self.list_widget.itemSelectionChanged.connect(self.change_font)
         self.list_widget.setStyleSheet("QTreeView::background-color{background-color:rgb(255,255,255);}")
 
+    def show_system_fonts(self):
+        self.sender().setEnabled(False)
+        QApplication.processEvents()
+        self.add_fonts_section("System", FontManager.get_system_fonts())
+
     def resizeEvent(self, a0: QtGui.QResizeEvent) -> None:
         super().resizeEvent(a0)
         self.example_label.setMaximumWidth(self.width() - 45)
 
-    def add_fonts_section(self, name, fonts, omit_if_empty=True):
-        #if len(fonts) == 0 and omit_if_empty:
+    def add_fonts_section(self, name, fonts, use_own_font=True):
+        # if len(fonts) == 0 and omit_if_empty:
         #    return
         parent = QTreeWidgetItem()
         parent.setText(0, name)
@@ -197,19 +202,20 @@ class FontPicker(QWidget):
             for font_info in fonts:
                 item = QTreeWidgetItem()
                 item.path = font_info['path']
-                font = FontManager.get_qfont_from_ttf(item.path)
-                label = QLabel(font_info['full_name'])
-                label.setFont(font)
+                label = QLabel(font_info['nickname'])
+                if use_own_font:
+                    font = FontManager.get_qfont_from_ttf(item.path)
+                    label.setFont(font)
                 parent.addChild(item)
                 self.list_widget.setItemWidget(item, 0, label)
                 self.items.append(item)
 
-
-
     def set_default(self, ttf_fil_name, size):
         self.size.setValue(size)
         for item in self.items:
+            print("test", item.path, ttf_fil_name)
             if item.path == ttf_fil_name:
+                print("done")
                 self.list_widget.setCurrentItem(item)
                 item.parent().setExpanded(True)
                 break

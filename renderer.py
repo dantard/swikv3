@@ -16,7 +16,7 @@ from fitz import PDF_ENCRYPT_KEEP, PDF_ANNOT_SQUARE, PDF_ANNOT_IS_LOCKED
 import utils
 from annotations.highlight_annotation import HighlightAnnotation
 from annotations.squareannotation import SquareAnnotation
-from swiktext import SwikText
+from swiktext import SwikText, SwikTextReplace
 from utils import fitz_rect_to_qrectf
 from widgets.pdf_widget import PdfTextWidget, MultiLinePdfTextWidget, PdfCheckboxWidget, PdfComboboxWidget, PdfWidget
 from word import Word, MetaWord
@@ -312,7 +312,7 @@ class MuPDFRenderer(QLabel):
                         line = lines[word.line_no]
                         # print(line)
                         for span in line.get("spans", []):
-                            #print(span)
+                            # print(span)
                             x1, y1, x2, y2 = span["bbox"]
                             rect2 = QRectF(int(x1), int(y1), int(x2 - x1), int(y2 - y1))
                             # rect = QRectF(word.pos().x(), word.pos().y(), word.rect().width(), word.rect().height())
@@ -367,23 +367,22 @@ class MuPDFRenderer(QLabel):
         page.add_redact_annot(rect, "", fill=color)
         page.apply_redactions()
 
-
     def add_redact_annot2(self, word, font, size, color):
         print("applying", word.page_id, word.get_rect_on_parent(), color)
         print("page", self.document[word.page_id].get_fonts())
         page = self.document[word.page_id]
         rect = word.get_rect_on_parent()
-        #rect.setWidth(rect.width() *1.3)
+        # rect.setWidth(rect.width() *1.3)
         rect.setHeight(rect.height() * 1.35)
         rect = utils.qrectf_to_fitz_rect(rect)
         color = utils.qcolor_to_fitz_color(color)
         print(rect, word.get_text(), "TT3", size, color)
-        page.add_redact_annot(rect, word.get_text(), fontname="TT3", fontsize=size+5, text_color=color)
+        page.add_redact_annot(rect, word.get_text(), fontname="TT3", fontsize=size + 5, text_color=color)
         page.apply_redactions()
         word.parentItem().invalidate()
 
-
     annoting = None
+
     def add_highlight_annot(self, index, swik_annot):
         # For some reason, the annoting page must be stored
         annoting = self.document[index]
@@ -512,8 +511,14 @@ class MuPDFRenderer(QLabel):
         rect.x1 = rect.x1 + 100
         rect.y0 += item.font().pointSize() / 3.5
         rect.y1 += item.font().pointSize() / 3.5
-        tw.fill_textbox(rect, item.get_text(), font=font, fontsize=item.font().pointSizeF() * 1.325)
+
+        tw.fill_textbox(rect, item.get_text(), font=font, fontsize=item.font().pointSizeF() * 1.34)  ## TODO: 1.325
         tw.write_text(self.document[index])
+
+    def replace_word(self, index, text: SwikTextReplace):
+        self.document[index].clean_contents()
+        self.add_redact_annot(index, text.get_patch_on_page(), text.get_patch_color())
+        self.add_text(index, text)
 
     def get_widgets(self, page):
         pdf_widgets = list()

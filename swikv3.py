@@ -58,7 +58,7 @@ class MainWindow(QMainWindow):
         ChangesTracker.set_view(self.view)
 
         self.font_manager = FontManager(self.renderer)
-        # self.font_manager.update_system_fonts()
+        self.font_manager.update_system_fonts()
         self.font_manager.update_swik_fonts()
 
         self.manager.register_tool('text_selection', TextSelection(self.view, self.renderer, self.font_manager, self.config), True)
@@ -70,6 +70,7 @@ class MainWindow(QMainWindow):
         self.manager.register_tool('drag', ToolDrag(self.view, self.renderer, self.config), False)
 
         self.key_manager = KeyboardManager(self)
+        self.key_manager.register_action(Qt.Key_Delete, self.delete_objects)
         self.key_manager.register_action(Qt.Key_Shift, lambda: self.manager.use_tool("drag"), self.manager.finished)
         self.key_manager.register_combination_action('Ctrl+A', self.manager.get_tool("text_selection").iterate_selection_mode)
         self.key_manager.register_combination_action('Ctrl+M', self.iterate_mode)
@@ -140,6 +141,13 @@ class MainWindow(QMainWindow):
                 self.renderer.open_pdf(last)
 
     info = {}
+
+    def delete_objects(self):
+        items = self.view.scene().selectedItems()
+        for item in items:
+            self.view.scene().removeItem(item)
+
+        ChangesTracker.items_removed(items)
 
     def should_open_here(self, filename):
         msg_box = QMessageBox(self)

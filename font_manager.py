@@ -55,10 +55,10 @@ class FontManager(QObject):
 
     def update_document_fonts(self):
         self.document_fonts.clear()
-        #if self.font_dir is not None:
+        # if self.font_dir is not None:
         #    shutil.rmtree(self.font_dir, ignore_errors=True)
 
-        self.font_dir = "/tmp/kakka"#tempfile.mkdtemp()
+        self.font_dir = "/tmp/kakka"  # tempfile.mkdtemp()
         print("-----------font dir: ", self.font_dir)
         self.renderer.save_fonts(self.font_dir)
         fonts = self.get_fonts([self.font_dir])
@@ -80,6 +80,12 @@ class FontManager(QObject):
 
     def get_subset_fonts(self):
         return [f for f in self.document_fonts if f['subset']]
+
+    def get_font_info_from_name(self, name):
+        for f in self.document_fonts:
+            if f['nickname'] == name:
+                return f
+        return None
 
     @staticmethod
     def update_swik_fonts():
@@ -136,9 +142,8 @@ class FontManager(QObject):
             # May be encrypted
             return None
 
-
     @staticmethod
-    def get_qfont_from_ttf(filename, size=12):
+    def get_qfont_from_ttf(filename, size=11):
         if filename.startswith('@base14'):
             nickname = filename[8:]
             font_info = next((f for f in FontManager.base14_fonts if f['nickname'] == nickname), FontManager.base14_fonts[0])
@@ -154,7 +159,11 @@ class FontManager(QObject):
                 family = font_info['family']
 
         weight = FontManager.weight_class_mapping.get(font_info['weight'], QFont.Normal)
-        return QFont(family, size, weight, font_info['italic'])
+        font = QFont(family)
+        font.setWeight(weight)
+        font.setItalic(font_info['italic'])
+        font.setPointSizeF(size)
+        return font
 
     @staticmethod
     def get_fonts(font_paths):
@@ -169,13 +178,14 @@ class FontManager(QObject):
                     for filename in files:
                         path = os.path.join(root, filename)
                         try:
-                            print("Font path: ", path)
+                            # print("Font path: ", path)
                             info = FontManager.get_font_info(path)
                             if info is not None:
                                 fonts.update({info.get('nickname', None): info})
                         except:
-                            #traceback.print_exc()
-                            print("Error reading font: ", path)
+                            pass
+                            # traceback.print_exc()
+                            # print("Error reading font: ", path)
 
         return list(fonts.values())
 

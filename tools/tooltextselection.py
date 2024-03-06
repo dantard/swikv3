@@ -9,7 +9,7 @@ from annotations.highlight_annotation import HighlightAnnotation
 from annotations.redactannotation import RedactAnnotation
 from selector import SelectorRectItem
 from simplepage import SimplePage
-from swiktext import SwikText
+from swiktext import SwikText, SwikTextReplace
 from tools.tool import Tool
 from word import Word
 
@@ -155,13 +155,13 @@ class TextSelection(Tool):
         elif res == copy:
             text = ""
             for word in self.selected:
-                text+= word.get_text()
+                text += word.get_text()
             QClipboard().setText(text)
 
         elif res == replace:
             font, size, color = self.renderer.get_word_font(self.selected[0])
-            self.renderer.add_redact_annot2(self.selected[0], font, size, QColor(Qt.red))
-
+            font_info = self.font_manager.get_font_info_from_name(font)
+            SwikTextReplace(self.selected[0], self.font_manager, font_info.get('path'), size / 1.34)
 
     def mouse_double_clicked(self, event):
         scene_pos = self.view.mapToScene(event.pos())

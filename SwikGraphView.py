@@ -5,7 +5,7 @@ from annotations.redactannotation import RedactAnnotation
 from annotations.squareannotation import SquareAnnotation
 from page import Page
 from simplepage import SimplePage
-from swiktext import SwikText
+from swiktext import SwikText, SwikTextReplace
 from widgets.pdf_widget import PdfWidget
 
 
@@ -41,12 +41,15 @@ class SwikGraphView(GraphView):
             page: Page = text.parentItem()
             self.renderer.add_highlight_annot(page.index, text)
 
-        widgets = [item for item in items if isinstance(item,PdfWidget)]
+        widgets = [item for item in items if isinstance(item, PdfWidget)]
         for widget in widgets:
             page: Page = widget.parentItem()
             self.renderer.add_widget(page.get_index(), widget)
 
-
+        swik_text = [item for item in items if type(item) == SwikTextReplace]
+        for text in swik_text:
+            page: Page = text.parentItem()
+            self.renderer.replace_word(page.get_index(), text)
 
         for index in pages_to_refresh:
             self.pages[index].invalidate()

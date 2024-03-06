@@ -69,6 +69,13 @@ class ChangesTracker(QObject):
         print("item removed", item)
 
     @staticmethod
+    def items_removed(items):
+        action = Action()
+        for item in items:
+            action.push(item, Action.ACTION_REMOVE, item.parentItem())
+        ChangesTracker.undo_stack.append(action)
+
+    @staticmethod
     def item_changed(action):
         print("item changed", action[0].item, action[0].kind, action[0].old, action[0].new)
         ChangesTracker.undo_stack.append(action)

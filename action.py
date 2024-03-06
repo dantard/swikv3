@@ -13,10 +13,13 @@ class Action(list):
     ACTION_COLOR_CHANGED = 3
     ACTION_ANNOT_CHANGED = 4
     POSE_SHAPE_CHANGED = 5
+    POSE_CHANGED = 6
+    TEXT_CHANGED = 7
 
-    def __init__(self, item, kind, old=None, new=None):
+    def __init__(self, item=None, kind=None, old=None, new=None):
         super().__init__()
-        self.push(item, kind, old, new)
+        if item is not None:
+            self.push(item, kind, old, new)
 
     def push(self, item, kind, old=None, new=None):
         super().append(Atom(item, kind, old, new))
