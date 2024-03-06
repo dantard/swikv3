@@ -4,8 +4,8 @@ import sys
 
 import fitz
 import psutil
-from PyQt5.QtCore import QObject, pyqtSignal, QRectF, QRect, Qt
-from PyQt5.QtGui import QImage, QColor, QFont
+from PyQt5.QtCore import QObject, pyqtSignal, QRectF, QRect, Qt, QStandardPaths
+from PyQt5.QtGui import QImage, QColor, QFont, QFontDatabase
 from PyQt5.QtWidgets import QGraphicsRectItem, QGraphicsItem
 from fontTools import ttLib
 
@@ -88,27 +88,6 @@ def adjust_crop(image: QImage) -> QRect:
 
     # Return the smallest rectangle that contains non-white pixels
     return QRect(left, top, right - left + 1, bottom - top + 1)
-
-
-def get_font_info(path):
-    font = ttLib.TTFont(path)
-    family_name = font['name'].getDebugName(1)
-    full_name = font['name'].getDebugName(4)
-    modifiers = str(font['name'].getDebugName(2))
-    modifiers = modifiers.lower()
-    os2_table = font['OS/2']
-
-    weight_class = os2_table.usWeightClass
-
-    print("aaa", weight_class, family_name, full_name, path, font['name'].getDebugName(2))
-    return {'path': path, 'family': family_name, 'weight': weight_class,
-            'italic': 'italic' in modifiers or 'oblique' in modifiers}
-
-
-def get_qfont_from_ttf(filename, size=12):
-    font_info = get_font_info(filename)
-    font = QFont(font_info['family'], size, font_info['weight'], font_info['italic'])
-    return font
 
 
 def are_other_instances_running():

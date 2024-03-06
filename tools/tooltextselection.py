@@ -1,7 +1,10 @@
+import tempfile
+
 from PyQt5.QtCore import Qt, QPointF, QRectF
 from PyQt5.QtGui import QFont, QFontDatabase, QColor
 from PyQt5.QtWidgets import QMenu, QGraphicsRectItem, QGraphicsScene
 
+import utils
 from annotations.highlight_annotation import HighlightAnnotation
 from annotations.redactannotation import RedactAnnotation
 from selector import SelectorRectItem
@@ -15,10 +18,11 @@ class TextSelection(Tool):
     SELECTION_MODE_NATURAL = 0
     SELECTION_MODE_RECT = 1
 
-    def __init__(self, view, renderer, config):
+    def __init__(self, view, renderer, font_manager, config):
         super(TextSelection, self).__init__(view, renderer, config)
         print("Manager created")
         self.rubberband = None
+        self.font_manager = font_manager
         self.selection_mode = TextSelection.SELECTION_MODE_RECT
         self.selected = []
 
@@ -112,40 +116,42 @@ class TextSelection(Tool):
             self.rubberband.view_mouse_move_event(self.view, event)
 
     def context_menu(self, event):
+        page = self.view.get_page_at_pos(event.pos())
+        if page is None:
+            return
+
         menu = QMenu()
         add_text = menu.addAction("Add Text")
         if len(self.selected) > 0:
             copy = menu.addAction("Copy")
             anon = menu.addAction("Anonymyze")
             highlight = menu.addAction("Highlight Annotation")
+            if len(self.selected) == 1:
+                a, font = self.renderer.get_word_font(self.selected[0])
+                action = menu.addAction(font)
         else:
             anon, highlight, copy = None, None, None
-
 
         res = menu.exec(event.globalPos())
         if res is None:
             pass
         elif res == anon:
-            for word in self.selected: # type: Word
+            for word in self.selected:  # type: Word
                 r = RedactAnnotation(word.parentItem(), brush=Qt.black)
                 r.setRect(word.get_rect_on_parent())
             self.clear_selection()
 
         elif res == highlight:
-            print("creating")
             annot = HighlightAnnotation(QColor(255, 0, 0, 80), self.selected[0].parentItem())
-            for word in self.selected: # type: Word
+            for word in self.selected:  # type: Word
                 r = word.get_rect_on_parent()
                 annot.add_quad(r)
             self.clear_selection()
 
         elif res == add_text:
-
-            st = SwikText("New Text", self.view.pages[0])
+            st = SwikText("New Text", page, self.font_manager, "fonts/Arial.ttf", 11)
             on_scene = self.view.mapToScene(event.pos())
             st.setPos(st.mapFromScene(on_scene))
-            font3 = "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf"
-            st.set_ttf_font(font3, 24)
 
         elif res == copy:
             for word in self.selected:

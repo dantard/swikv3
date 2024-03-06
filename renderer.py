@@ -272,6 +272,60 @@ class MuPDFRenderer(QLabel):
 
         return word_objs
 
+    def fill_font_info(self, page_id, words):
+        page_spans = []
+        data = self.document[page_id].get_text("dict", sort=True, flags=TEXTFLAGS_DICT & ~TEXT_PRESERVE_IMAGES)
+        blocks = data.get('blocks', [])
+        for block in blocks:
+            lines = block.get('lines', [])
+            for line in lines:
+                spans = line.get('spans', [])
+
+                for span in spans:
+                    x1, y1, x2, y2 = span["bbox"]
+                    rect = QRectF(x1, y1, x2 - x1, y2 - y1)
+                    h = span.get("color")
+                    b, g, r = h & 255, (h >> 8) & 255, (h >> 16) & 255
+                    color = QColor(r, g, b)
+                    page_spans.append((rect, span.get('font'), span.get('size'), color))
+
+        for word in words:
+            for rect, font, size, color in page_spans:
+                print("rect", rect, "word", word.get_rect_on_parent())
+                if rect.intersects(word.get_rect_on_parent()):
+                    word.set_font(font, size, color)
+                    print("Setting font", font, size, color, word.get_text())
+                    break
+        return words
+
+    def get_word_font(self, word: Word):
+        data = self.document[word.page_id].get_text("dict", sort=False, flags=TEXTFLAGS_DICT & ~TEXT_PRESERVE_IMAGES)
+        if data is not None:
+            blocks = data.get('blocks', [])
+            # print(blocks)
+            if len(blocks) > word.block_no:
+                lines = blocks[word.block_no]
+                if lines is not None:
+                    lines = lines.get('lines', [])
+                    if len(lines) > word.line_no:
+                        line = lines[word.line_no]
+                        # print(line)
+                        for span in line.get("spans", []):
+                            # print(span)
+                            x1, y1, x2, y2 = span["bbox"]
+                            rect2 = QRectF(int(x1), int(y1), int(x2 - x1), int(y2 - y1))
+                            # rect = QRectF(word.pos().x(), word.pos().y(), word.rect().width(), word.rect().height())
+                            pr = word.get_rect_on_parent()
+                            rect = QRectF(pr.x(), pr.y(), pr.width(), pr.height())
+                            if rect2.intersected(rect):
+                                print("span", span)
+                                h = span.get("color")
+                                b = h & 255
+                                g = (h >> 8) & 255
+                                r = (h >> 16) & 255
+                                return span.get('font'), span.get('size'), (r / 255, g / 255, b / 255)
+        return None, None, None
+
     def rearrange_pages(self, order, emit):
         self.document.select(order)
         # self.set_document(self.document, emit)
@@ -330,7 +384,7 @@ class MuPDFRenderer(QLabel):
         stroke = utils.qcolor_to_fitz_color(color)
         fitz_annot.set_info(None, swik_annot.get_content(), "", "", "", "")
         fitz_annot.set_colors(stroke=stroke)
-        fitz_annot.set_opacity(color.alpha()/255 if stroke is not None else 0.0)
+        fitz_annot.set_opacity(color.alpha() / 255 if stroke is not None else 0.0)
 
         fitz_annot.update()
 
@@ -431,10 +485,15 @@ class MuPDFRenderer(QLabel):
             fitz_annot.update()
 
     def add_text(self, index, item: SwikText):
+        self.document[index].clean_contents()
         color = utils.qcolor_to_fitz_color(item.defaultTextColor())
         tw = fitz.TextWriter(self.document[index].rect, color=color)
         x, y, h = item.pos().x(), item.pos().y(), item.sceneBoundingRect().height()
-        font = Font(fontfile=item.get_ttf_filename())
+        font_file = item.get_ttf_filename()
+        if font_file.startswith('@base14'):
+            font = Font(fontname=font_file[8:])
+        else:
+            font = Font(fontfile=font_file)
 
         # tw.append((x,y + h), item.get_text(), font=font, fontsize=item.font().pointSizeF()*1.32)
         rect = utils.qrectf_and_pos_to_fitz_rect(item.get_rect_on_parent(), item.pos())
@@ -513,11 +572,13 @@ class MuPDFRenderer(QLabel):
         font_names = set()
         for pno in range(self.get_num_of_pages()):
             itemlist = self.document.get_page_fonts(pno - 1)
+            print("ITEMLIST", itemlist)
             for item in itemlist:
                 xref = item[0]
                 if xref not in font_xrefs:
                     font_xrefs.add(xref)
-                    fontname, ext, _, buffer = self.document.extract_font(xref)
+                    fontname, ext, k, buffer = self.document.extract_font(xref)
+                    print("DADADDA", fontname, ext, k)
                     font_names.add(fontname)
                     if ext == "n/a" or not buffer:
                         continue

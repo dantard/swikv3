@@ -25,7 +25,6 @@ def move_numbers(vector, numbers_to_move, position):
 
 
 class ToolRearrange(Tool):
-
     STATE_RECT_SELECTION = 0
     STATE_PAGE_SELECTION = 1
     STATE_PAGE_MOVING = 2
@@ -46,6 +45,9 @@ class ToolRearrange(Tool):
         self.view.scene().addItem(self.collider)
 
     def mouse_pressed(self, event):
+        if event.button() != Qt.LeftButton:
+            return
+
         page = self.view.get_page_at_pos(event.pos())
         print("page", page)
         if page is None:
@@ -75,7 +77,7 @@ class ToolRearrange(Tool):
         if self.state == self.STATE_RECT_SELECTION:
             self.rb.view_mouse_move_event(self.view, event)
 
-        elif self.state==self.STATE_PAGE_MOVING:
+        elif self.state == self.STATE_PAGE_MOVING:
             delta = event.pos() - self.pickup_point
             self.leader_page.moveBy(delta.x(), delta.y())
 
@@ -148,7 +150,6 @@ class ToolRearrange(Tool):
                 self.selected.append(page)
         print("rubberband", rubberband, ci)
 
-
     def operation_done(self):
         self.view.fully_update_layout()
         self.leader_page = None
@@ -157,6 +158,9 @@ class ToolRearrange(Tool):
         self.selected.clear()
 
     def context_menu(self, event):
+        if len(self.selected) == 0:
+            return
+
         menu = QMenu()
         delete = menu.addAction("Delete" + " " + str(len(self.selected)) + " " + "pages")
         res = menu.exec_(event.globalPos())

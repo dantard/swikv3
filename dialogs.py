@@ -3,10 +3,12 @@ from PyQt5.QtWidgets import QFormLayout, QDialogButtonBox, QDialog, QLabel, QVBo
 
 
 class ComposableDialog(QDialog):
-    def __init__(self):
+    def __init__(self, start_enabled=True):
         super().__init__()
         self.rows = {}
         self.initUI()
+        if not start_enabled:
+            self.button_box.button(QDialogButtonBox.Ok).setEnabled(False)
 
     def initUI(self):
         self.setWindowTitle('Simple Dialog')
@@ -14,16 +16,17 @@ class ComposableDialog(QDialog):
         layout = QVBoxLayout()
 
         self.setLayout(layout)
+        self.button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
 
     def exec(self):
-        button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        button_box.accepted.connect(self.accept)
-        button_box.rejected.connect(self.reject)
-        self.layout().addWidget(button_box)
+        self.button_box.accepted.connect(self.accept)
+        self.button_box.rejected.connect(self.reject)
+        self.layout().addWidget(self.button_box)
         return super().exec()
 
     def add_row(self, label, widget):
         layout = QVBoxLayout()
+        widget.enable.connect(lambda x: self.button_box.button(QDialogButtonBox.Ok).setEnabled(x))
 
         gb = QGroupBox(label)
         gb.setLayout(layout)
@@ -32,6 +35,7 @@ class ComposableDialog(QDialog):
         self.rows[label] = widget
         layout.addWidget(widget)
         self.layout().addWidget(gb)
+        return widget
 
     def get(self, label):
         return self.rows[label]

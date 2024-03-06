@@ -17,6 +17,7 @@ from LayoutManager import LayoutManager
 from SwikGraphView import SwikGraphView
 from changestracker import ChangesTracker
 from dialogs import PasswordDialog
+from font_manager import FontManager
 from groupbox import GroupBox
 from keyboard_manager import KeyboardManager
 from manager import Manager
@@ -50,14 +51,17 @@ class MainWindow(QMainWindow):
         self.renderer.document_changed.connect(self.document_changed)
 
         self.scene = Scene()
-        self.key_manager = KeyboardManager(self)
         self.manager = Manager(self.renderer, self.config)
         self.view = SwikGraphView(self.manager, self.renderer, self.scene, page=Page, mode=self.config.get('mode', LayoutManager.MODE_VERTICAL))
         self.manager.set_view(self.view)
 
         ChangesTracker.set_view(self.view)
 
-        self.manager.register_tool('text_selection', TextSelection(self.view, self.renderer, self.config), True)
+        self.font_manager = FontManager(self.renderer)
+        # self.font_manager.update_system_fonts()
+        self.font_manager.update_swik_fonts()
+
+        self.manager.register_tool('text_selection', TextSelection(self.view, self.renderer, self.font_manager, self.config), True)
         self.manager.register_tool('sign', ToolSign(self.view, self.renderer, self.config), False)
         self.manager.register_tool('rearrange', ToolRearrange(self.view, self.renderer, self.config), False)
         self.manager.register_tool('redact_annot', ToolRedactAnnotation(self.view, self.renderer, self.config), False)
@@ -65,6 +69,7 @@ class MainWindow(QMainWindow):
         self.manager.register_tool('crop', ToolCrop(self.view, self.renderer, self.config), False)
         self.manager.register_tool('drag', ToolDrag(self.view, self.renderer, self.config), False)
 
+        self.key_manager = KeyboardManager(self)
         self.key_manager.register_action(Qt.Key_Shift, lambda: self.manager.use_tool("drag"), self.manager.finished)
         self.key_manager.register_combination_action('Ctrl+A', self.manager.get_tool("text_selection").iterate_selection_mode)
         self.key_manager.register_combination_action('Ctrl+M', self.iterate_mode)
@@ -114,11 +119,12 @@ class MainWindow(QMainWindow):
 
         self.mode_group = GroupBox()
         self.mode_group.add(self.manage_tool, True, icon=":/icons/text_cursor.png", text="Select Text", tool="text_selection")
-        self.mode_group.add(self.manage_tool, icon=":/icons/sign.png", text="Sign", tool="sign")
+        self.sign_btn = self.mode_group.add(self.manage_tool, icon=":/icons/sign.png", text="Sign", tool="sign")
         self.mode_group.add(self.manage_tool, icon=":/icons/crop.png", text="Crop", tool="crop")
         self.mode_group.add(self.manage_tool, icon=":/icons/annotate.png", text="Annotate", tool="square_annot")
         self.mode_group.add(self.manage_tool, icon=":/icons/white.png", text="Anonymize", tool="redact_annot")
         self.mode_group.add(self.manage_tool, icon=":/icons/shuffle.png", text="Shuffle Pages", tool="rearrange")
+        self.sign_btn.setEnabled(self.config.get("p12") is not None)
 
         self.mode_group.append(self.toolbar)
         self.manager.tool_finished.connect(self.mode_group.reset)
@@ -185,6 +191,7 @@ class MainWindow(QMainWindow):
 
     def document_changed(self):
         self.setWindowTitle("Swik - " + self.renderer.get_filename())
+        self.font_manager.update_document_fonts()
 
     def manage_tool(self):
         button = self.sender()
@@ -218,6 +225,8 @@ class MainWindow(QMainWindow):
 
     def preferences(self):
         self.config.exec()
+        self.sign_btn.setEnabled(self.config.get("p12") is not None)
+        self.config.flush()
 
     def open_with_other(self, command):
         if command is not None:

@@ -18,6 +18,7 @@ class Page(SimplePage):
         self.words = words
         for word in self.words:
             word.join(self)
+        # self.renderer.fill_font_info(self.index, self.words)
 
     def has_words(self):
         return self.words is not None
