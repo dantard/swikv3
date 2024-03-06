@@ -133,7 +133,6 @@ class SimplePage(QGraphicsRectItem):
     def paint(self, painter, option, widget: typing.Optional[QWidget] = ...) -> None:
         super().paint(painter, option, widget)
         if self.state == SimplePage.STATE_INVALID:
-            print("requesting ", self.index)
             image, final = self.renderer.request_image(self.index, self.ratio, 0, True)
             self.state = SimplePage.STATE_FINAL if final else SimplePage.STATE_WAITING_FINAL
             self.image.setVisible(True)
@@ -143,9 +142,9 @@ class SimplePage(QGraphicsRectItem):
             self.state = SimplePage.STATE_FINAL
 
     def image_ready(self, index, ratio, key, pixmap):
-        print("image ready", self.index)
+        #print("image ready", self.index)
         if index == self.index and key == 0 and ratio == self.ratio:
-            print("applying")
+        #   print("applying")
             self.image.setScale(1)
             self.image.setPixmap(pixmap)
             self.image.setVisible(True)

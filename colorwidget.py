@@ -2,7 +2,7 @@ from PyQt5 import QtGui
 from PyQt5.QtCore import QRectF, Qt, pyqtSignal, QItemSelectionModel
 from PyQt5.QtGui import QPainter, QPixmap, QColor, QFont
 from PyQt5.QtWidgets import QPushButton, QColorDialog, QWidget, QSlider, QVBoxLayout, QHBoxLayout, QFormLayout, QLineEdit, QListWidget, QListWidgetItem, QLabel, \
-    QGroupBox, QTreeWidget, QTreeWidgetItem
+    QGroupBox, QTreeWidget, QTreeWidgetItem, QAbstractItemView
 
 import utils
 from font_manager import FontManager
@@ -134,8 +134,12 @@ class FontPicker(QWidget):
     class TreeWidget(QTreeWidget):
 
         def selectionCommand(self, index, event=None):
-            if index.isValid() and not index.parent().isValid():  # Check if it's a top-level item
+            item = self.itemFromIndex(index)
+            if self.indexOfTopLevelItem(item)>0:  # Check if it's a top-level item
                 return QItemSelectionModel.NoUpdate
+            elif item.path is None:
+                return QItemSelectionModel.NoUpdate
+
             return super().selectionCommand(index, event)
 
     def __init__(self):
@@ -168,31 +172,39 @@ class FontPicker(QWidget):
         layout.addWidget(gb)
         self.items = []
         self.list_widget.itemSelectionChanged.connect(self.change_font)
+        self.list_widget.setStyleSheet("QTreeView::background-color{background-color:rgb(255,255,255);}")
 
     def resizeEvent(self, a0: QtGui.QResizeEvent) -> None:
         super().resizeEvent(a0)
         self.example_label.setMaximumWidth(self.width() - 45)
-        print("resizedd")
 
     def add_fonts_section(self, name, fonts, omit_if_empty=True):
-        if len(fonts) == 0 and omit_if_empty:
-            return
+        #if len(fonts) == 0 and omit_if_empty:
+        #    return
         parent = QTreeWidgetItem()
         parent.setText(0, name)
         self.list_widget.addTopLevelItem(parent)
-        for font_info in fonts:
+
+        if len(fonts) == 0:
             item = QTreeWidgetItem()
-            item.path = font_info['path']
-            font = FontManager.get_qfont_from_ttf(item.path)
-            label = QLabel(font_info['full_name'])
-            label.setFont(font)
+            item.path = None
+            label = QLabel("None")
+            label.setEnabled(False)
             parent.addChild(item)
             self.list_widget.setItemWidget(item, 0, label)
             self.items.append(item)
+        else:
+            for font_info in fonts:
+                item = QTreeWidgetItem()
+                item.path = font_info['path']
+                font = FontManager.get_qfont_from_ttf(item.path)
+                label = QLabel(font_info['full_name'])
+                label.setFont(font)
+                parent.addChild(item)
+                self.list_widget.setItemWidget(item, 0, label)
+                self.items.append(item)
 
-        if self.list_widget.topLevelItemCount() == 1 and self.list_widget.topLevelItem(0).childCount() > 0:
-            self.list_widget.expandAll()
-            self.list_widget.setCurrentItem(self.list_widget.topLevelItem(0).child(0))
+
 
     def set_default(self, ttf_fil_name, size):
         self.size.setValue(size)
@@ -222,8 +234,7 @@ class FontPicker(QWidget):
         self.example_label.setFont(font)
 
     def get_font_filename(self):
-        print("selected", self.list_widget.currentItem().path)
-        return self.list_widget.currentItem().path
+        return self.list_widget.selectedItems()[0].path
 
     def get_font_size(self):
         return self.size.value()

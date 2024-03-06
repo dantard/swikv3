@@ -221,13 +221,11 @@ class GraphView(QGraphicsView):
         unthreaded = min(50, self.renderer.get_num_of_pages())
 
         for i in range(unthreaded):
-            print("Creating unthreaded page", i)
             self.do_create_page(i)
 
         QApplication.processEvents()
 
         for i in range(unthreaded, self.renderer.get_num_of_pages()):
-            print("Creating threaded page", i)
             self.futures.append(self.tpe.submit(self.do_create_page, i))
 
     def add_annotation(self, annot):
@@ -443,9 +441,7 @@ class GraphView(QGraphicsView):
         self.manager.mouse_moved(event)
 
     def contextMenuEvent(self, event: QtGui.QContextMenuEvent) -> None:
-        print("Context menu0", self)
         super().contextMenuEvent(event)
-        print("Context menu1", self)
         if not event.isAccepted():
             self.manager.context_menu(event)
 

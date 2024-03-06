@@ -282,6 +282,7 @@ class MuPDFRenderer(QLabel):
                 spans = line.get('spans', [])
 
                 for span in spans:
+                    print("span", span)
                     x1, y1, x2, y2 = span["bbox"]
                     rect = QRectF(x1, y1, x2 - x1, y2 - y1)
                     h = span.get("color")
@@ -311,14 +312,13 @@ class MuPDFRenderer(QLabel):
                         line = lines[word.line_no]
                         # print(line)
                         for span in line.get("spans", []):
-                            # print(span)
+                            #print(span)
                             x1, y1, x2, y2 = span["bbox"]
                             rect2 = QRectF(int(x1), int(y1), int(x2 - x1), int(y2 - y1))
                             # rect = QRectF(word.pos().x(), word.pos().y(), word.rect().width(), word.rect().height())
                             pr = word.get_rect_on_parent()
                             rect = QRectF(pr.x(), pr.y(), pr.width(), pr.height())
                             if rect2.intersected(rect):
-                                print("span", span)
                                 h = span.get("color")
                                 b = h & 255
                                 g = (h >> 8) & 255
@@ -367,8 +367,23 @@ class MuPDFRenderer(QLabel):
         page.add_redact_annot(rect, "", fill=color)
         page.apply_redactions()
 
-    annoting = None
 
+    def add_redact_annot2(self, word, font, size, color):
+        print("applying", word.page_id, word.get_rect_on_parent(), color)
+        print("page", self.document[word.page_id].get_fonts())
+        page = self.document[word.page_id]
+        rect = word.get_rect_on_parent()
+        #rect.setWidth(rect.width() *1.3)
+        rect.setHeight(rect.height() * 1.35)
+        rect = utils.qrectf_to_fitz_rect(rect)
+        color = utils.qcolor_to_fitz_color(color)
+        print(rect, word.get_text(), "TT3", size, color)
+        page.add_redact_annot(rect, word.get_text(), fontname="TT3", fontsize=size+5, text_color=color)
+        page.apply_redactions()
+        word.parentItem().invalidate()
+
+
+    annoting = None
     def add_highlight_annot(self, index, swik_annot):
         # For some reason, the annoting page must be stored
         annoting = self.document[index]
@@ -390,11 +405,8 @@ class MuPDFRenderer(QLabel):
 
     def get_annotations(self, page):
         annots = list()
-        print("get annotatioons")
         for annot in self.document[page.index].annots():  # type: fitz.Annot
-            print("one")
             if annot.type[0] == PDF_ANNOT_SQUARE:
-                print("two", annot.colors)
                 opacity = annot.opacity if 1 > annot.opacity > 0 else 0.999
                 stroke = utils.fitz_color_to_qcolor(annot.colors['stroke'], opacity) if annot.colors['stroke'] is not None else Qt.transparent
                 fill = utils.fitz_color_to_qcolor(annot.colors['fill'], opacity) if annot.colors['fill'] is not None else Qt.transparent
@@ -571,14 +583,13 @@ class MuPDFRenderer(QLabel):
         font_xrefs = set()
         font_names = set()
         for pno in range(self.get_num_of_pages()):
-            itemlist = self.document.get_page_fonts(pno - 1)
-            print("ITEMLIST", itemlist)
+            itemlist = self.document.get_page_fonts(pno)
             for item in itemlist:
                 xref = item[0]
                 if xref not in font_xrefs:
                     font_xrefs.add(xref)
                     fontname, ext, k, buffer = self.document.extract_font(xref)
-                    print("DADADDA", fontname, ext, k)
+                    print("Extracting", fontname, ext)
                     font_names.add(fontname)
                     if ext == "n/a" or not buffer:
                         continue

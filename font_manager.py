@@ -4,6 +4,7 @@ import sys
 import tempfile
 import threading
 import time
+import traceback
 
 from PyQt5.QtCore import QObject, QStandardPaths
 from PyQt5.QtGui import QFont, QFontDatabase
@@ -54,12 +55,15 @@ class FontManager(QObject):
 
     def update_document_fonts(self):
         self.document_fonts.clear()
-        if self.font_dir is not None:
-            shutil.rmtree(self.font_dir, ignore_errors=True)
+        #if self.font_dir is not None:
+        #    shutil.rmtree(self.font_dir, ignore_errors=True)
 
-        self.font_dir = tempfile.mkdtemp()
+        self.font_dir = "/tmp/kakka"#tempfile.mkdtemp()
+        print("-----------font dir: ", self.font_dir)
         self.renderer.save_fonts(self.font_dir)
         fonts = self.get_fonts([self.font_dir])
+
+        print("-----------Fonts: ", fonts)
         for f in fonts:
             self.document_fonts.append(f)
 
@@ -114,17 +118,24 @@ class FontManager(QObject):
             return None
 
         font = ttLib.TTFont(path)
-        family_name = font['name'].getDebugName(1)
-        full_name = font['name'].getDebugName(4)
-        nickname = font['name'].getDebugName(6)
-        modifiers = str(font['name'].getDebugName(2))
-        modifiers = modifiers.lower()
-        os2_table = font['OS/2']
+        if font.has_key('name'):
+            family_name = font['name'].getDebugName(1)
+            full_name = font['name'].getDebugName(4)
+            nickname = font['name'].getDebugName(6)
+            modifiers = str(font['name'].getDebugName(2))
+            modifiers = modifiers.lower()
+            if font.has_key('OS/2'):
+                os2_table = font['OS/2']
+                weight_class = os2_table.usWeightClass
+            else:
+                weight_class = 400
 
-        weight_class = os2_table.usWeightClass
+            return {'full_name': full_name, 'path': path, 'family': family_name, 'weight': weight_class, 'nickname': nickname,
+                    'italic': 'italic' in modifiers or 'oblique' in modifiers, 'subset': '+' in path}
+        else:
+            # May be encrypted
+            return None
 
-        return {'full_name': full_name, 'path': path, 'family': family_name, 'weight': weight_class, 'nickname': nickname,
-                'italic': 'italic' in modifiers or 'oblique' in modifiers, 'subset': '+' in path}
 
     @staticmethod
     def get_qfont_from_ttf(filename, size=12):
@@ -158,12 +169,13 @@ class FontManager(QObject):
                     for filename in files:
                         path = os.path.join(root, filename)
                         try:
+                            print("Font path: ", path)
                             info = FontManager.get_font_info(path)
-                            nickname = info.get('nickname', None)
-                            if nickname is not None:
-                                fonts[nickname] = info
+                            if info is not None:
+                                fonts.update({info.get('nickname', None): info})
                         except:
-                            pass
+                            #traceback.print_exc()
+                            print("Error reading font: ", path)
 
         return list(fonts.values())
 

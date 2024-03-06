@@ -6,7 +6,6 @@ from PyQt5 import QtGui, QtCore
 from PyQt5.QtGui import QImage, QFont, QFontMetrics, QColor, QBrush, QPen
 from PyQt5.QtWidgets import QApplication, QGraphicsView, QGraphicsScene, QGraphicsRectItem, QWidget, QStyle, QMenu, QDialog, QSlider, QGraphicsItem
 from PyQt5.QtCore import Qt, QPointF, QRectF, QTimer, QObject, pyqtSignal
-from pyqtgraph import GraphicsItem
 
 from action import Action
 from coloreable import ColoreableRectItem

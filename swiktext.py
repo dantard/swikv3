@@ -40,7 +40,7 @@ class SwikText(QGraphicsTextItem):
             fp = font_dialog.add_row("Font", FontPicker())
             # fp.add_fonts_section("Current", [FontManager.get_font_info(self.get_ttf_filename())])
             fp.add_fonts_section("Fully Embedded", self.font_manager.get_fully_embedded_fonts())
-            fp.add_fonts_section("Subset", self.font_manager.get_subset_fonts())
+            #fp.add_fonts_section("Subset", self.font_manager.get_subset_fonts())
             fp.add_fonts_section("Swik Fonts", self.font_manager.get_swik_fonts())
             fp.add_fonts_section("Base14 Fonts", self.font_manager.get_base14_fonts())
             fp.set_default(self.get_ttf_filename(), self.get_font_size())

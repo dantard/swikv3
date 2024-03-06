@@ -1,7 +1,7 @@
 import tempfile
 
 from PyQt5.QtCore import Qt, QPointF, QRectF
-from PyQt5.QtGui import QFont, QFontDatabase, QColor
+from PyQt5.QtGui import QFont, QFontDatabase, QColor, QClipboard
 from PyQt5.QtWidgets import QMenu, QGraphicsRectItem, QGraphicsScene
 
 import utils
@@ -127,8 +127,7 @@ class TextSelection(Tool):
             anon = menu.addAction("Anonymyze")
             highlight = menu.addAction("Highlight Annotation")
             if len(self.selected) == 1:
-                a, font = self.renderer.get_word_font(self.selected[0])
-                action = menu.addAction(font)
+                replace = menu.addAction("Replace")
         else:
             anon, highlight, copy = None, None, None
 
@@ -154,8 +153,15 @@ class TextSelection(Tool):
             st.setPos(st.mapFromScene(on_scene))
 
         elif res == copy:
+            text = ""
             for word in self.selected:
-                print(word.get_text())
+                text+= word.get_text()
+            QClipboard().setText(text)
+
+        elif res == replace:
+            font, size, color = self.renderer.get_word_font(self.selected[0])
+            self.renderer.add_redact_annot2(self.selected[0], font, size, QColor(Qt.red))
+
 
     def mouse_double_clicked(self, event):
         scene_pos = self.view.mapToScene(event.pos())

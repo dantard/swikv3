@@ -13,11 +13,9 @@ class Scene(QGraphicsScene):
 
     def addItem(self, item) -> None:
         super().addItem(item)
-        print("addItem", item)
         self.signals.item_added.emit(item)
 
     def removeItem(self, item) -> None:
         super().removeItem(item)
-        print('removeItem', item)
         if item is not None:
             self.signals.item_removed.emit(item)
