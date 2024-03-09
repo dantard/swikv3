@@ -31,25 +31,31 @@ class SwikGraphView(GraphView):
             page: Page = annot.parentItem()
             self.renderer.add_annot(page.get_index(), annot)
 
+        highlight_annot = [item for item in items if type(item) == HighlightAnnotation]
+        for annot in highlight_annot:
+            page: Page = annot.parentItem()
+            self.renderer.add_highlight_annot(page.index, annot)
+            pages_to_refresh.add(page.get_index())
+
         swik_text = [item for item in items if type(item) == SwikText]
         for text in swik_text:
             page: Page = text.parentItem()
             self.renderer.add_text(page.get_index(), text)
+            pages_to_refresh.add(page.get_index())
+            self.scene().removeItem(text)
 
-        swik_text = [item for item in items if type(item) == HighlightAnnotation]
-        for text in swik_text:
+        swik_text_replace = [item for item in items if type(item) == SwikTextReplace]
+        for text in swik_text_replace:
             page: Page = text.parentItem()
-            self.renderer.add_highlight_annot(page.index, text)
+            self.renderer.replace_word(page.get_index(), text)
+            pages_to_refresh.add(page.get_index())
+            self.scene().removeItem(text)
 
         widgets = [item for item in items if isinstance(item, PdfWidget)]
         for widget in widgets:
             page: Page = widget.parentItem()
             self.renderer.add_widget(page.get_index(), widget)
-
-        swik_text = [item for item in items if type(item) == SwikTextReplace]
-        for text in swik_text:
-            page: Page = text.parentItem()
-            self.renderer.replace_word(page.get_index(), text)
+            pages_to_refresh.add(page.get_index())
 
         for index in pages_to_refresh:
             self.pages[index].invalidate()

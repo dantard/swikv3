@@ -34,6 +34,7 @@ class ChangesTracker(QObject):
                     ChangesTracker.view.scene().removeItem(atom.item)
                 elif atom.kind == Action.ACTION_REMOVE:
                     if atom.old is not None:
+                        print("set parent", atom.item, atom.old, "undo remove")
                         atom.item.setParentItem(atom.old)
                     else:
                         ChangesTracker.view.scene().addItem(atom.item)
@@ -66,7 +67,7 @@ class ChangesTracker(QObject):
     @staticmethod
     def item_removed(item):
         ChangesTracker.undo_stack.append(Action(item, Action.ACTION_REMOVE, item.parentItem()))
-        print("item removed", item)
+        print("item removed", item, item.parentItem())
 
     @staticmethod
     def items_removed(items):

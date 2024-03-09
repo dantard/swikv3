@@ -31,3 +31,7 @@ class RedactAnnotation(ResizableRectItem):
         super().redo(kind, info)
         if kind == Action.ACTION_COLOR_CHANGED:
             self.set_fill_color(info)
+
+    def mouseDoubleClickEvent(self, event: 'QGraphicsSceneMouseEvent') -> None:
+        super().mouseDoubleClickEvent(event)
+        self.change_color()

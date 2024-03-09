@@ -343,10 +343,20 @@ class GraphView(QGraphicsView):
 
     def top_is(self, pos, check_items):
         items = self.scene().items(self.mapToScene(pos))
+        print("Mouse pressed", items)
         if len(items) == 0:
             return False
         for item in check_items:
             if isinstance(items[0], item):
+                return True
+        return False
+
+    def there_is_any_other_than(self, pos, check_items):
+        items = self.scene().items(self.mapToScene(pos))
+        if len(items) == 0:
+            return True
+        for item in items:
+            if not isinstance(item, check_items):
                 return True
         return False
 
@@ -381,7 +391,10 @@ class GraphView(QGraphicsView):
     # ## REIMPLEMENTED METHODS
     def scrollContentsBy(self, dx: int, dy: int) -> None:
         super().scrollContentsBy(dx, dy)
-        self.page_scrolled()
+        try:
+            self.page_scrolled()
+        except Exception as e:
+            pass
 
     def wheelEvent(self, event: QtGui.QWheelEvent) -> None:
 
@@ -476,6 +489,12 @@ class MiniatureView(GraphView):
                 self.pages[self.page].box.setVisible(False)
                 self.page_clicked.emit(page.index, self.renderer.get_num_of_pages())
                 self.pages[page.index].box.setVisible(True)
+
+    def get_current_page(self):
+        return self.pages[self.page]
+
+    def get_current_page_index(self):
+        return self.page
 
 # def wheelEvent(self, event: QtGui.QWheelEvent) -> None:
 #     QGraphicsView.wheelEvent(self, event)

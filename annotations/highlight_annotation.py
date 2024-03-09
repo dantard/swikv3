@@ -1,5 +1,5 @@
 from PyQt5.QtCore import QRectF, Qt, QPointF
-from PyQt5.QtWidgets import QGraphicsRectItem, QGraphicsItem, QDialog
+from PyQt5.QtWidgets import QGraphicsRectItem, QGraphicsItem, QDialog, QMenu
 
 from action import Action
 from colorwidget import Color, ColorAndAlpha, TextLineEdit
@@ -17,6 +17,9 @@ class HighlightAnnotation(QGraphicsRectItem, Undoable):
         def mouseDoubleClickEvent(self, event) -> None:
             super().mouseDoubleClickEvent(event)
             self.parentItem().quad_double_click(event)
+
+        def contextMenuEvent(self, event: 'QGraphicsSceneContextMenuEvent') -> None:
+            self.parentItem().quad_context_menu(event)
 
     def __init__(self, color, parent):
         super().__init__()
@@ -74,3 +77,15 @@ class HighlightAnnotation(QGraphicsRectItem, Undoable):
             quads_on_page.append(quad_on_page)
             print(quad_on_page)
         return quads_on_page
+
+    def quad_context_menu(self, event):
+        menu = QMenu("Highlight Annotation")
+        edit = menu.addAction("Edit")
+        menu.addSeparator()
+        delete = menu.addAction("Delete")
+        res = menu.exec(event.screenPos())
+        if res == delete:
+            self.notify_deletion(self)
+            self.scene().removeItem(self)
+        if res == edit:
+            self.quad_double_click(event)

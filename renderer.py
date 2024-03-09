@@ -142,11 +142,11 @@ class MuPDFRenderer(QLabel):
 
         if filename != self.get_filename():
             self.document.save(filename, encryption=PDF_ENCRYPT_KEEP, deflate=True, garbage=3)
-            self.set_document(self.document, True)
+            # self.set_document(self.document, True)
             return 0
         elif self.document.can_save_incrementally():
             self.document.save(filename, encryption=PDF_ENCRYPT_KEEP, incremental=True, deflate=True)
-            self.set_document(self.document, True)
+            # self.set_document(self.document, True)
             return 1
         else:
             tmp_dir = tempfile.gettempdir() + os.sep
@@ -159,7 +159,8 @@ class MuPDFRenderer(QLabel):
 
             if exists(temp_filename):
                 os.remove(temp_filename)
-            self.open_pdf(filename)
+
+            self.document = fitz.open(filename)
             return 2
 
     def get_page_size(self, index):
@@ -199,6 +200,7 @@ class MuPDFRenderer(QLabel):
         return self.request_image(index, ratio)
 
     def request_image(self, index, ratio, key=None, force=False):
+        print("force", force)
         if not self.images[index].loaded or self.images[index].ratio != ratio or force:
             self.load(index, ratio, key, force)
             return self.get_image(index, ratio), False  # self.get_blank(index, ratio), False
@@ -227,24 +229,31 @@ class MuPDFRenderer(QLabel):
                 self.key = key
                 self.force = force
 
+            def get_pixmap(self):
+                mat = fitz.Matrix(self.ratio, self.ratio)
+
+                pix = self.renderer.get_document()[self.index].get_pixmap(matrix=mat, alpha=False, annots=True)
+                image = QImage(pix.samples, pix.width, pix.height, pix.stride, QImage.Format_RGB888)
+
+                pixmap = QPixmap.fromImage(image)
+                self.renderer.set_image(index, pixmap, ratio)
+                self.renderer.image_ready.emit(self.index, self.ratio, self.key, pixmap)
+
             def run(self):
                 image = self.renderer.images[self.index]
-                if image.ratio == self.ratio and image.loaded and not self.force:
-                    # print("As is ", self.index, self.key)
+                if self.force:
+                    self.get_pixmap()
+                    print("get pixmap1")
+                elif image.ratio == self.ratio and image.loaded:
+                    print("As is ", self.index, self.key)
                     self.renderer.image_ready.emit(self.index, self.ratio, self.key, image.image)
-                elif image.ratio > self.ratio and image.loaded and not self.force:
-                    # print("Scaling down ", self.index, self.key)
+                elif image.ratio > self.ratio and image.loaded:
+                    print("Scaling down ", self.index, self.key)
                     pixmap = image.image.scaledToWidth(int(image.w * ratio), QtCore.Qt.SmoothTransformation)
                     self.renderer.image_ready.emit(self.index, self.ratio, self.key, pixmap)
                 else:
-                    mat = fitz.Matrix(self.ratio, self.ratio)
-
-                    pix = self.renderer.get_document()[self.index].get_pixmap(matrix=mat, alpha=False, annots=True)
-                    image = QImage(pix.samples, pix.width, pix.height, pix.stride, QImage.Format_RGB888)
-
-                    pixmap = QPixmap.fromImage(image)
-                    self.renderer.set_image(index, pixmap, ratio)
-                    self.renderer.image_ready.emit(self.index, self.ratio, self.key, pixmap)
+                    print("get pixmap2")
+                    self.get_pixmap()
 
         loader = Loader(self, index, ratio, key, self.mutex[index])
         self.h.start(loader)

@@ -1,8 +1,10 @@
 from PyQt5.QtCore import QObject, pyqtSignal
 from easyconfig import EasyConfig
 
+
 class BasicTool(QObject):
     finished = pyqtSignal()
+
     def __init__(self, view, renderer, config):
         super(BasicTool, self).__init__()
         self.view = view
@@ -16,6 +18,9 @@ class BasicTool(QObject):
         pass
 
     def finish(self):
+        pass
+
+    def keyboard(self, combination):
         pass
 
     def context_menu(self, event):

@@ -12,6 +12,7 @@ class SimplePage(QGraphicsRectItem):
     STATE_WAITING_FINAL = 1
     STATE_FINAL = 2
     STATE_INVALID = 3
+    STATE_FORCED = 4
 
     class MyImage(QGraphicsPixmapItem):
         def paint(self, painter: QtGui.QPainter, option: 'QStyleOptionGraphicsItem', widget: QWidget) -> None:
@@ -132,8 +133,8 @@ class SimplePage(QGraphicsRectItem):
 
     def paint(self, painter, option, widget: typing.Optional[QWidget] = ...) -> None:
         super().paint(painter, option, widget)
-        if self.state == SimplePage.STATE_INVALID:
-            image, final = self.renderer.request_image(self.index, self.ratio, 0, True)
+        if self.state == SimplePage.STATE_INVALID or self.state == SimplePage.STATE_FORCED:
+            image, final = self.renderer.request_image(self.index, self.ratio, 0, self.state == SimplePage.STATE_FORCED)
             self.state = SimplePage.STATE_FINAL if final else SimplePage.STATE_WAITING_FINAL
             self.image.setVisible(True)
             self.image.setPixmap(image)
@@ -142,16 +143,16 @@ class SimplePage(QGraphicsRectItem):
             self.state = SimplePage.STATE_FINAL
 
     def image_ready(self, index, ratio, key, pixmap):
-        #print("image ready", self.index)
+        # print("image ready", self.index)
         if index == self.index and key == 0 and ratio == self.ratio:
-        #   print("applying")
+            #   print("applying")
             self.image.setScale(1)
             self.image.setPixmap(pixmap)
             self.image.setVisible(True)
 
     def invalidate(self):
         print('Invalidating page', self.index)
-        self.state = self.STATE_INVALID
+        self.state = self.STATE_FORCED
         self.w, self.h = self.renderer.get_page_size(self.index)
         self.setRect(QRectF(0, 0, self.w, self.h))
         self.paint_accessories()

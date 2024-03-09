@@ -22,6 +22,7 @@ from groupbox import GroupBox
 from keyboard_manager import KeyboardManager
 from manager import Manager
 from scene import Scene
+from toolbars.zoom_toolbar import ZoomToolbar
 from tools.tool_drag import ToolDrag
 from tools.toolcrop import ToolCrop
 from tools.toolrearranger import ToolRearrange
@@ -72,7 +73,9 @@ class MainWindow(QMainWindow):
         self.key_manager = KeyboardManager(self)
         self.key_manager.register_action(Qt.Key_Delete, self.delete_objects)
         self.key_manager.register_action(Qt.Key_Shift, lambda: self.manager.use_tool("drag"), self.manager.finished)
-        self.key_manager.register_combination_action('Ctrl+A', self.manager.get_tool("text_selection").iterate_selection_mode)
+        self.key_manager.register_combination_action('Ctrl+C', lambda: self.manager.keyboard('Ctrl+C'))
+        self.key_manager.register_combination_action('Ctrl+A', lambda: self.manager.keyboard('Ctrl+A'))
+        self.key_manager.register_combination_action('Ctrl+T', self.manager.get_tool("text_selection").iterate_selection_mode)
         self.key_manager.register_combination_action('Ctrl+M', self.iterate_mode)
         self.key_manager.register_combination_action('Ctrl+Z', ChangesTracker.undo)
         self.key_manager.register_combination_action('Ctrl+Shift+Z', ChangesTracker.redo)
@@ -129,7 +132,7 @@ class MainWindow(QMainWindow):
 
         self.mode_group.append(self.toolbar)
         self.manager.tool_finished.connect(self.mode_group.reset)
-
+        self.zoom_toolbar = ZoomToolbar(self.view, self.toolbar)
         self.nav_toolbar = NavigationToolbar(self.view, self.toolbar)
         self.finder_toolbar = TextSearchToolbar(self.view, self.renderer, self.toolbar)
         self.statusBar().show()

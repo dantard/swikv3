@@ -55,10 +55,10 @@ class FontManager(QObject):
 
     def update_document_fonts(self):
         self.document_fonts.clear()
-        # if self.font_dir is not None:
-        #    shutil.rmtree(self.font_dir, ignore_errors=True)
+        if self.font_dir is not None:
+            shutil.rmtree(self.font_dir, ignore_errors=True)
 
-        self.font_dir = "/tmp/kakka"  # tempfile.mkdtemp()
+        self.font_dir = tempfile.mkdtemp()
         print("-----------font dir: ", self.font_dir)
         self.renderer.save_fonts(self.font_dir)
         fonts = self.get_fonts([self.font_dir])

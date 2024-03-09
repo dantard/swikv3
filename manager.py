@@ -20,6 +20,16 @@ class Manager(QObject):
     def set_view(self, view):
         self.view = view
 
+    def keyboard(self, action):
+        if action == "Ctrl+C":
+            items = self.view.scene().selectedItems()
+            if len(items) == 0:
+                self.current.keyboard("Ctrl+C")
+            else:
+                print("Copy selected items")
+        else:
+            self.current.keyboard(action)
+
     def register_tool(self, name, tool, default=False):
         self.tools[name] = tool
         tool.finished.connect(self.finished)
@@ -40,9 +50,7 @@ class Manager(QObject):
     def mouse_pressed(self, event):
         # TODO:if not self.top_is(event.pos(), [SimplePage, SimplePage.MyImage, Word]):
         # return
-        #if event.modifiers() & Qt.ShiftModifier:
-
-
+        # if event.modifiers() & Qt.ShiftModifier:
 
         if self.current is not None:
             self.current.mouse_pressed(event)
@@ -70,7 +78,7 @@ class Manager(QObject):
         print("released", event.key(), Qt.Key_Escape, Qt.Key_Escape == event.key())
 
         if event.key() == Qt.Key_Escape:
-           self.finished()
+            self.finished()
 
     def finished(self):
         self.tool_finished.emit()

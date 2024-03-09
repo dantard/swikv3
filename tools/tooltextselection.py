@@ -1,7 +1,7 @@
 import tempfile
 
 from PyQt5.QtCore import Qt, QPointF, QRectF
-from PyQt5.QtGui import QFont, QFontDatabase, QColor, QClipboard
+from PyQt5.QtGui import QFont, QFontDatabase, QColor, QClipboard, QGuiApplication
 from PyQt5.QtWidgets import QMenu, QGraphicsRectItem, QGraphicsScene
 
 import utils
@@ -25,6 +25,7 @@ class TextSelection(Tool):
         self.font_manager = font_manager
         self.selection_mode = TextSelection.SELECTION_MODE_RECT
         self.selected = []
+        self.multiple_selection = []
 
     def iterate_selection_mode(self):
         self.selection_mode = (self.selection_mode + 1) % 2
@@ -33,9 +34,14 @@ class TextSelection(Tool):
         self.view = view
 
     def clear_selection(self):
+        zombies = []
         for word in self.selected:
-            word.set_selected(False)
-        self.selected.clear()
+            if word not in self.multiple_selection:
+                word.set_selected(False)
+                zombies.append(word)
+        # self.selected.clear()
+        for word in zombies:
+            self.selected.remove(word)
 
     def selecting(self, selector: SelectorRectItem):
         p1 = selector.get_rect_on_scene().topLeft()
@@ -47,7 +53,7 @@ class TextSelection(Tool):
         page1 = self.view.get_page_at_pos(p1_on_view)
         page2 = self.view.get_page_at_pos(p2_on_view)
 
-        print(page1.index, page2.index)
+        # print(page1.index, page2.index)
 
         self.clear_selection()
 
@@ -56,7 +62,6 @@ class TextSelection(Tool):
             words = []
 
             for i in range(page1.index, page2.index + 1):
-                print("Page ", i)
                 page = self.view.get_page_item(i)
                 if page.get_words() is None:
                     page.set_words(self.renderer.extract_words(i))
@@ -85,16 +90,22 @@ class TextSelection(Tool):
         self.view.scene().removeItem(selector)
         self.rubberband = None
         self.view.setCursor(Qt.ArrowCursor)
+        self.multiple_selection.extend(self.selected)
 
     def mouse_pressed(self, event):
         if event.button() == Qt.RightButton:
             return
 
-        if not self.view.top_is(event.pos(), [SimplePage, SimplePage.MyImage, Word]):
+        if self.view.there_is_any_other_than(event.pos(), (SimplePage, SimplePage.MyImage, Word)):
             return
 
         if self.rubberband is None:
-            self.clear_selection()
+
+            if event.modifiers() & Qt.ControlModifier:
+                pass
+            else:
+                self.multiple_selection.clear()
+
             if self.selection_mode == TextSelection.SELECTION_MODE_NATURAL:
                 self.rubberband = SelectorRectItem(pen=Qt.transparent)
                 self.view.setCursor(Qt.IBeamCursor)
@@ -118,6 +129,12 @@ class TextSelection(Tool):
     def context_menu(self, event):
         page = self.view.get_page_at_pos(event.pos())
         if page is None:
+            return
+
+        # if not self.view.top_is(event.pos(), [SimplePage, SimplePage.MyImage, Word]):
+        #    return
+
+        if self.view.there_is_any_other_than(event.pos(), (SimplePage, SimplePage.MyImage, Word)):
             return
 
         menu = QMenu()
@@ -153,13 +170,11 @@ class TextSelection(Tool):
             st.setPos(st.mapFromScene(on_scene))
 
         elif res == copy:
-            text = ""
-            for word in self.selected:
-                text += word.get_text()
-            QClipboard().setText(text)
+            self.copy_selected_to_clipboard()
 
         elif res == replace:
             font, size, color = self.renderer.get_word_font(self.selected[0])
+            print("Font: ", font, "Size: ", size, "Color: ", color)
             font_info = self.font_manager.get_font_info_from_name(font)
             SwikTextReplace(self.selected[0], self.font_manager, font_info.get('path'), size / 1.34)
 
@@ -175,3 +190,26 @@ class TextSelection(Tool):
     def finish(self):
         self.clear_selection()
         self.view.setCursor(Qt.ArrowCursor)
+
+    def copy_selected_to_clipboard(self):
+        text = ""
+        for word in self.selected:
+            text += word.get_text() + " "
+        text.rstrip(" ")
+        clipboard = QGuiApplication.clipboard()
+        clipboard.setText(text)
+
+    def keyboard(self, combination):
+        if combination == "Ctrl+C":
+            self.copy_selected_to_clipboard()
+        elif combination == "Ctrl+A":
+            self.select_all()
+
+    def select_all(self):
+        self.clear_selection()
+        page = self.view.get_current_page()
+        if page.get_words() is None:
+            page.set_words(self.renderer.extract_words(i))
+        for word in page.get_words():
+            word.set_selected(True)
+            self.selected.append(word)
