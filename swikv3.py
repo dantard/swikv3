@@ -63,6 +63,8 @@ class MainWindow(QMainWindow):
         tool_menu.addAction('Flatten', lambda: self.flatten(False))
         tool_menu.addAction('Flatten and Open', lambda: self.flatten(True))
         tool_menu.addSeparator()
+        tool_menu.addAction('Append PDF', self.append_pdf)
+        tool_menu.addSeparator()
         tool_menu.addAction('Extract Fonts', self.extract_fonts)
 
         command = self.config.get("other_pdf")
@@ -83,6 +85,7 @@ class MainWindow(QMainWindow):
         self.tab_widget = QTabWidget()
         self.tab_widget.addTab(QWidget(), "+")
         self.tab_widget.currentChanged.connect(self.tab_changed)
+        self.tab_widget.setStyleSheet("QTabBar::tab { max-width: 300px; text-align: right; }")
 
         self.setCentralWidget(self.tab_widget)
 
@@ -94,39 +97,7 @@ class MainWindow(QMainWindow):
             else:
                 for tab in tabs:
                     self.create_tab(tab)
-
-    def open_file(self, filename=None):
-        if filename is None:
-            filename, _ = QFileDialog.getOpenFileName(self, "Open PDF", "", "PDF Files (*.pdf)")
-
-        if filename:
-            for widget in self.get_widgets():
-                if widget.get_filename() is None:
-                    widget.open_file(filename)
-                    break
-            else:
-                self.create_tab(filename)
-
-    def save_file(self):
-        self.current().save_file()
-
-    def save_file_as(self):
-        self.current().save_file_as()
-
-    def flatten(self, open):
-        self.current().flatten(open)
-
-    def extract_fonts(self):
-        self.current().extract_fonts()
-
-    def preferences(self):
-        self.config.exec()
-        self.config.flush()
-        for widget in self.get_widgets():
-            widget.preferences_changed()
-
-    def open_with_other(self, command):
-        self.current().open_with_other(command)
+            self.tab_widget.setCurrentIndex(0)
 
     def get_widgets(self):
         return [self.tab_widget.widget(i) for i in range(self.tab_widget.count() - 1)]
@@ -138,6 +109,8 @@ class MainWindow(QMainWindow):
         if index == self.tab_widget.count() - 1:
             self.create_tab(None)
             self.tab_widget.setCurrentIndex(index)
+        self.setWindowTitle(
+            "Swik" + (" - " + self.tab_widget.currentWidget().get_filename()) if self.tab_widget.currentWidget().get_filename() is not None else "")
 
     def create_tab(self, filename=None):
         widget = SwikWidget(self, self.tab_widget, self.config)
@@ -173,6 +146,46 @@ class MainWindow(QMainWindow):
         self.config.set_tabs(tabs)
         self.config.flush()
         super().closeEvent(a0)
+
+    # ### TOOLS
+
+    def open_file(self, filename=None):
+        if filename is None:
+            filename, _ = QFileDialog.getOpenFileName(self, "Open PDF", "", "PDF Files (*.pdf)")
+
+        if filename:
+            for widget in self.get_widgets():
+                if widget.get_filename() is None:
+                    widget.open_file(filename)
+                    break
+            else:
+                self.create_tab(filename)
+
+    def save_file(self):
+        self.current().save_file()
+
+    def save_file_as(self):
+        self.current().save_file_as()
+
+    def flatten(self, open):
+        self.current().flatten(open)
+
+    def extract_fonts(self):
+        self.current().extract_fonts()
+
+    def preferences(self):
+        self.config.exec()
+        self.config.flush()
+        for widget in self.get_widgets():
+            widget.preferences_changed()
+
+    def open_with_other(self, command):
+        self.current().open_with_other(command)
+
+    def append_pdf(self):
+        filename, _ = QFileDialog.getOpenFileName(self, "Open PDF", "", "PDF Files (*.pdf)")
+        if filename:
+            self.current().append_pdf(filename)
 
 
 def main():

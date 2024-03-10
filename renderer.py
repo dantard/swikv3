@@ -614,3 +614,22 @@ class MuPDFRenderer(QLabel):
                     outfile.write(buffer)
                     outfile.close()
         return font_names
+
+    def append_pdf(self, filename):
+        doc2 = fitz.open(filename)
+        self.document.insert_pdf(doc2)
+        page_count = len(doc2)
+        doc2.close()
+        self.set_document(self.document, False)
+        return page_count
+
+    def export_pages(self, order, filename):
+        doc = fitz.open()
+        for i in order:
+            doc.insert_pdf(self.document, from_page=i, to_page=i)
+        try:
+            doc.save(filename, encryption=PDF_ENCRYPT_KEEP)
+            doc.close()
+        except Exception as e:
+            return False
+        return True

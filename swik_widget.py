@@ -1,16 +1,17 @@
 import os
 import subprocess
 import sys
+import time
 
 from PyQt5.QtNetwork import QUdpSocket, QHostAddress
 
 import resources
 import pyclip
 from PyQt5 import QtGui
-from PyQt5.QtCore import QPointF, Qt
+from PyQt5.QtCore import QPointF, Qt, QTimer
 from PyQt5.QtGui import QPainter, QIcon, QKeySequence
 from PyQt5.QtWidgets import QApplication, QMainWindow, QShortcut, QFileDialog, QDialog, QMessageBox, QHBoxLayout, QWidget, QTabWidget, QVBoxLayout, QToolBar, \
-    QPushButton, QSizePolicy, QTabBar
+    QPushButton, QSizePolicy, QTabBar, QProgressDialog
 
 import utils
 from GraphView import GraphView
@@ -22,6 +23,7 @@ from font_manager import FontManager
 from groupbox import GroupBox
 from keyboard_manager import KeyboardManager
 from manager import Manager
+from progressing import Progressing
 from scene import Scene
 from toolbars.zoom_toolbar import ZoomToolbar
 from tools.tool_drag import ToolDrag
@@ -170,9 +172,14 @@ class SwikWidget(QWidget):
 
     def document_changed(self):
         self.font_manager.update_document_fonts()
-        self.tabw: QTabWidget
+
+        # Update the tab name
         my_index = self.tabw.indexOf(self)
-        self.tabw.setTabText(my_index, os.path.basename(self.renderer.get_filename()))
+        text = os.path.basename(self.renderer.get_filename())
+        font_metrics = self.tabw.fontMetrics()
+        text = font_metrics.elidedText(text, Qt.ElideRight, 200)
+        self.tabw.setTabText(my_index, text)
+        self.tabw.setTabToolTip(my_index, self.renderer.get_filename())
 
     def get_filename(self):
         return self.renderer.get_filename()
@@ -181,6 +188,18 @@ class SwikWidget(QWidget):
         button = self.sender()
         if button is not None:
             self.manager.use_tool(button.get_tool())
+
+    def keyPressEvent(self, a0: QtGui.QKeyEvent) -> None:
+        super().keyPressEvent(a0)
+        if not self.key_manager.key_pressed(a0):
+            self.manager.key_pressed(a0)
+
+    def keyReleaseEvent(self, a0: QtGui.QKeyEvent) -> None:
+        super().keyReleaseEvent(a0)
+        if not self.key_manager.key_released(a0):
+            self.manager.key_released(a0)
+
+    # ### Tools
 
     def open_file(self, filename=None):
         if filename is None:
@@ -218,12 +237,17 @@ class SwikWidget(QWidget):
         else:
             self.config.edit()
 
-    def keyPressEvent(self, a0: QtGui.QKeyEvent) -> None:
-        super().keyPressEvent(a0)
-        if not self.key_manager.key_pressed(a0):
-            self.manager.key_pressed(a0)
+    def append_pdf(self, filename):
+        pd = Progressing(self)
 
-    def keyReleaseEvent(self, a0: QtGui.QKeyEvent) -> None:
-        super().keyReleaseEvent(a0)
-        if not self.key_manager.key_released(a0):
-            self.manager.key_released(a0)
+        def append():
+            index = self.renderer.get_num_of_pages()
+            num_of_pages_added = self.renderer.append_pdf(filename)
+            for i in range(num_of_pages_added):
+                self.view.do_create_page(index + i)
+                time.sleep(0.01)
+                pd.update(i * 100 / num_of_pages_added)
+
+            self.view.fully_update_layout()
+
+        pd.start(append)

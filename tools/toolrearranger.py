@@ -1,5 +1,5 @@
 from PyQt5.QtCore import QPointF, Qt
-from PyQt5.QtWidgets import QGraphicsRectItem, QMenu
+from PyQt5.QtWidgets import QGraphicsRectItem, QMenu, QFileDialog, QMessageBox
 
 from selector import SelectorRectItem
 from simplepage import SimplePage
@@ -162,6 +162,9 @@ class ToolRearrange(Tool):
             return
 
         menu = QMenu()
+        export_and_open = menu.addAction("Export" + " " + str(len(self.selected)) + " " + "pages and open")
+        export = menu.addAction("Export" + " " + str(len(self.selected)) + " " + "pages")
+        menu.addSeparator()
         delete = menu.addAction("Delete" + " " + str(len(self.selected)) + " " + "pages")
         res = menu.exec_(event.globalPos())
         if res == delete:
@@ -179,7 +182,20 @@ class ToolRearrange(Tool):
                 page.index = i
 
             self.operation_done()
-            print("delete")
+        elif res == export:
+            filename, _ = QFileDialog.getSaveFileName(self.view, "Save PDF Document", self.renderer.get_filename(), "PDF Files (*.pdf)")
+            if filename:
+                if self.renderer.export([page.index for page in self.selected], filename):
+                    QMessageBox.information(self.view, "Export", "Exported" + " " + str(len(self.selected)) + " " + "pages to" + " " + filename)
+                else:
+                    QMessageBox.critical(self.view, "Export", "Error exporting pages")
+        elif res == export_and_open:
+            filename, _ = QFileDialog.getSaveFileName(self.view, "Save PDF Document", self.renderer.get_filename(), "PDF Files (*.pdf)")
+            if filename:
+                if self.renderer.export_pages([page.index for page in self.selected], filename):
+                    self.renderer.open_pdf(filename)
+                else:
+                    QMessageBox.critical(self.view, "Export", "Error exporting pages")
 
     def finish(self):
         self.pickup_point = None
