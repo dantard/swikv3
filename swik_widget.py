@@ -11,7 +11,7 @@ from PyQt5 import QtGui
 from PyQt5.QtCore import QPointF, Qt, QTimer
 from PyQt5.QtGui import QPainter, QIcon, QKeySequence
 from PyQt5.QtWidgets import QApplication, QMainWindow, QShortcut, QFileDialog, QDialog, QMessageBox, QHBoxLayout, QWidget, QTabWidget, QVBoxLayout, QToolBar, \
-    QPushButton, QSizePolicy, QTabBar, QProgressDialog
+    QPushButton, QSizePolicy, QTabBar, QProgressDialog, QSplitter, QGraphicsScene
 
 import utils
 from GraphView import GraphView
@@ -23,6 +23,7 @@ from font_manager import FontManager
 from groupbox import GroupBox
 from keyboard_manager import KeyboardManager
 from manager import Manager
+from miniature_view import MiniatureView
 from progressing import Progressing
 from scene import Scene
 from toolbars.zoom_toolbar import ZoomToolbar
@@ -103,9 +104,31 @@ class SwikWidget(QWidget):
         self.nav_toolbar = NavigationToolbar(self.view, self.toolbar)
         self.finder_toolbar = TextSearchToolbar(self.view, self.renderer, self.toolbar)
 
+        self.miniature_view = MiniatureView(self.manager, self.renderer, QGraphicsScene())
+        self.miniature_view.setRenderHint(QPainter.Antialiasing)
+        self.miniature_view.setRenderHint(QPainter.TextAntialiasing)
+        self.miniature_view.setRenderHint(QPainter.SmoothPixmapTransform)
+        self.miniature_view.setRenderHint(QPainter.HighQualityAntialiasing)
+        self.miniature_view.setRenderHint(QPainter.NonCosmeticDefaultPen)
+        self.miniature_view.setMaximumWidth(350)
+        self.miniature_view.setMinimumWidth(180)
+        self.miniature_view.set_alignment(Qt.AlignTop)
+        self.miniature_view.set_fit_width(True)
+        self.view.page_clicked.connect(self.miniature_view.set_page)
+        self.miniature_view.page_clicked.connect(self.view.set_page)
+
+        self.splitter = QSplitter(Qt.Horizontal)
+
         self.setLayout(QVBoxLayout())
-        self.layout().addWidget(self.toolbar)
-        self.layout().addWidget(self.view)
+
+        self.layout().addWidget(self.splitter)
+        helper = QWidget()
+        helper.setLayout(QVBoxLayout())
+        helper.layout().addWidget(self.toolbar)
+        helper.layout().addWidget(self.view)
+
+        self.splitter.addWidget(self.miniature_view)
+        self.splitter.addWidget(helper)
 
     def preferences_changed(self):
         self.sign_btn.setEnabled(self.config.get("p12") is not None)
@@ -243,11 +266,15 @@ class SwikWidget(QWidget):
         def append():
             index = self.renderer.get_num_of_pages()
             num_of_pages_added = self.renderer.append_pdf(filename)
+
             for i in range(num_of_pages_added):
                 self.view.do_create_page(index + i)
+                self.miniature_view.do_create_page(index + i)
+
                 time.sleep(0.01)
                 pd.update(i * 100 / num_of_pages_added)
 
             self.view.fully_update_layout()
+            self.miniature_view.fully_update_layout()
 
         pd.start(append)

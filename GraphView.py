@@ -22,6 +22,7 @@ class GraphView(QGraphicsView):
     drop_event = pyqtSignal(QtGui.QDropEvent)
     document_ready = pyqtSignal()
     page_created = pyqtSignal(SimplePage)
+    page_clicked = pyqtSignal(int)
 
     def __init__(self, manager, renderer, scene, page=SimplePage, mode=LayoutManager.MODE_VERTICAL_MULTIPAGE):
         super().__init__()
@@ -445,6 +446,9 @@ class GraphView(QGraphicsView):
     def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
         super().mousePressEvent(event)
         self.manager.mouse_pressed(event)
+        page = self.get_items_at_pos(event.pos(), SimplePage, 0, False)
+        if page is not None:
+            self.page_clicked.emit(page.index)
 
     def mouseReleaseEvent(self, event: QtGui.QMouseEvent) -> None:
         super().mouseReleaseEvent(event)
@@ -462,40 +466,3 @@ class GraphView(QGraphicsView):
     def mouseDoubleClickEvent(self, event: QtGui.QMouseEvent) -> None:
         super().mouseDoubleClickEvent(event)
         self.manager.mouse_double_clicked(event)
-
-
-class MiniatureView(GraphView):
-    page_clicked = pyqtSignal(int, int)
-
-    def __init__(self, renderer, mode, page):
-        super(MiniatureView, self).__init__(renderer, mode, page)
-
-    def wheelEvent(self, event: 'QGraphicsSceneWheelEvent') -> None:
-        super(QGraphicsView, self).wheelEvent(event)
-
-    def set_page(self, index):
-        for p in self.pages.values():
-            p.box.setVisible(False)
-
-        if self.pages.get(index) is not None:
-            self.pages[index].box.setVisible(True)
-            if not self.pages[index].is_completely_shown():
-                self.ensureVisible(self.pages[index], 0, 50)
-
-    def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
-        super().mousePressEvent(event)
-        if event.button() == QtCore.Qt.LeftButton:
-            page = self.get_items_at_pos(event.pos(), SimplePage, 0, False)
-            if page is not None:
-                self.pages[self.page].box.setVisible(False)
-                self.page_clicked.emit(page.index, self.renderer.get_num_of_pages())
-                self.pages[page.index].box.setVisible(True)
-
-    def get_current_page(self):
-        return self.pages[self.page]
-
-    def get_current_page_index(self):
-        return self.page
-
-# def wheelEvent(self, event: QtGui.QWheelEvent) -> None:
-#     QGraphicsView.wheelEvent(self, event)
