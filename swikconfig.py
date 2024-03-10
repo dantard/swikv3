@@ -81,8 +81,19 @@ class SwikConfig(EasyConfig):
         private.addString("last_dir_for_rename")
         private.addString("last_dir_for_image")
         private.addDict("print_options")
+        self.tabs = private.addList("tabs")
 
         self.load(self.base_dir + "swik.yaml")
+
+    def get_tabs(self, index=None):
+        if index is not None:
+            res = self.tabs.get_value()[index]
+        else:
+            res = self.tabs.get_value()
+        return res if res is not None else []
+
+    def set_tabs(self, tabs):
+        self.tabs.set_value(tabs)
 
     def push_general_config(self, window, view, renderer):
         self.set("Ratio", view.get_ratio())

@@ -363,6 +363,7 @@ class GraphView(QGraphicsView):
     def fully_update_layout(self):
 
         self.m_layout.clear()
+
         for i in range(self.renderer.get_num_of_pages()):
             if (p := self.pages.get(i)) is not None:
                 self.update_layout(p)

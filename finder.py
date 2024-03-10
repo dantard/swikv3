@@ -70,7 +70,7 @@ class Finder(QObject):
                 return
 
             page = self.view.get_page_item(i)
-            self.progress.emit(i / (self.view.get_num_of_pages() - 1))
+            self.progress.emit(i + 1 / (self.view.get_num_of_pages()))
 
             # Wait until the page is ready
             while not page.has_words():

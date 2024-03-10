@@ -171,7 +171,7 @@ class MuPDFRenderer(QLabel):
         self.images[index].loaded = True
 
     def get_num_of_pages(self):
-        return len(self.document)
+        return len(self.document) if self.document else 0
 
     def get_max_pages_size(self):
         return self.max_width, self.max_height

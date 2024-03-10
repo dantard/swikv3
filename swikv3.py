@@ -9,7 +9,8 @@ import pyclip
 from PyQt5 import QtGui
 from PyQt5.QtCore import QPointF, Qt
 from PyQt5.QtGui import QPainter, QIcon, QKeySequence
-from PyQt5.QtWidgets import QApplication, QMainWindow, QShortcut, QFileDialog, QDialog, QMessageBox, QHBoxLayout
+from PyQt5.QtWidgets import QApplication, QMainWindow, QShortcut, QFileDialog, QDialog, QMessageBox, QHBoxLayout, QWidget, QTabWidget, QVBoxLayout, QToolBar, \
+    QPushButton, QSizePolicy, QTabBar
 
 import utils
 from GraphView import GraphView
@@ -44,10 +45,142 @@ class MainWindow(QMainWindow):
 
         self.config = SwikConfig()
 
+        menu_bar = self.menuBar()
+        file_menu = menu_bar.addMenu('File')
+        file_menu.addAction('Open', self.open_file)
+        open_recent = file_menu.addMenu("Open Recent")
+        open_recent.aboutToShow.connect(lambda: self.config.fill_recent(self, open_recent))
+        file_menu.addAction('Save', self.save_file)
+        file_menu.addAction('Save as', self.save_file_as)
+        #        file_menu.addAction('Locate in folder', lambda: os.system(self.config.get("file_browser") + " '" + self.renderer.get_filename() + "' &"))
+        file_menu.addAction('Copy path', lambda: pyclip.copy(self.renderer.filename))
+        edit_menu = menu_bar.addMenu('Edit')
+        edit_menu.addSeparator()
+        edit_menu.addAction('Preferences', self.preferences)
+
+        tool_menu = menu_bar.addMenu('Tools')
+        tool_menu.addAction('Flatten', lambda: self.flatten(False))
+        tool_menu.addAction('Flatten and Open', lambda: self.flatten(True))
+        tool_menu.addSeparator()
+        tool_menu.addAction('Extract Fonts', self.extract_fonts)
+
+        command = self.config.get("other_pdf")
+        if command is not None and command != "None":
+            open_wo_odf = file_menu.addMenu('Open with other Viewer')
+            for line in command.split("&&"):
+                data = line.split(" ")
+                if len(data) == 2:
+                    name, cmd = data
+                else:
+                    name = cmd = data[0]
+                open_wo_odf.addAction(name, lambda x=cmd: self.open_with_other(x))
+
         self.setWindowTitle("Swik")
         self.setGeometry(100, 100, 640, 480)
         self.setAcceptDrops(True)
 
+        self.tab_widget = QTabWidget()
+        self.tab_widget.addTab(QWidget(), "+")
+        self.tab_widget.currentChanged.connect(self.tab_changed)
+
+        self.setCentralWidget(self.tab_widget)
+
+        # Open last files if required
+        if self.config.get("open_last"):
+            tabs = self.config.get_tabs()
+            if len(tabs) == 0:
+                self.create_tab()
+            else:
+                for tab in tabs:
+                    self.create_tab(tab)
+
+    def open_file(self, filename=None):
+        if filename is None:
+            filename, _ = QFileDialog.getOpenFileName(self, "Open PDF", "", "PDF Files (*.pdf)")
+
+        if filename:
+            for widget in self.get_widgets():
+                if widget.get_filename() is None:
+                    widget.open_file(filename)
+                    break
+            else:
+                self.create_tab(filename)
+
+    def save_file(self):
+        self.current().save_file()
+
+    def save_file_as(self):
+        self.current().save_file_as()
+
+    def flatten(self, open):
+        self.current().flatten(open)
+
+    def extract_fonts(self):
+        self.current().extract_fonts()
+
+    def preferences(self):
+        self.config.exec()
+        self.config.flush()
+        for widget in self.get_widgets():
+            widget.preferences_changed()
+
+    def open_with_other(self, command):
+        self.current().open_with_other(command)
+
+    def get_widgets(self):
+        return [self.tab_widget.widget(i) for i in range(self.tab_widget.count() - 1)]
+
+    def current(self):
+        return self.tab_widget.currentWidget()
+
+    def tab_changed(self, index):
+        if index == self.tab_widget.count() - 1:
+            self.create_tab(None)
+            self.tab_widget.setCurrentIndex(index)
+
+    def create_tab(self, filename=None):
+        widget = SwikWidget(self, self.tab_widget, self.config)
+        index = self.tab_widget.insertTab(self.tab_widget.count() - 1, widget, filename if filename is not None else "(None)")
+        close_button = QPushButton("x")
+        close_button.setContentsMargins(0, 0, 0, 15)
+        close_button.setFixedSize(20, 20)
+        close_button.setFlat(True)
+        close_button.widget = widget
+        close_button.clicked.connect(lambda y, x=widget: self.close_tab(x))
+        self.tab_widget.tabBar().setTabButton(index, QTabBar.RightSide, close_button)
+        if filename is not None:
+            widget.open_file(filename)
+        self.tab_widget.setCurrentIndex(index)
+        return widget
+
+    def close_tab(self, tab):
+        print("tab", tab, "closed")
+        if self.tab_widget.count() > 2:
+            index = self.tab_widget.indexOf(tab)
+            self.tab_widget.setCurrentIndex(index - 1)
+            self.tab_widget.removeTab(index)
+
+        filename = self.tab_widget.currentWidget().get_filename()
+        self.setWindowTitle("Swik" + (" - " + filename) if filename is not None else "")
+
+    def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
+        tabs = []
+        for index in range(self.tab_widget.count() - 1):
+            swik_widget = self.tab_widget.widget(index)
+            tabs.append(swik_widget.get_filename())
+
+        self.config.set_tabs(tabs)
+        self.config.flush()
+        super().closeEvent(a0)
+
+
+class SwikWidget(QWidget):
+
+    def __init__(self, window, tab_widget, config):
+        super().__init__()
+        self.win = window
+        self.tabw = tab_widget
+        self.config = config
         self.renderer = MuPDFRenderer()
         self.renderer.document_changed.connect(self.document_changed)
 
@@ -86,37 +219,7 @@ class MainWindow(QMainWindow):
         self.view.setRenderHint(QPainter.TextAntialiasing)
         self.view.set_natural_hscroll(self.config.get('natural_hscroll'))
 
-        menu_bar = self.menuBar()
-        file_menu = menu_bar.addMenu('File')
-        file_menu.addAction('Open', self.open_file)
-        open_recent = file_menu.addMenu("Open Recent")
-        open_recent.aboutToShow.connect(lambda: self.config.fill_recent(self, open_recent))
-        file_menu.addAction('Save', self.save_file)
-        file_menu.addAction('Save as', self.save_file_as)
-        file_menu.addAction('Locate in folder', lambda: os.system(self.config.get("file_browser") + " '" + self.renderer.get_filename() + "' &"))
-        file_menu.addAction('Copy path', lambda: pyclip.copy(self.renderer.filename))
-        command = self.config.get("other_pdf")
-        if command is not None and command != "None":
-            open_wo_odf = file_menu.addMenu('Open with other Viewer')
-            for line in command.split("&&"):
-                data = line.split(" ")
-                if len(data) == 2:
-                    name, cmd = data
-                else:
-                    name = cmd = data[0]
-                open_wo_odf.addAction(name, lambda x=cmd: self.open_with_other(x))
-
-        edit_menu = menu_bar.addMenu('Edit')
-        edit_menu.addSeparator()
-        edit_menu.addAction('Preferences', self.preferences)
-
-        tool_menu = menu_bar.addMenu('Tools')
-        tool_menu.addAction('Flatten', lambda: self.flatten(False))
-        tool_menu.addAction('Flatten and Open', lambda: self.flatten(True))
-        tool_menu.addSeparator()
-        tool_menu.addAction('Extract Fonts', self.extract_fonts)
-
-        self.toolbar = self.addToolBar('Toolbar')
+        self.toolbar = QToolBar()
         self.toolbar.addAction("Open", self.open_file).setIcon(QIcon(":/icons/open.png"))
         self.toolbar.addAction("Save", self.save_file).setIcon(QIcon(":/icons/save.png"))
         self.toolbar.addSeparator()
@@ -135,15 +238,19 @@ class MainWindow(QMainWindow):
         self.zoom_toolbar = ZoomToolbar(self.view, self.toolbar)
         self.nav_toolbar = NavigationToolbar(self.view, self.toolbar)
         self.finder_toolbar = TextSearchToolbar(self.view, self.renderer, self.toolbar)
-        self.statusBar().show()
-        self.setCentralWidget(self.view)
 
-        if self.config.get("open_last"):
-            last = self.config.get('last', None)
-            if last is not None:
-                self.renderer.open_pdf(last)
+        self.setLayout(QVBoxLayout())
+        self.layout().addWidget(self.toolbar)
+        self.layout().addWidget(self.view)
 
-    info = {}
+    def preferences_changed(self):
+        self.sign_btn.setEnabled(self.config.get("p12") is not None)
+
+    def set_tab(self, tab):
+        self.tab = tab
+
+    def statusBar(self):
+        return self.win.statusBar()
 
     def delete_objects(self):
         items = self.view.scene().selectedItems()
@@ -201,8 +308,13 @@ class MainWindow(QMainWindow):
             item.serialize(self.info)
 
     def document_changed(self):
-        self.setWindowTitle("Swik - " + self.renderer.get_filename())
         self.font_manager.update_document_fonts()
+        self.tabw: QTabWidget
+        my_index = self.tabw.indexOf(self)
+        self.tabw.setTabText(my_index, os.path.basename(self.renderer.get_filename()))
+
+    def get_filename(self):
+        return self.renderer.get_filename()
 
     def manage_tool(self):
         button = self.sender()
@@ -228,16 +340,16 @@ class MainWindow(QMainWindow):
             else:
                 QMessageBox.warning(self, "Error", "Error opening file")
 
-    def save_file(self):
-        self.renderer.save_pdf(self.renderer.get_filename())
+    def save_file(self, name=None):
+        name = self.renderer.get_filename() if name is None else name
+        return self.renderer.save_pdf(name)
 
     def save_file_as(self):
-        pass
-
-    def preferences(self):
-        self.config.exec()
-        self.sign_btn.setEnabled(self.config.get("p12") is not None)
-        self.config.flush()
+        name = self.renderer.get_filename()
+        name, _ = QFileDialog.getSaveFileName(self, "Save PDF Document", name, "PDF Files (*.pdf)")
+        if name:
+            return self.save_file(name)
+        return False
 
     def open_with_other(self, command):
         if command is not None:
@@ -245,19 +357,17 @@ class MainWindow(QMainWindow):
         else:
             self.config.edit()
 
-    def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
-        self.config.save("swik.yaml")
-        super().closeEvent(a0)
 
-    def keyPressEvent(self, a0: QtGui.QKeyEvent) -> None:
-        super().keyPressEvent(a0)
-        if not self.key_manager.key_pressed(a0):
-            self.manager.key_pressed(a0)
+def keyPressEvent(self, a0: QtGui.QKeyEvent) -> None:
+    super().keyPressEvent(a0)
+    if not self.key_manager.key_pressed(a0):
+        self.manager.key_pressed(a0)
 
-    def keyReleaseEvent(self, a0: QtGui.QKeyEvent) -> None:
-        super().keyReleaseEvent(a0)
-        if not self.key_manager.key_released(a0):
-            self.manager.key_released(a0)
+
+def keyReleaseEvent(self, a0: QtGui.QKeyEvent) -> None:
+    super().keyReleaseEvent(a0)
+    if not self.key_manager.key_released(a0):
+        self.manager.key_released(a0)
 
 
 def main():
