@@ -21,9 +21,6 @@ class ChangesTracker(QObject):
         self.redo_stack = []
         self.scene = scene
 
-    def set_view(self, view):
-        self.scene = scene
-
     def undo(self):
         print("undo stack", len(self.undo_stack))
         if len(self.undo_stack) > 0:

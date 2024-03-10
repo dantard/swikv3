@@ -175,18 +175,6 @@ class MainWindow(QMainWindow):
         super().closeEvent(a0)
 
 
-def keyPressEvent(self, a0: QtGui.QKeyEvent) -> None:
-    super().keyPressEvent(a0)
-    if not self.key_manager.key_pressed(a0):
-        self.manager.key_pressed(a0)
-
-
-def keyReleaseEvent(self, a0: QtGui.QKeyEvent) -> None:
-    super().keyReleaseEvent(a0)
-    if not self.key_manager.key_released(a0):
-        self.manager.key_released(a0)
-
-
 def main():
     app = QApplication(sys.argv)
     window = MainWindow()

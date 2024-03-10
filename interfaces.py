@@ -4,6 +4,12 @@ from action import Action
 from changestracker import ChangesTracker
 
 
+class Copyable:
+
+    def duplicate(self):
+        pass
+
+
 class Undoable:
 
     def notify_creation(self, item=None):

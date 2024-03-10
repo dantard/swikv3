@@ -1,6 +1,7 @@
 from PyQt5.QtCore import QObject, pyqtSignal, Qt
 from PyQt5.QtWidgets import QGraphicsRectItem
 
+from interfaces import Copyable
 from simplepage import SimplePage
 from word import Word
 
@@ -16,17 +17,28 @@ class Manager(QObject):
         self.config = config
         self.view: QGraphicsRectItem = None
         self.renderer = renderer
+        self.copy_buffer = []
 
     def set_view(self, view):
         self.view = view
 
     def keyboard(self, action):
         if action == "Ctrl+C":
+            self.copy_buffer.clear()
             items = self.view.scene().selectedItems()
             if len(items) == 0:
                 self.current.keyboard("Ctrl+C")
             else:
-                print("Copy selected items")
+                for item in items:
+                    if isinstance(item, Copyable):
+                        r, parent = item.duplicate()
+                        self.copy_buffer.append((r, parent))
+        elif action == "Ctrl+V":
+            self.view.scene().clearSelection()
+            for r, parent in self.copy_buffer:
+                # self.view.scene().addItem(r)
+                r.setParentItem(parent)
+                r.setSelected(True)
         else:
             self.current.keyboard(action)
 

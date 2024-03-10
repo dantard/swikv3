@@ -68,6 +68,7 @@ class SwikWidget(QWidget):
         self.key_manager.register_action(Qt.Key_Delete, self.delete_objects)
         self.key_manager.register_action(Qt.Key_Shift, lambda: self.manager.use_tool("drag"), self.manager.finished)
         self.key_manager.register_combination_action('Ctrl+C', lambda: self.manager.keyboard('Ctrl+C'))
+        self.key_manager.register_combination_action('Ctrl+V', lambda: self.manager.keyboard('Ctrl+V'))
         self.key_manager.register_combination_action('Ctrl+A', lambda: self.manager.keyboard('Ctrl+A'))
         self.key_manager.register_combination_action('Ctrl+T', self.manager.get_tool("text_selection").iterate_selection_mode)
         self.key_manager.register_combination_action('Ctrl+M', self.iterate_mode)
@@ -115,10 +116,9 @@ class SwikWidget(QWidget):
 
     def delete_objects(self):
         items = self.view.scene().selectedItems()
+        self.scene.tracker().items_removed(items)
         for item in items:
             self.view.scene().removeItem(item)
-
-        self.scene.tracker().items_removed(items)
 
     def should_open_here(self, filename):
         msg_box = QMessageBox(self)
@@ -217,3 +217,13 @@ class SwikWidget(QWidget):
             os.system(command + " '" + self.renderer.get_filename() + "' &")
         else:
             self.config.edit()
+
+    def keyPressEvent(self, a0: QtGui.QKeyEvent) -> None:
+        super().keyPressEvent(a0)
+        if not self.key_manager.key_pressed(a0):
+            self.manager.key_pressed(a0)
+
+    def keyReleaseEvent(self, a0: QtGui.QKeyEvent) -> None:
+        super().keyReleaseEvent(a0)
+        if not self.key_manager.key_released(a0):
+            self.manager.key_released(a0)
