@@ -15,68 +15,63 @@ from simplepage import SimplePage
 # which are 2 atoms to undo/redo. The items that want to be undoable must implement the Undoable interface.
 
 class ChangesTracker(QObject):
-    undo_stack = []
-    redo_stack = []
-    view = None
+    def __init__(self, scene):
+        super(ChangesTracker, self).__init__()
+        self.undo_stack = []
+        self.redo_stack = []
+        self.scene = scene
 
-    @staticmethod
-    def set_view(view):
-        ChangesTracker.view = view
+    def set_view(self, view):
+        self.scene = scene
 
-    @staticmethod
-    def undo():
-        print("undo stack", len(ChangesTracker.undo_stack))
-        if len(ChangesTracker.undo_stack) > 0:
-            action = ChangesTracker.undo_stack.pop()
-            ChangesTracker.redo_stack.append(action)
+    def undo(self):
+        print("undo stack", len(self.undo_stack))
+        if len(self.undo_stack) > 0:
+            action = self.undo_stack.pop()
+            self.redo_stack.append(action)
             for atom in action:
                 if atom.kind == Action.ACTION_CREATE:
-                    ChangesTracker.view.scene().removeItem(atom.item)
+                    self.scene.removeItem(atom.item)
                 elif atom.kind == Action.ACTION_REMOVE:
                     if atom.old is not None:
                         print("set parent", atom.item, atom.old, "undo remove")
                         atom.item.setParentItem(atom.old)
                     else:
-                        ChangesTracker.view.scene().addItem(atom.item)
+                        self.scene.addItem(atom.item)
                 else:
                     atom.item.undo(atom.kind, atom.old)
 
-    @staticmethod
-    def redo():
-        print("redo stack", len(ChangesTracker.redo_stack))
-        if len(ChangesTracker.redo_stack) > 0:
-            action = ChangesTracker.redo_stack.pop()
+    def redo(self):
+        print("redo stack", len(self.redo_stack))
+        if len(self.redo_stack) > 0:
+            action = self.redo_stack.pop()
             for atom in action:
                 print("item redo", atom.item, atom.kind, atom.old, atom.new)
                 if atom.kind == Action.ACTION_CREATE:
                     if atom.old is not None:
                         atom.item.setParentItem(atom.old)
                     else:
-                        ChangesTracker.view.scene().addItem(atom.item)
+                        self.scene.addItem(atom.item)
                 elif atom.kind == Action.ACTION_REMOVE:
-                    ChangesTracker.view.scene().removeItem(atom.item)
+                    self.scene.removeItem(atom.item)
                 else:
                     atom.item.redo(atom.kind, atom.new)
-            ChangesTracker.undo_stack.append(action)
+            self.undo_stack.append(action)
 
-    @staticmethod
-    def item_added(item):
-        ChangesTracker.undo_stack.append(Action(item, Action.ACTION_CREATE, item.parentItem()))
+    def item_added(self, item):
+        self.undo_stack.append(Action(item, Action.ACTION_CREATE, item.parentItem()))
         print("item added", item)
 
-    @staticmethod
-    def item_removed(item):
-        ChangesTracker.undo_stack.append(Action(item, Action.ACTION_REMOVE, item.parentItem()))
+    def item_removed(self, item):
+        self.undo_stack.append(Action(item, Action.ACTION_REMOVE, item.parentItem()))
         print("item removed", item, item.parentItem())
 
-    @staticmethod
-    def items_removed(items):
+    def items_removed(self, items):
         action = Action()
         for item in items:
             action.push(item, Action.ACTION_REMOVE, item.parentItem())
-        ChangesTracker.undo_stack.append(action)
+        self.undo_stack.append(action)
 
-    @staticmethod
-    def item_changed(action):
+    def item_changed(self, action):
         print("item changed", action[0].item, action[0].kind, action[0].old, action[0].new)
-        ChangesTracker.undo_stack.append(action)
+        self.undo_stack.append(action)

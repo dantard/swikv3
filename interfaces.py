@@ -7,14 +7,14 @@ from changestracker import ChangesTracker
 class Undoable:
 
     def notify_creation(self, item=None):
-        ChangesTracker.item_added(item if item is not None else self)
+        self.scene().tracker().item_added(item if item is not None else self)
 
     def notify_deletion(self, item=None):
-        ChangesTracker.item_removed(item if item is not None else self)
+        item.scene().tracker().item_removed(item if item is not None else self)
 
     def notify_change(self, kind, old, new):
         if old != new:
-            ChangesTracker.item_changed(Action(self, kind, old, new))
+            self.scene().tracker().item_changed(Action(self, kind, old, new))
 
     def undo(self, kind, info):
         pass

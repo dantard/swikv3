@@ -320,12 +320,10 @@ class AnonymizerRubberBand(StaticRubberBand):
 
     def mouseDoubleClickEvent(self, event: 'QGraphicsSceneMouseEvent') -> None:
         super().mouseDoubleClickEvent(event)
-        self.look_edit()
         a = QColorDialog(self.brush().color())
         if a.exec_() == QDialog.Accepted:
             self.setBrush(QBrush(a.selectedColor()))
             self.update()
-            self.look_done()
 
 
 class ImageRubberBand(StaticRubberBand):
@@ -378,14 +376,10 @@ class ImageRubberBand(StaticRubberBand):
             self.view.duplicate(self)
 
 
-
-
 class SignatureRubberBand(StaticRubberBand):
 
     def __init__(self, view, parent: QGraphicsRectItem = None, **kwargs):
         super().__init__(view, parent, **kwargs)
-
-
 
     def add_interaction_frame(self):
         super().add_interaction_frame()
