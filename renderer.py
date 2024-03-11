@@ -5,13 +5,13 @@ import time
 import traceback
 from os.path import exists
 
-import fitz
 from PyQt5 import QtCore
-from PyQt5.QtCore import Qt, QRunnable, QThreadPool, pyqtSignal, QMutex, QRectF, QRect
+from PyQt5.QtCore import Qt, QRunnable, QThreadPool, pyqtSignal, QMutex, QRectF, QRect, QByteArray, QBuffer, QIODevice
 from PyQt5.QtGui import QPixmap, QImage, QBrush, QPen, QColor
 from PyQt5.QtWidgets import QLabel
-from fitz import TEXTFLAGS_DICT, TEXT_PRESERVE_IMAGES, Font, PDF_WIDGET_TYPE_TEXT, PDF_WIDGET_TYPE_COMBOBOX, PDF_WIDGET_TYPE_CHECKBOX
-from fitz import PDF_ENCRYPT_KEEP, PDF_ANNOT_SQUARE, PDF_ANNOT_IS_LOCKED
+import fitz
+from fitz import PDF_ENCRYPT_KEEP, PDF_WIDGET_TYPE_TEXT, PDF_WIDGET_TYPE_CHECKBOX, PDF_WIDGET_TYPE_COMBOBOX, Font, PDF_ANNOT_IS_LOCKED, PDF_ANNOT_HIGHLIGHT, \
+    PDF_ANNOT_SQUARE, TEXTFLAGS_DICT, TEXT_PRESERVE_IMAGES
 
 import utils
 from annotations.highlight_annotation import HighlightAnnotation
@@ -433,7 +433,7 @@ class MuPDFRenderer(QLabel):
                 swik_annot.setPos(annot.rect[0], annot.rect[1])
                 annots.append(swik_annot)
                 self.document[page.index].delete_annot(annot)
-            elif annot.type[0] == fitz.PDF_ANNOT_HIGHLIGHT:
+            elif annot.type[0] == PDF_ANNOT_HIGHLIGHT:
                 color = utils.fitz_color_to_qcolor(annot.colors["stroke"], annot.opacity)
                 print(annot.colors, annot.opacity)
                 swik_annot = HighlightAnnotation(color, page)
@@ -529,9 +529,12 @@ class MuPDFRenderer(QLabel):
         self.add_redact_annot(index, text.get_patch_on_page(), text.get_patch_color())
         self.add_text(index, text)
 
+    to_remove = []
     def get_widgets(self, page):
+        page2 = self.document[page.index]
         pdf_widgets = list()
-        for i, field in enumerate(self.document[page.index].widgets()):
+        widgets = page2.widgets()
+        for field in widgets:
 
             if field.field_type == PDF_WIDGET_TYPE_TEXT:
                 rect = QRectF(field.rect[0], field.rect[1], field.rect[2] - field.rect[0],
@@ -544,14 +547,16 @@ class MuPDFRenderer(QLabel):
                 text_field.set_info(field.field_name, field.field_flags)
                 pdf_widgets.append(text_field)
                 self.document[page.index].delete_widget(field)
-
+            '''
             elif field.field_type == PDF_WIDGET_TYPE_CHECKBOX:
                 rect = QRectF(field.rect[0], field.rect[1], field.rect[2] - field.rect[0],
                               field.rect[3] - field.rect[1])
                 cb_field = PdfCheckboxWidget(page, field.field_value, rect, field.text_fontsize)
                 cb_field.set_info(field.field_name, field.field_flags)
                 pdf_widgets.append(cb_field)
-                self.document[page.index].delete_widget(field)
+                #self.document[page.index].delete_widget(field)
+                self.to_remove.append(field)
+
 
             elif field.field_type == PDF_WIDGET_TYPE_COMBOBOX:
                 rect = QRectF(field.rect[0], field.rect[1], field.rect[2] - field.rect[0],
@@ -559,7 +564,9 @@ class MuPDFRenderer(QLabel):
                 combo_field = PdfComboboxWidget(page, field.field_value, rect, field.text_fontsize, field.choice_values)
                 combo_field.set_info(field.field_name, field.field_flags)
                 pdf_widgets.append(combo_field)
-                self.document[page.index].delete_widget(field)
+                # self.document[page.index].delete_widget(field)
+                self.to_remove.append(field)
+            '''
 
         return pdf_widgets
 
@@ -574,13 +581,13 @@ class MuPDFRenderer(QLabel):
         widget.field_value = swik_widget.get_value()
 
         if type(swik_widget) == PdfTextWidget:
-            widget.field_type = fitz.PDF_WIDGET_TYPE_TEXT
+            widget.field_type = PDF_WIDGET_TYPE_TEXT
         if type(swik_widget) == MultiLinePdfTextWidget:
-            widget.field_type = fitz.PDF_WIDGET_TYPE_TEXT
+            widget.field_type = PDF_WIDGET_TYPE_TEXT
         elif type(swik_widget) == PdfCheckboxWidget:
-            widget.field_type = fitz.PDF_WIDGET_TYPE_CHECKBOX
+            widget.field_type = PDF_WIDGET_TYPE_CHECKBOX
         elif type(swik_widget) == PdfComboboxWidget:
-            widget.field_type = fitz.PDF_WIDGET_TYPE_COMBOBOX
+            widget.field_type = PDF_WIDGET_TYPE_COMBOBOX
             widget.choice_values = swik_widget.get_items()
 
         print("Adding widget", widget.field_name, widget.field_flags, widget.rect, widget.field_value)
@@ -633,3 +640,15 @@ class MuPDFRenderer(QLabel):
         except Exception as e:
             return False
         return True
+
+    def insert_image(self, index, rect, qimage):
+        self.document[index].clean_contents()
+        rect = fitz.Rect(rect.x(), rect.y(), rect.x() + rect.width(), rect.y() + rect.height())
+        byte_array = QByteArray()
+        buffer = QBuffer(byte_array)
+        buffer.open(QIODevice.WriteOnly)
+        qimage.save(buffer, "PNG")
+
+        # Create a fitz.Pixmap from the bytes
+        pixmap = fitz.Pixmap(byte_array.data())
+        self.document[index].insert_image(rect, pixmap=pixmap)

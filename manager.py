@@ -45,7 +45,6 @@ class Manager(QObject):
     def register_tool(self, name, tool, default=False):
         self.tools[name] = tool
         tool.finished.connect(self.finished)
-        tool.configure()
         if default:
             self.default = tool
             self.use_tool(name)

@@ -2,7 +2,7 @@ import typing
 
 from PyQt5 import QtGui
 from PyQt5.QtCore import QObject, QRectF, Qt
-from PyQt5.QtGui import QFont, QFontMetrics
+from PyQt5.QtGui import QFont, QFontMetrics, QImage, QPainter
 from PyQt5.QtWidgets import QGraphicsRectItem, QWidget
 
 from coloreable import ColoreableRectItem
@@ -66,6 +66,7 @@ class PaintableSelectorRectItem(SelectorRectItem):
         self.image_mode, self.image, self.text = None, None, None
         self.text_mode, self.max_font_size, self.font = None, None, None
         super().__init__(parent, **kwargs)
+        self.image_rect = self.rect()
 
     def apply_kwargs(self, **kwargs):
         super().apply_kwargs(**kwargs)
@@ -74,7 +75,7 @@ class PaintableSelectorRectItem(SelectorRectItem):
         self.text = kwargs.get("text", "")
         self.text_mode = kwargs.get("text_mode", self.TEXT_MODE_STRETCH)
         self.max_font_size = kwargs.get("max_font_size", 100)
-        self.font = kwargs.get("font", QFont("Arial", 12))
+        self.font = kwargs.get("font", QFont("Monospace", 12))
 
     def copy(self, item, **kwargs):
         super().copy(item, **kwargs)
@@ -92,7 +93,7 @@ class PaintableSelectorRectItem(SelectorRectItem):
         self.image_mode = mode
         self.update()
 
-    def get_image(self):
+    def get_source_image(self):
         return self.image
 
     def set_image(self, image):
@@ -127,31 +128,51 @@ class PaintableSelectorRectItem(SelectorRectItem):
         self.font = font
         self.update()
 
+    def compute_image(self):
+        image_rect, img = self.rect(), self.image
+
+        if self.image_mode == self.IMAGE_MODE_MAINTAIN_RATIO:
+            rw, rh = self.rect().width(), self.rect().height()
+            iw, ih = self.image.width(), self.image.height()
+            if rw != 0 and iw != 0 and ih != 0:
+                i_ratio = ih / iw
+                r_ratio = rh / rw
+                if r_ratio > i_ratio:
+                    ratio = rw / iw
+                else:
+                    ratio = rh / ih
+
+                qr = QRectF(self.rect().x(), self.rect().y(), iw * ratio, ih * ratio)
+                image_rect, img = qr, self.image
+                #painter.drawImage(qr, self.image)
+        elif self.image_mode == self.IMAGE_MODE_STRETCH:
+            image_rect, img = self.rect(), self.image
+            #painter.drawImage(self.rect(), self.image)
+        elif self.image_mode == self.IMAGE_MODE_MAINTAIN_SIZE:
+            w = min(self.rect().width(), self.image.width())
+            h = min(self.rect().height(), self.image.height())
+            img = self.image.copy(0, 0, int(w), int(h))
+            image_rect = QRectF(self.rect().x(), self.rect().y(), w, h)
+
+
+        return image_rect, img
+
+    def get_image(self):
+        rect, img = self.compute_image()
+        image = QImage(rect.size().toSize(), QImage.Format_ARGB32)
+        painter = QPainter(image)
+        painter.setRenderHint(QPainter.SmoothPixmapTransform)
+        painter.setRenderHint(QPainter.Antialiasing)
+        painter.drawImage(rect, img)
+        return image
+
     def paint(self, painter: QtGui.QPainter, option, widget: typing.Optional[QWidget] = ...) -> None:
         super().paint(painter, option, widget)
 
 
         if self.image is not None:
-            if self.image_mode == self.IMAGE_MODE_MAINTAIN_RATIO:
-                rw, rh = self.rect().width(), self.rect().height()
-                iw, ih = self.image.width(), self.image.height()
-                if rw != 0 and iw != 0 and ih != 0:
-                    i_ratio = ih / iw
-                    r_ratio = rh / rw
-                    if r_ratio > i_ratio:
-                        ratio = rw / iw
-                    else:
-                        ratio = rh / ih
-
-                    qr = QRectF(self.rect().x(), self.rect().y(), iw * ratio, ih * ratio)
-                    painter.drawImage(qr, self.image)
-            elif self.image_mode == self.IMAGE_MODE_STRETCH:
-                painter.drawImage(self.rect(), self.image)
-            elif self.image_mode == self.IMAGE_MODE_MAINTAIN_SIZE:
-                w = min(self.rect().width(), self.image.width())
-                h = min(self.rect().height(), self.image.height())
-                img = self.image.copy(0, 0, int(w), int(h))
-                painter.drawImage(QRectF(self.rect().x(), self.rect().y(), w, h), img)
+            rect, image = self.compute_image()
+            painter.drawImage(rect, image)
 
         if self.text is not None:
 
@@ -173,6 +194,13 @@ class PaintableSelectorRectItem(SelectorRectItem):
             painter.setFont(self.font)
             painter.setPen(Qt.black)
             painter.drawText(self.rect(), 0, self.text)
+
+    def get_image_rect_on_parent(self):
+        rect, image = self.compute_image()
+        if self.parentItem() is None:
+            return rect
+        else:
+            return self.parentItem().mapRectFromItem(self, rect)
 
     def serialize(self, info):
         super().serialize(info)

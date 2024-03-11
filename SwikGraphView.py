@@ -6,6 +6,7 @@ from annotations.squareannotation import SquareAnnotation
 from page import Page
 from simplepage import SimplePage
 from swiktext import SwikText, SwikTextReplace
+from tools.tool_insert_image import InsertImageRectItem
 from widgets.pdf_widget import PdfWidget
 
 
@@ -56,6 +57,14 @@ class SwikGraphView(GraphView):
             page: Page = widget.parentItem()
             self.renderer.add_widget(page.get_index(), widget)
             pages_to_refresh.add(page.get_index())
+
+        images = [item for item in items if isinstance(item, InsertImageRectItem)]
+        for image in images:
+            page: Page = image.parentItem()
+            self.renderer.insert_image(page.get_index(), image.get_image_rect_on_parent(), image.get_image())
+            pages_to_refresh.add(page.get_index())
+            self.scene().removeItem(image)
+
 
         for index in pages_to_refresh:
             self.pages[index].invalidate()

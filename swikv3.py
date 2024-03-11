@@ -7,10 +7,10 @@ from PyQt5.QtNetwork import QUdpSocket, QHostAddress
 import resources
 import pyclip
 from PyQt5 import QtGui
-from PyQt5.QtCore import QPointF, Qt
-from PyQt5.QtGui import QPainter, QIcon, QKeySequence
+from PyQt5.QtCore import QPointF, Qt, QPoint
+from PyQt5.QtGui import QPainter, QIcon, QKeySequence, QCursor
 from PyQt5.QtWidgets import QApplication, QMainWindow, QShortcut, QFileDialog, QDialog, QMessageBox, QHBoxLayout, QWidget, QTabWidget, QVBoxLayout, QToolBar, \
-    QPushButton, QSizePolicy, QTabBar
+    QPushButton, QSizePolicy, QTabBar, QMenu
 
 import utils
 from GraphView import GraphView
@@ -23,6 +23,7 @@ from groupbox import GroupBox
 from keyboard_manager import KeyboardManager
 from manager import Manager
 from scene import Scene
+from swik_tab_widget import SwikTabWidget
 from swik_widget import SwikWidget
 from toolbars.zoom_toolbar import ZoomToolbar
 from tools.tool_drag import ToolDrag
@@ -41,10 +42,20 @@ from swikconfig import SwikConfig
 
 class MainWindow(QMainWindow):
 
+    TAB_MENU_OPEN_IN_OTHER_TAB = 0
+    TAB_MENU_OPEN_IN_OTHER_WINDOW = 1
+    TAB_MENU_OPEN_WITH = 2
+    TAB_MENU_LOCATE_IN_FOLDER = 3
+
+
     def __init__(self):
         super().__init__()
 
         self.config = SwikConfig()
+
+        ToolSign.configure(self.config)
+
+        self.config.read()
 
         menu_bar = self.menuBar()
         file_menu = menu_bar.addMenu('File')
@@ -53,7 +64,6 @@ class MainWindow(QMainWindow):
         open_recent.aboutToShow.connect(lambda: self.config.fill_recent(self, open_recent))
         file_menu.addAction('Save', self.save_file)
         file_menu.addAction('Save as', self.save_file_as)
-        #        file_menu.addAction('Locate in folder', lambda: os.system(self.config.get("file_browser") + " '" + self.renderer.get_filename() + "' &"))
         file_menu.addAction('Copy path', lambda: pyclip.copy(self.renderer.filename))
         edit_menu = menu_bar.addMenu('Edit')
         edit_menu.addSeparator()
@@ -82,10 +92,24 @@ class MainWindow(QMainWindow):
         self.setGeometry(100, 100, 640, 480)
         self.setAcceptDrops(True)
 
-        self.tab_widget = QTabWidget()
+        self.tab_widget = SwikTabWidget()
         self.tab_widget.addTab(QWidget(), "+")
         self.tab_widget.currentChanged.connect(self.tab_changed)
         self.tab_widget.setStyleSheet("QTabBar::tab { max-width: 300px; text-align: right; }")
+        self.tab_widget.add_menu_entry("Open copy in other tab", self.TAB_MENU_OPEN_IN_OTHER_TAB)
+        self.tab_widget.add_menu_entry("Open copy in other window", self.TAB_MENU_OPEN_IN_OTHER_WINDOW)
+        self.tab_widget.add_menu_entry('Locate in folder', self.TAB_MENU_LOCATE_IN_FOLDER)
+
+        # Add open with menu
+        command = self.config.get("other_pdf")
+        if command is not None and command != "None":
+            actions = []
+            for line in command.split("&&"):
+                data = line.split(" ")
+                actions.append((data[0], self.TAB_MENU_OPEN_WITH, data[1]) if len(data)==2 else (data[0], self.TAB_MENU_OPEN_WITH, data[0]))
+            self.tab_widget.add_menu_submenu("Open with", actions)
+        self.tab_widget.set_menu_callback(self.tab_menu)
+        # Done
 
         self.setCentralWidget(self.tab_widget)
 
@@ -99,10 +123,22 @@ class MainWindow(QMainWindow):
                     self.create_tab(tab)
             self.tab_widget.setCurrentIndex(0)
 
-    def get_widgets(self):
+    def tab_menu(self, action, code, data, widget):
+        print("tab_menu", action, code, data, widget)
+        filename = widget.get_filename()
+        if code == self.TAB_MENU_OPEN_IN_OTHER_TAB:
+            self.create_tab(filename)
+        elif code == self.TAB_MENU_OPEN_IN_OTHER_WINDOW:
+            subprocess.Popen([sys.executable, os.path.realpath(__file__), filename])
+        elif code == self.TAB_MENU_OPEN_WITH:
+            self.open_with_other(data)
+        elif code == self.TAB_MENU_LOCATE_IN_FOLDER:
+            os.system(self.config.get("file_browser") + " '" + widget.get_filename() + "' &")
+
+    def get_widgets(self) -> [SwikWidget]:
         return [self.tab_widget.widget(i) for i in range(self.tab_widget.count() - 1)]
 
-    def current(self):
+    def current(self) -> SwikWidget:
         return self.tab_widget.currentWidget()
 
     def tab_changed(self, index):
@@ -114,17 +150,9 @@ class MainWindow(QMainWindow):
 
     def create_tab(self, filename=None):
         widget = SwikWidget(self, self.tab_widget, self.config)
-        index = self.tab_widget.insertTab(self.tab_widget.count() - 1, widget, filename if filename is not None else "(None)")
-        close_button = QPushButton("x")
-        close_button.setContentsMargins(0, 0, 0, 15)
-        close_button.setFixedSize(20, 20)
-        close_button.setFlat(True)
-        close_button.widget = widget
-        close_button.clicked.connect(lambda y, x=widget: self.close_tab(x))
-        self.tab_widget.tabBar().setTabButton(index, QTabBar.RightSide, close_button)
+        self.tab_widget.new_tab(widget, filename)
         if filename is not None:
             widget.open_file(filename)
-        self.tab_widget.setCurrentIndex(index)
         return widget
 
     def close_tab(self, tab):
@@ -141,7 +169,8 @@ class MainWindow(QMainWindow):
         tabs = []
         for index in range(self.tab_widget.count() - 1):
             swik_widget = self.tab_widget.widget(index)
-            tabs.append(swik_widget.get_filename())
+            if (filename:=swik_widget.get_filename()) is not None:
+                tabs.append(filename)
 
         self.config.set_tabs(tabs)
         self.config.flush()

@@ -1,7 +1,7 @@
 import base64
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QImage
+from PyQt5.QtGui import QImage, QColor
 from PyQt5.QtWidgets import QMenu, QDialog, QMessageBox
 
 from dialogs import PasswordDialog
@@ -13,46 +13,48 @@ from tools.tool import Tool
 
 class SignerRectItem(ResizableRectItem):
     ACTION_SIGN = 0
+    ACTION_EDIT = 1
 
     def contextMenuEvent(self, event: 'QGraphicsSceneContextMenuEvent') -> None:
         menu = QMenu()
         menu.addAction("Sign", lambda: self.signals.action.emit(SignerRectItem.ACTION_SIGN, self))
+        menu.addAction("Edit", lambda: self.signals.action.emit(SignerRectItem.ACTION_EDIT, self))
         menu.addSeparator()
         menu.exec(event.screenPos())
 
 
 class ToolSign(Tool):
+
+    (configured, cfg_p12, cfg_password, cfg_signed_suffix,
+     cfg_signature_border, cfg_text_font_size, cfg_text,
+     cfg_text_stretch, cfg_text_timestamp, cfg_image_file,
+     cfg_image_stretch) = (False, None, None, None,
+                           None, None, None, None, None, None, None)
+
     def __init__(self, view, renderer, config):
         super().__init__(view, renderer, config)
         self.rubberband = None
-        self.cfg_p12 = None
-        self.cfg_password = None
-        self.cfg_signed_suffix = None
-        self.cfg_signature_border = None
-        self.cfg_text_font_size = None
-        self.cfg_text = None
-        self.cfg_text_stretch = None
-        self.cfg_text_timestamp = None
-        self.cfg_image_file = None
-        self.cfg_image_stretch = None
 
-    def configure(self):
-        signature = self.config.root().addSubSection("Digital Signature")
-        self.cfg_p12 = signature.addFile("p12", pretty="Signature File", extension=["p12", "pfx"], extension_name="PKCS#12")
-        self.cfg_password = signature.addPassword("password", pretty='Password')
-        self.cfg_signed_suffix = signature.addString("signed_suffix", pretty="Signed File Suffix", default="-signed")
+    @staticmethod
+    def configure(config):
+        signature = config.root().addSubSection("Digital Signature")
+        ToolSign.cfg_p12 = signature.addFile("p12", pretty="Signature File", extension=["p12", "pfx"], extension_name="PKCS#12")
+        ToolSign.cfg_password = signature.addPassword("password", pretty='Password')
+        ToolSign.cfg_signed_suffix = signature.addString("signed_suffix", pretty="Signed File Suffix", default="-signed")
         appearance = signature.addSubSection("Appearance")
-        self.cfg_signature_border = appearance.addInt("signature_border", pretty="Border width", default=0)
+
+        ToolSign.cfg_signature_border = appearance.addInt("signature_border", pretty="Border width", default=0)
         text = appearance.addSubSection("Text")
-        self.cfg_text_font_size = text.addInt("text_font_size", pretty="Font Size", default=11, max=85)
-        self.cfg_text = text.addEditBox("text_signature", pretty="Text",
+        ToolSign.cfg_text_font_size = text.addInt("text_font_size", pretty="Font Size", default=11, max=85)
+        ToolSign.cfg_text = text.addEditBox("text_signature", pretty="Text",
                                         default='Signed by&&%(signer)s&&Time: %(ts)s'.replace('\n', '\\n'))
-        self.cfg_text_stretch = text.addCheckbox("text_stretch", pretty="Stretch")
-        self.cfg_text_timestamp = text.addString("text_timestamp", default="%d/%m/%Y")
+        ToolSign.cfg_text_stretch = text.addCheckbox("text_stretch", pretty="Stretch")
+        ToolSign.cfg_text_timestamp = text.addString("text_timestamp", default="%d/%m/%Y")
 
         image = appearance.addSubSection("Image")
-        self.cfg_image_file = image.addFile("image_file", pretty="File", extension="png")
-        self.cfg_image_stretch = image.addCheckbox("image_stretch", pretty="Stretch")
+        ToolSign.cfg_image_file = image.addFile("image_file", pretty="File", extension="png")
+        ToolSign.cfg_image_stretch = image.addCheckbox("image_stretch", pretty="Stretch")
+        ToolSign.configured = True
 
     def mouse_pressed(self, event):
         page = self.view.get_page_at_pos(event.pos())
@@ -67,7 +69,7 @@ class ToolSign(Tool):
             text_mode = SignerRectItem.TEXT_MODE_STRETCH if self.cfg_text_stretch.get_value() else SignerRectItem.TEXT_MODE_KEEP
             image_mode = SignerRectItem.IMAGE_MODE_STRETCH if self.cfg_image_stretch.get_value() else SignerRectItem.IMAGE_MODE_MAINTAIN_RATIO
             self.rubberband = SignerRectItem(page, text=text, image=image, max_font_size=max_font_size, text_mode=text_mode,
-                                             image_mode=image_mode)
+                                             image_mode=image_mode, pen=Qt.transparent, brush=QColor(255, 0, 0, 80))
 
             self.view.setCursor(Qt.CrossCursor)
             self.rubberband.signals.action.connect(self.actions)
@@ -107,19 +109,19 @@ class ToolSign(Tool):
 
         res = self.apply_signature(filename, index, rect,
                                    password, output_filename,
-                                   font_size=self.config.get('text_font_size'),
-                                   border=self.config.get('signature_border'),
-                                   text=self.config.get('text_signature').replace('&&', '\n'),
-                                   image=self.config.get('image_file'),
-                                   timestamp=self.config.get('text_timestamp'),
-                                   text_stretch=1 if self.config.get('text_stretch') else 0,
-                                   image_stretch=0 if self.config.get('image_stretch') else 1)
+                                   font_size=self.cfg_text_font_size.get_value(),
+                                   border=self.cfg_signature_border.get_value(),
+                                   text=self.cfg_text.get_value().replace('&&', '\n'),
+                                   image=self.cfg_image_file.get_value(),
+                                   timestamp=self.cfg_text_timestamp.get_value(),
+                                   text_stretch=1 if self.cfg_text_stretch.get_value() else 0,
+                                   image_stretch=0 if self.cfg_image_stretch.get_value() else 1)
 
         if res == P12Signer.OK:
             QMessageBox.information(self.view, "Signature", "Document signed Successfully", QMessageBox.Ok)
             # Save Password only if the signature was successful
             if password_to_save is not None:
-                self.config.set('Password', password_to_save)
+                self.cfg_password.set_value(password_to_save)
             self.renderer.open_pdf(output_filename)
         else:
             QMessageBox.warning(self.view, "Signature", "Error signing the document", QMessageBox.Ok)
@@ -143,3 +145,17 @@ class ToolSign(Tool):
         if action == SignerRectItem.ACTION_SIGN:
             self.sign(rubberband.get_parent().index,
                       rubberband.get_rect_on_parent())
+        elif action == SignerRectItem.ACTION_EDIT:
+            if self.config.edit():
+                text = self.cfg_text.get_value().replace('&&', '\n')
+                image = QImage(self.cfg_image_file.get_value())
+                max_font_size = self.cfg_text_font_size.get_value()
+
+                text_mode = SignerRectItem.TEXT_MODE_STRETCH if self.cfg_text_stretch.get_value() else SignerRectItem.TEXT_MODE_KEEP
+                image_mode = SignerRectItem.IMAGE_MODE_STRETCH if self.cfg_image_stretch.get_value() else SignerRectItem.IMAGE_MODE_MAINTAIN_RATIO
+
+                rubberband.apply_kwargs(text=text, image=image, max_font_size=max_font_size, text_mode=text_mode,
+                                             image_mode=image_mode)
+                rubberband.update()
+
+

@@ -28,6 +28,7 @@ from progressing import Progressing
 from scene import Scene
 from toolbars.zoom_toolbar import ZoomToolbar
 from tools.tool_drag import ToolDrag
+from tools.tool_insert_image import ToolInsertImage
 from tools.toolcrop import ToolCrop
 from tools.toolrearranger import ToolRearrange
 from tools.toolredactannotation import ToolRedactAnnotation
@@ -66,6 +67,7 @@ class SwikWidget(QWidget):
         self.manager.register_tool('square_annot', ToolSquareAnnotation(self.view, self.renderer, self.config), False)
         self.manager.register_tool('crop', ToolCrop(self.view, self.renderer, self.config), False)
         self.manager.register_tool('drag', ToolDrag(self.view, self.renderer, self.config), False)
+        self.manager.register_tool('insert_image', ToolInsertImage(self.view, self.renderer, self.config), False)
 
         self.key_manager = KeyboardManager(self)
         self.key_manager.register_action(Qt.Key_Delete, self.delete_objects)
@@ -77,8 +79,6 @@ class SwikWidget(QWidget):
         self.key_manager.register_combination_action('Ctrl+M', self.iterate_mode)
         self.key_manager.register_combination_action('Ctrl+Z', self.scene.tracker().undo)
         self.key_manager.register_combination_action('Ctrl+Shift+Z', self.scene.tracker().redo)
-
-        self.config.load("swik.yaml")
 
         self.view.setRenderHint(QPainter.Antialiasing)
         self.view.setRenderHint(QPainter.TextAntialiasing)
@@ -95,6 +95,7 @@ class SwikWidget(QWidget):
         self.mode_group.add(self.manage_tool, icon=":/icons/crop.png", text="Crop", tool="crop")
         self.mode_group.add(self.manage_tool, icon=":/icons/annotate.png", text="Annotate", tool="square_annot")
         self.mode_group.add(self.manage_tool, icon=":/icons/white.png", text="Anonymize", tool="redact_annot")
+        self.mode_group.add(self.manage_tool, icon=":/icons/image.png", text="Insert Image", tool="insert_image")
         self.mode_group.add(self.manage_tool, icon=":/icons/shuffle.png", text="Shuffle Pages", tool="rearrange")
         self.sign_btn.setEnabled(self.config.get("p12") is not None)
 
@@ -126,9 +127,11 @@ class SwikWidget(QWidget):
         helper.setLayout(QVBoxLayout())
         helper.layout().addWidget(self.toolbar)
         helper.layout().addWidget(self.view)
+        helper.layout().setContentsMargins(2, 2, 2, 2)
 
         self.splitter.addWidget(self.miniature_view)
         self.splitter.addWidget(helper)
+        self.layout().setContentsMargins(2, 2, 2, 2)
 
     def preferences_changed(self):
         self.sign_btn.setEnabled(self.config.get("p12") is not None)

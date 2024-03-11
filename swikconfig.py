@@ -22,7 +22,7 @@ class SwikConfig(EasyConfig):
         self.init_config()
 
     def flush(self):
-        self.save(self.base_dir + "swik.yaml")
+        self.save(self.base_dir + "swikV3.yaml")
 
     def get_open_other_pdf_in(self):
         return self.open_other_pdf_in.get_value()
@@ -48,19 +48,6 @@ class SwikConfig(EasyConfig):
         signature = self.root().addSubSection("Image Signature")
         signature.addFile("image_signature", pretty="Signature File", extension=["png", "jpg"], extension_name="Image")
 
-        appearance = signature.addSubSection("Appearance")
-        appearance.addInt("signature_border", pretty="Border width", default=0)
-        text = appearance.addSubSection("Text")
-        text.addInt("text_font_size", pretty="Font Size", default=11, max=25)
-        text.addEditBox("text_signature", pretty="Text",
-                        default='Signed by&&%(signer)s&&Time: %(ts)s'.replace('\n', '\\n'))
-        text.addCheckbox("text_stretch", pretty="Stretch")
-        text.addString("text_timestamp", default="%d/%m/%Y")
-
-        image = appearance.addSubSection("Image")
-        image.addFile("image_file", pretty="File", extension="png")
-        image.addCheckbox("image_stretch", pretty="Stretch")
-
         ## Private
         private = self.root().addSubSection("Private", hidden=True)
         private.addString("last")
@@ -83,7 +70,8 @@ class SwikConfig(EasyConfig):
         private.addDict("print_options")
         self.tabs = private.addList("tabs")
 
-        self.load(self.base_dir + "swik.yaml")
+    def read(self):
+        self.load(self.base_dir + "swikV3.yaml")
 
     def get_tabs(self, index=None):
         if index is not None:

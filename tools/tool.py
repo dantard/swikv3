@@ -10,7 +10,7 @@ class BasicTool(QObject):
         self.view = view
         self.renderer = renderer
         self.config: EasyConfig = config
-
+    @staticmethod
     def configure(self):
         pass
 
