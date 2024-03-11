@@ -41,12 +41,10 @@ from swikconfig import SwikConfig
 
 
 class MainWindow(QMainWindow):
-
     TAB_MENU_OPEN_IN_OTHER_TAB = 0
     TAB_MENU_OPEN_IN_OTHER_WINDOW = 1
     TAB_MENU_OPEN_WITH = 2
     TAB_MENU_LOCATE_IN_FOLDER = 3
-
 
     def __init__(self):
         super().__init__()
@@ -93,12 +91,13 @@ class MainWindow(QMainWindow):
         self.setAcceptDrops(True)
 
         self.tab_widget = SwikTabWidget()
-        self.tab_widget.addTab(QWidget(), "+")
-        self.tab_widget.currentChanged.connect(self.tab_changed)
+        # self.tab_widget.addTab(QWidget(), "+")
+        # self.tab_widget.currentChanged.connect(self.tab_changed)
         self.tab_widget.setStyleSheet("QTabBar::tab { max-width: 300px; text-align: right; }")
         self.tab_widget.add_menu_entry("Open copy in other tab", self.TAB_MENU_OPEN_IN_OTHER_TAB)
         self.tab_widget.add_menu_entry("Open copy in other window", self.TAB_MENU_OPEN_IN_OTHER_WINDOW)
         self.tab_widget.add_menu_entry('Locate in folder', self.TAB_MENU_LOCATE_IN_FOLDER)
+        self.tab_widget.plus_clicked.connect(lambda: self.create_tab(None))
 
         # Add open with menu
         command = self.config.get("other_pdf")
@@ -106,7 +105,7 @@ class MainWindow(QMainWindow):
             actions = []
             for line in command.split("&&"):
                 data = line.split(" ")
-                actions.append((data[0], self.TAB_MENU_OPEN_WITH, data[1]) if len(data)==2 else (data[0], self.TAB_MENU_OPEN_WITH, data[0]))
+                actions.append((data[0], self.TAB_MENU_OPEN_WITH, data[1]) if len(data) == 2 else (data[0], self.TAB_MENU_OPEN_WITH, data[0]))
             self.tab_widget.add_menu_submenu("Open with", actions)
         self.tab_widget.set_menu_callback(self.tab_menu)
         # Done
@@ -169,7 +168,7 @@ class MainWindow(QMainWindow):
         tabs = []
         for index in range(self.tab_widget.count() - 1):
             swik_widget = self.tab_widget.widget(index)
-            if (filename:=swik_widget.get_filename()) is not None:
+            if (filename := swik_widget.get_filename()) is not None:
                 tabs.append(filename)
 
         self.config.set_tabs(tabs)

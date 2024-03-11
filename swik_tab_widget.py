@@ -2,9 +2,9 @@ import os
 import subprocess
 import sys
 
-from PyQt5.QtCore import QPoint
-from PyQt5.QtWidgets import QTabWidget, QPushButton, QWidget, QHBoxLayout, QTabBar, QMenu, QAction
-
+from PyQt5 import QtCore
+from PyQt5.QtCore import QPoint, Qt, pyqtSignal, QSize
+from PyQt5.QtWidgets import QTabWidget, QPushButton, QWidget, QHBoxLayout, QTabBar, QMenu, QAction, QLabel
 
 
 class MyAction(QAction):
@@ -14,13 +14,36 @@ class MyAction(QAction):
         self.data = data
 
 
-
 class SwikTabWidget(QTabWidget):
+    plus_clicked = pyqtSignal()
+
     def __init__(self, parent=None):
         super(SwikTabWidget, self).__init__(parent)
         self.setMovable(True)
         self.menu = QMenu()
         self.menu_callback = None
+
+        class PB(QWidget):
+            def __init__(self, text, parent=None):
+                super(PB, self).__init__(parent)
+                self.setLayout(QHBoxLayout())
+                self.layout().addWidget(QLabel(" ", self))
+                self.pp = QPushButton(text, self)
+                self.pp.setFixedSize(20, 20)
+                self.layout().addWidget(self.pp)
+                self.pp.setVisible(True)
+                self.pp.setContentsMargins(0, 0, 5, 8)
+                self.layout().setContentsMargins(0, 0, 5, 5)
+
+        pb = PB("+")
+        self.setCornerWidget(pb, Qt.TopRightCorner)
+        #        self.setTabBar(TabBarPlus())
+        self.plusButton = QPushButton("+", self)
+        self.plusButton.clicked.connect(self.plus_clicked.emit)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self.move_plus_button()
 
     def add_menu_entry(self, name, code=0, data=None):
         qa = MyAction(name, code, data, self)
@@ -71,3 +94,17 @@ class SwikTabWidget(QTabWidget):
 
         self.tabBar().setTabButton(index, QTabBar.RightSide, widget.a)
         self.setCurrentIndex(index)
+        self.move_plus_button()
+
+    def move_plus_button(self):
+        xpos = 0
+        for i in range(self.tabBar().count()):
+            rect = self.tabBar().tabRect(i)
+            xpos += rect.width()
+        self.plusButton.setGeometry(xpos + 5, 5, 20, 20)
+        if xpos > self.width() - 35:
+            self.plusButton.hide()
+            self.cornerWidget().show()
+        else:
+            self.plusButton.show()
+            self.cornerWidget().hide()
