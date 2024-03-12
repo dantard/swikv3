@@ -63,6 +63,7 @@ class SwikTabWidget(QTabWidget):
         self.menu_callback = callback
 
     def menu_popup(self, pos, widget):
+        self.menu.setEnabled(widget.get_filename() is not None)
         res = self.menu.exec(pos)
         if res and self.menu_callback:
             self.menu_callback(res.text(), res.code, res.data, widget)

@@ -15,8 +15,24 @@ from tools.tool import Tool
 class InsertImageRectItem(ResizableRectItem):
     def contextMenuEvent(self, event):
         menu = QMenu()
-        menu.addMenu("Set Mode Stretch")
-        menu.exec(event.screenPos())
+        image_mode = self.get_image_mode()
+        stretch = menu.addAction("Set Mode Stretch")
+        stretch.setCheckable(True)
+        stretch.setChecked(image_mode == self.IMAGE_MODE_STRETCH)
+        maintain_ratio = menu.addAction("Set Mode Maintain Ratio")
+        maintain_ratio.setCheckable(True)
+        maintain_ratio.setChecked(image_mode == self.IMAGE_MODE_MAINTAIN_RATIO)
+        maintain_size = menu.addAction("Set Mode Maintain Size")
+        maintain_size.setCheckable(True)
+        maintain_size.setChecked(image_mode == self.IMAGE_MODE_MAINTAIN_SIZE)
+        res = menu.exec(event.screenPos())
+        if res == stretch:
+            self.set_image_mode(self.IMAGE_MODE_STRETCH)
+        elif res == maintain_ratio:
+            self.set_image_mode(self.IMAGE_MODE_MAINTAIN_RATIO)
+        elif res == maintain_size:
+            self.set_image_mode(self.IMAGE_MODE_MAINTAIN_SIZE)
+        self.update()
 
 
 class ToolInsertImage(Tool):
@@ -57,3 +73,7 @@ class ToolInsertImage(Tool):
 
     def finish(self):
         self.view.setCursor(Qt.ArrowCursor)
+
+class ToolInserSignatureImage(ToolInsertImage):
+    def init(self):
+        self.image = QImage(self.config.get("image_signature", ""))

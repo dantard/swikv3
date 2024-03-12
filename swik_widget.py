@@ -22,13 +22,14 @@ from dialogs import PasswordDialog
 from font_manager import FontManager
 from groupbox import GroupBox
 from keyboard_manager import KeyboardManager
+from long_press_button import LongPressButton
 from manager import Manager
 from miniature_view import MiniatureView
 from progressing import Progressing
 from scene import Scene
 from toolbars.zoom_toolbar import ZoomToolbar
 from tools.tool_drag import ToolDrag
-from tools.tool_insert_image import ToolInsertImage
+from tools.tool_insert_image import ToolInsertImage, ToolInserSignatureImage
 from tools.toolcrop import ToolCrop
 from tools.toolrearranger import ToolRearrange
 from tools.toolredactannotation import ToolRedactAnnotation
@@ -39,6 +40,8 @@ from toolbars.navigationtoolbar import NavigationToolbar
 from page import Page
 from renderer import MuPDFRenderer
 from toolbars.searchtoolbar import TextSearchToolbar
+
+
 
 
 class SwikWidget(QWidget):
@@ -69,6 +72,7 @@ class SwikWidget(QWidget):
         self.manager.register_tool('crop', ToolCrop(self.view, self.renderer, self.config), False)
         self.manager.register_tool('drag', ToolDrag(self.view, self.renderer, self.config), False)
         self.manager.register_tool('insert_image', ToolInsertImage(self.view, self.renderer, self.config), False)
+        self.manager.register_tool('insert_signature_image', ToolInserSignatureImage(self.view, self.renderer, self.config), False)
 
         self.key_manager = KeyboardManager(self)
         self.key_manager.register_action(Qt.Key_Delete, self.delete_objects)
@@ -90,6 +94,7 @@ class SwikWidget(QWidget):
         self.save_btn = self.toolbar.addAction("Save", self.save_file)
         self.save_btn.setIcon(QIcon(":/icons/save.png"))
         self.toolbar.addSeparator()
+        #self.toolbar.addWidget(LongPressButton())
 
         self.mode_group = GroupBox()
         self.mode_group.add(self.manage_tool, True, icon=":/icons/text_cursor.png", text="Select Text", tool="text_selection")
@@ -98,6 +103,7 @@ class SwikWidget(QWidget):
         self.mode_group.add(self.manage_tool, icon=":/icons/annotate.png", text="Annotate", tool="square_annot")
         self.mode_group.add(self.manage_tool, icon=":/icons/white.png", text="Anonymize", tool="redact_annot")
         self.mode_group.add(self.manage_tool, icon=":/icons/image.png", text="Insert Image", tool="insert_image")
+        self.mode_group.add(self.manage_tool, icon=":/icons/signature.png", text="Insert Signature", tool="insert_signature_image")
         self.mode_group.add(self.manage_tool, icon=":/icons/shuffle.png", text="Shuffle Pages", tool="rearrange")
         self.sign_btn.setEnabled(self.config.get("p12") is not None)
 

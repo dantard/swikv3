@@ -40,6 +40,8 @@ from toolbars.searchtoolbar import TextSearchToolbar
 from swikconfig import SwikConfig
 
 
+
+
 class MainWindow(QMainWindow):
     TAB_MENU_OPEN_IN_OTHER_TAB = 0
     TAB_MENU_OPEN_IN_OTHER_WINDOW = 1
@@ -56,28 +58,21 @@ class MainWindow(QMainWindow):
         self.config.read()
 
         menu_bar = self.menuBar()
+
+        # Setup file menu
         file_menu = menu_bar.addMenu('File')
         file_menu.addAction('Open', self.open_file)
         open_recent = file_menu.addMenu("Open Recent")
         open_recent.aboutToShow.connect(lambda: self.config.fill_recent(self, open_recent))
-        file_menu.addAction('Save', self.save_file)
-        file_menu.addAction('Save as', self.save_file_as)
-        file_menu.addAction('Copy path', lambda: pyclip.copy(self.renderer.filename))
-        edit_menu = menu_bar.addMenu('Edit')
-        edit_menu.addSeparator()
-        edit_menu.addAction('Preferences', self.preferences)
-
-        self.tool_menu = menu_bar.addMenu('Tools')
-        self.tool_menu.addAction('Flatten', lambda: self.flatten(False))
-        self.tool_menu.addAction('Flatten and Open', lambda: self.flatten(True))
-        self.tool_menu.addSeparator()
-        self.tool_menu.addAction('Append PDF', self.append_pdf)
-        self.tool_menu.addSeparator()
-        self.tool_menu.addAction('Extract Fonts', self.extract_fonts)
-
+        save = file_menu.addAction('Save', self.save_file)
+        save_as = file_menu.addAction('Save as', self.save_file_as)
+        copy_path = file_menu.addAction('Copy path', lambda: pyclip.copy(self.renderer.filename))
         command = self.config.get("other_pdf")
+        self.file_menu_actions = [save, save_as, copy_path]
+
         if command is not None and command != "None":
             open_wo_odf = file_menu.addMenu('Open with other Viewer')
+            self.file_menu_actions.append(open_wo_odf)
             for line in command.split("&&"):
                 data = line.split(" ")
                 if len(data) == 2:
@@ -85,6 +80,23 @@ class MainWindow(QMainWindow):
                 else:
                     name = cmd = data[0]
                 open_wo_odf.addAction(name, lambda x=cmd: self.open_with_other(x))
+        # end setup file menu
+
+        # Setup edit menu
+        self.edit_menu = menu_bar.addMenu('Edit')
+        self.edit_menu.addSeparator()
+        self.edit_menu.addAction('Preferences', self.preferences)
+        # end setup edit menu
+
+        # Setup tools menu
+        self.tool_menu = menu_bar.addMenu('Tools')
+        self.tool_menu.addAction('Flatten', lambda: self.flatten(False))
+        self.tool_menu.addAction('Flatten and Open', lambda: self.flatten(True))
+        self.tool_menu.addSeparator()
+        self.tool_menu.addAction('Append PDF', self.append_pdf)
+        self.tool_menu.addSeparator()
+        self.tool_menu.addAction('Extract Fonts', self.extract_fonts)
+        # end setup tools menu
 
         self.setWindowTitle("Swik")
         self.setGeometry(100, 100, 640, 480)
@@ -113,8 +125,11 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.tab_widget)
 
         # Open last files if required
+        print("hey")
         if self.config.get("open_last"):
+
             tabs = self.config.get_tabs()
+            print("he1", len(tabs))
             if len(tabs) == 0:
                 self.create_tab()
             else:
@@ -135,7 +150,7 @@ class MainWindow(QMainWindow):
             os.system(self.config.get("file_browser") + " '" + widget.get_filename() + "' &")
 
     def get_widgets(self) -> [SwikWidget]:
-        return [self.tab_widget.widget(i) for i in range(self.tab_widget.count() - 1)]
+        return [self.tab_widget.widget(i) for i in range(self.tab_widget.count())]
 
     def current(self) -> SwikWidget:
         return self.tab_widget.currentWidget()
@@ -148,6 +163,9 @@ class MainWindow(QMainWindow):
 
     def set_interaction_enabled(self):
         self.tool_menu.setEnabled(self.current().is_interaction_enabled())
+        #self.edit_menu.setEnabled(self.current().is_interaction_enabled())
+        for action in self.file_menu_actions:
+            action.setEnabled(self.current().is_interaction_enabled())
 
     def create_tab(self, filename=None):
         widget = SwikWidget(self, self.tab_widget, self.config)
@@ -169,11 +187,11 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
         tabs = []
-        for index in range(self.tab_widget.count() - 1):
+        for index in range(self.tab_widget.count()):
             swik_widget = self.tab_widget.widget(index)
             if (filename := swik_widget.get_filename()) is not None:
                 tabs.append(filename)
-
+        print("tabs", tabs)
         self.config.set_tabs(tabs)
         self.config.flush()
         super().closeEvent(a0)
@@ -188,6 +206,7 @@ class MainWindow(QMainWindow):
             for widget in self.get_widgets():
                 if widget.get_filename() is None:
                     widget.open_file(filename)
+                    self.set_interaction_enabled()
                     break
             else:
                 self.create_tab(filename)
