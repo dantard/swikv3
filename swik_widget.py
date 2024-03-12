@@ -45,6 +45,7 @@ class SwikWidget(QWidget):
 
     def __init__(self, window, tab_widget, config):
         super().__init__()
+        self.interaction_enabled = False
         self.win = window
         self.tabw = tab_widget
         self.config = config
@@ -86,7 +87,8 @@ class SwikWidget(QWidget):
 
         self.toolbar = QToolBar()
         self.toolbar.addAction("Open", self.open_file).setIcon(QIcon(":/icons/open.png"))
-        self.toolbar.addAction("Save", self.save_file).setIcon(QIcon(":/icons/save.png"))
+        self.save_btn = self.toolbar.addAction("Save", self.save_file)
+        self.save_btn.setIcon(QIcon(":/icons/save.png"))
         self.toolbar.addSeparator()
 
         self.mode_group = GroupBox()
@@ -132,6 +134,18 @@ class SwikWidget(QWidget):
         self.splitter.addWidget(self.miniature_view)
         self.splitter.addWidget(helper)
         self.layout().setContentsMargins(2, 2, 2, 2)
+        self.set_enable_interaction(False)
+
+    def set_enable_interaction(self, enable):
+        self.mode_group.set_enabled(enable)
+        self.zoom_toolbar.setEnabled(enable)
+        self.nav_toolbar.setEnabled(enable)
+        self.finder_toolbar.setEnabled(enable)
+        self.save_btn.setEnabled(enable)
+        self.interaction_enabled = enable
+
+    def is_interaction_enabled(self):
+        return self.interaction_enabled
 
     def preferences_changed(self):
         self.sign_btn.setEnabled(self.config.get("p12") is not None)
@@ -187,14 +201,7 @@ class SwikWidget(QWidget):
             item.deserialize(self.info)
 
     def copy(self):
-        selected = self.view.scene().selectedItems()
-        for item in selected:
-            kind = type(item)
-            print("Creating ", kind, " from ", item, " with ", item.get_kwargs())
-            # obj = kind(copy=item, offset=QPointF(50, 50))
-            obj = kind()
-            info = {}
-            item.serialize(self.info)
+        pass
 
     def document_changed(self):
         self.font_manager.update_document_fonts()
@@ -241,6 +248,7 @@ class SwikWidget(QWidget):
                     res = self.renderer.open_pdf(filename, dialog.getText())
 
             if res == MuPDFRenderer.OPEN_OK:
+                self.set_enable_interaction(True)
                 self.config.set('last', self.renderer.get_filename())
                 self.config.flush()
             else:

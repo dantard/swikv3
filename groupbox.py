@@ -2,12 +2,15 @@ from PyQt5.QtCore import QSize
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QButtonGroup, QPushButton, QToolBar, QAction
 
+
 class GroupButton(QPushButton):
     def __init__(self, tool=None):
         super().__init__()
         self.tool = tool
+
     def get_tool(self):
         return self.tool
+
 
 class GroupBox:
     def __init__(self):
@@ -61,3 +64,7 @@ class GroupBox:
     def append(self, toolbar: QToolBar):
         for btn in self.buttons:
             toolbar.addWidget(btn)
+
+    def set_enabled(self, value):
+        for btn in self.buttons:
+            btn.setEnabled(value)

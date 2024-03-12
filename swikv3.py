@@ -67,13 +67,13 @@ class MainWindow(QMainWindow):
         edit_menu.addSeparator()
         edit_menu.addAction('Preferences', self.preferences)
 
-        tool_menu = menu_bar.addMenu('Tools')
-        tool_menu.addAction('Flatten', lambda: self.flatten(False))
-        tool_menu.addAction('Flatten and Open', lambda: self.flatten(True))
-        tool_menu.addSeparator()
-        tool_menu.addAction('Append PDF', self.append_pdf)
-        tool_menu.addSeparator()
-        tool_menu.addAction('Extract Fonts', self.extract_fonts)
+        self.tool_menu = menu_bar.addMenu('Tools')
+        self.tool_menu.addAction('Flatten', lambda: self.flatten(False))
+        self.tool_menu.addAction('Flatten and Open', lambda: self.flatten(True))
+        self.tool_menu.addSeparator()
+        self.tool_menu.addAction('Append PDF', self.append_pdf)
+        self.tool_menu.addSeparator()
+        self.tool_menu.addAction('Extract Fonts', self.extract_fonts)
 
         command = self.config.get("other_pdf")
         if command is not None and command != "None":
@@ -92,7 +92,7 @@ class MainWindow(QMainWindow):
 
         self.tab_widget = SwikTabWidget()
         # self.tab_widget.addTab(QWidget(), "+")
-        # self.tab_widget.currentChanged.connect(self.tab_changed)
+        self.tab_widget.currentChanged.connect(self.tab_changed)
         self.tab_widget.setStyleSheet("QTabBar::tab { max-width: 300px; text-align: right; }")
         self.tab_widget.add_menu_entry("Open copy in other tab", self.TAB_MENU_OPEN_IN_OTHER_TAB)
         self.tab_widget.add_menu_entry("Open copy in other window", self.TAB_MENU_OPEN_IN_OTHER_WINDOW)
@@ -141,17 +141,20 @@ class MainWindow(QMainWindow):
         return self.tab_widget.currentWidget()
 
     def tab_changed(self, index):
-        if index == self.tab_widget.count() - 1:
-            self.create_tab(None)
-            self.tab_widget.setCurrentIndex(index)
         self.setWindowTitle(
             "Swik" + (" - " + self.tab_widget.currentWidget().get_filename()) if self.tab_widget.currentWidget().get_filename() is not None else "")
+        enabled = self.current().is_interaction_enabled()
+        self.set_interaction_enabled()
+
+    def set_interaction_enabled(self):
+        self.tool_menu.setEnabled(self.current().is_interaction_enabled())
 
     def create_tab(self, filename=None):
         widget = SwikWidget(self, self.tab_widget, self.config)
         self.tab_widget.new_tab(widget, filename)
         if filename is not None:
             widget.open_file(filename)
+            self.set_interaction_enabled()
         return widget
 
     def close_tab(self, tab):

@@ -28,21 +28,25 @@ class SwikTabWidget(QTabWidget):
                 super(PB, self).__init__(parent)
                 self.setLayout(QHBoxLayout())
                 self.layout().addWidget(QLabel(" ", self))
-                self.pp = QPushButton(text, self)
-                self.pp.setFixedSize(20, 20)
-                self.layout().addWidget(self.pp)
-                self.pp.setVisible(True)
-                self.pp.setContentsMargins(0, 0, 5, 8)
+                self.pb = QPushButton(text, self)
+                self.pb.setFixedSize(20, 20)
+                self.layout().addWidget(self.pb)
+                self.pb.setVisible(True)
+                self.pb.setContentsMargins(0, 0, 5, 8)
                 self.layout().setContentsMargins(0, 0, 5, 5)
 
         pb = PB("+")
+        pb.pb.clicked.connect(self.plus_clicked.emit)
         self.setCornerWidget(pb, Qt.TopRightCorner)
-        #        self.setTabBar(TabBarPlus())
         self.plusButton = QPushButton("+", self)
         self.plusButton.clicked.connect(self.plus_clicked.emit)
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
+        self.move_plus_button()
+
+    def setTabText(self, index: int, a1: str) -> None:
+        super().setTabText(index, a1)
         self.move_plus_button()
 
     def add_menu_entry(self, name, code=0, data=None):
@@ -69,8 +73,22 @@ class SwikTabWidget(QTabWidget):
             self.removeTab(index)
             widget.deleteLater()
 
+    def removeTab(self, index: int) -> None:
+        super().removeTab(index)
+        self.move_plus_button()
+
+    def addTab(self, widget: QWidget, a1: str) -> int:
+        index = super().addTab(widget, a1)
+        self.move_plus_button()
+        return index
+
+    def insertTab(self, index: int, widget: QWidget, a1: str) -> None:
+        index = super().insertTab(index, widget, a1)
+        self.move_plus_button()
+        return index
+
     def new_tab(self, widget, filename):
-        index = self.insertTab(self.count() - 1, widget, filename if filename is not None else "(None)")
+        index = self.addTab(widget, filename if filename is not None else "(None)")
         close_button = QPushButton("⨯")
         close_button.setContentsMargins(0, 0, 0, 0)
         close_button.setFixedSize(20, 20)
