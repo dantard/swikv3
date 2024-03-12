@@ -58,6 +58,23 @@ class SwikWidget(QWidget):
         self.scene = Scene()
         self.manager = Manager(self.renderer, self.config)
         self.view = SwikGraphView(self.manager, self.renderer, self.scene, page=Page, mode=self.config.get('mode', LayoutManager.MODE_VERTICAL))
+        self.view.setRenderHint(QPainter.Antialiasing)
+        self.view.setRenderHint(QPainter.TextAntialiasing)
+        self.view.set_natural_hscroll(self.config.get('natural_hscroll'))
+
+        self.miniature_view = MiniatureView(self.manager, self.renderer, QGraphicsScene())
+        self.miniature_view.setRenderHint(QPainter.Antialiasing)
+        self.miniature_view.setRenderHint(QPainter.TextAntialiasing)
+        self.miniature_view.setRenderHint(QPainter.SmoothPixmapTransform)
+        self.miniature_view.setRenderHint(QPainter.HighQualityAntialiasing)
+        self.miniature_view.setRenderHint(QPainter.NonCosmeticDefaultPen)
+        self.miniature_view.setMaximumWidth(350)
+        self.miniature_view.setMinimumWidth(180)
+        self.miniature_view.set_alignment(Qt.AlignTop)
+        self.miniature_view.set_fit_width(True)
+        self.view.page_clicked.connect(self.miniature_view.set_page)
+        self.miniature_view.page_clicked.connect(self.view.set_page)
+
         self.manager.set_view(self.view)
 
         self.font_manager = FontManager(self.renderer)
@@ -66,7 +83,7 @@ class SwikWidget(QWidget):
 
         self.manager.register_tool('text_selection', TextSelection(self.view, self.renderer, self.font_manager, self.config), True)
         self.manager.register_tool('sign', ToolSign(self.view, self.renderer, self.config), False)
-        self.manager.register_tool('rearrange', ToolRearrange(self.view, self.renderer, self.config), False)
+        self.manager.register_tool('rearrange', ToolRearrange([self.view, self.miniature_view], self.renderer, self.config), False)
         self.manager.register_tool('redact_annot', ToolRedactAnnotation(self.view, self.renderer, self.config), False)
         self.manager.register_tool('square_annot', ToolSquareAnnotation(self.view, self.renderer, self.config), False)
         self.manager.register_tool('crop', ToolCrop(self.view, self.renderer, self.config), False)
@@ -85,9 +102,6 @@ class SwikWidget(QWidget):
         self.key_manager.register_combination_action('Ctrl+Z', self.scene.tracker().undo)
         self.key_manager.register_combination_action('Ctrl+Shift+Z', self.scene.tracker().redo)
 
-        self.view.setRenderHint(QPainter.Antialiasing)
-        self.view.setRenderHint(QPainter.TextAntialiasing)
-        self.view.set_natural_hscroll(self.config.get('natural_hscroll'))
 
         self.toolbar = QToolBar()
         self.toolbar.addAction("Open", self.open_file).setIcon(QIcon(":/icons/open.png"))
@@ -103,28 +117,17 @@ class SwikWidget(QWidget):
         self.mode_group.add(self.manage_tool, icon=":/icons/annotate.png", text="Annotate", tool="square_annot")
         self.mode_group.add(self.manage_tool, icon=":/icons/white.png", text="Anonymize", tool="redact_annot")
         self.mode_group.add(self.manage_tool, icon=":/icons/image.png", text="Insert Image", tool="insert_image")
-        self.mode_group.add(self.manage_tool, icon=":/icons/signature.png", text="Insert Signature", tool="insert_signature_image")
+        self.image_sign_btn = self.mode_group.add(self.manage_tool, icon=":/icons/signature.png", text="Insert Signature", tool="insert_signature_image")
         self.mode_group.add(self.manage_tool, icon=":/icons/shuffle.png", text="Shuffle Pages", tool="rearrange")
+        print("puta iryo", self.config.get("p12"), )
         self.sign_btn.setEnabled(self.config.get("p12") is not None)
+        self.image_sign_btn.setEnabled(self.config.get("image_signature") is not None)
 
         self.mode_group.append(self.toolbar)
         self.manager.tool_finished.connect(self.mode_group.reset)
         self.zoom_toolbar = ZoomToolbar(self.view, self.toolbar)
         self.nav_toolbar = NavigationToolbar(self.view, self.toolbar)
         self.finder_toolbar = TextSearchToolbar(self.view, self.renderer, self.toolbar)
-
-        self.miniature_view = MiniatureView(self.manager, self.renderer, QGraphicsScene())
-        self.miniature_view.setRenderHint(QPainter.Antialiasing)
-        self.miniature_view.setRenderHint(QPainter.TextAntialiasing)
-        self.miniature_view.setRenderHint(QPainter.SmoothPixmapTransform)
-        self.miniature_view.setRenderHint(QPainter.HighQualityAntialiasing)
-        self.miniature_view.setRenderHint(QPainter.NonCosmeticDefaultPen)
-        self.miniature_view.setMaximumWidth(350)
-        self.miniature_view.setMinimumWidth(180)
-        self.miniature_view.set_alignment(Qt.AlignTop)
-        self.miniature_view.set_fit_width(True)
-        self.view.page_clicked.connect(self.miniature_view.set_page)
-        self.miniature_view.page_clicked.connect(self.view.set_page)
 
         self.splitter = QSplitter(Qt.Horizontal)
 
@@ -155,6 +158,7 @@ class SwikWidget(QWidget):
 
     def preferences_changed(self):
         self.sign_btn.setEnabled(self.config.get("p12") is not None)
+        self.image_sign_btn.setEnabled(self.config.get("image_signature") is not None)
 
     def set_tab(self, tab):
         self.tab = tab

@@ -9,7 +9,8 @@ import pyclip
 from PyQt5 import QtGui
 from PyQt5.QtCore import QPointF, Qt, QPoint
 from PyQt5.QtGui import QPainter, QIcon, QKeySequence, QCursor
-from PyQt5.QtWidgets import QApplication, QMainWindow, QShortcut, QFileDialog, QDialog, QMessageBox, QHBoxLayout, QWidget, QTabWidget, QVBoxLayout, QToolBar, \
+from PyQt5.QtWidgets import QApplication, QMainWindow, QShortcut, QFileDialog, QDialog, QMessageBox, QHBoxLayout, \
+    QWidget, QTabWidget, QVBoxLayout, QToolBar, \
     QPushButton, QSizePolicy, QTabBar, QMenu
 
 import utils
@@ -38,8 +39,6 @@ from page import Page
 from renderer import MuPDFRenderer
 from toolbars.searchtoolbar import TextSearchToolbar
 from swikconfig import SwikConfig
-
-
 
 
 class MainWindow(QMainWindow):
@@ -117,7 +116,8 @@ class MainWindow(QMainWindow):
             actions = []
             for line in command.split("&&"):
                 data = line.split(" ")
-                actions.append((data[0], self.TAB_MENU_OPEN_WITH, data[1]) if len(data) == 2 else (data[0], self.TAB_MENU_OPEN_WITH, data[0]))
+                actions.append((data[0], self.TAB_MENU_OPEN_WITH, data[1]) if len(data) == 2 else (
+                data[0], self.TAB_MENU_OPEN_WITH, data[0]))
             self.tab_widget.add_menu_submenu("Open with", actions)
         self.tab_widget.set_menu_callback(self.tab_menu)
         # Done
@@ -157,13 +157,14 @@ class MainWindow(QMainWindow):
 
     def tab_changed(self, index):
         self.setWindowTitle(
-            "Swik" + (" - " + self.tab_widget.currentWidget().get_filename()) if self.tab_widget.currentWidget().get_filename() is not None else "")
+            "Swik" + (
+                        " - " + self.tab_widget.currentWidget().get_filename()) if self.tab_widget.currentWidget().get_filename() is not None else "")
         enabled = self.current().is_interaction_enabled()
         self.set_interaction_enabled()
 
     def set_interaction_enabled(self):
         self.tool_menu.setEnabled(self.current().is_interaction_enabled())
-        #self.edit_menu.setEnabled(self.current().is_interaction_enabled())
+        # self.edit_menu.setEnabled(self.current().is_interaction_enabled())
         for action in self.file_menu_actions:
             action.setEnabled(self.current().is_interaction_enabled())
 

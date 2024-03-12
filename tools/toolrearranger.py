@@ -29,14 +29,16 @@ class ToolRearrange(Tool):
     STATE_PAGE_SELECTION = 1
     STATE_PAGE_MOVING = 2
 
-    def __init__(self, view, renderer, config):
-        super().__init__(view, renderer, config)
+    def __init__(self, views, renderer, config):
+        super().__init__(None, renderer, config)
         self.selected = []
         self.pickup_point = None
         self.leader_page = None
         self.collider = None
         self.insert_at_page = None
         self.state = None
+        self.views = views if isinstance(views, list) else [views]
+        self.view = views[0]
 
     def init(self):
         self.collider = QGraphicsRectItem()
@@ -116,7 +118,8 @@ class ToolRearrange(Tool):
                 page.setZValue(0)
 
             if self.insert_at_page is None:
-                self.view.fully_update_layout()
+                for view in self.views:
+                    view.fully_update_layout()
             else:
                 for page in self.selected:
                     page.set_selected(False)
@@ -125,16 +128,19 @@ class ToolRearrange(Tool):
                 ids = [i for i in range(self.view.get_page_count())]
                 move_numbers(ids, selected_index, self.insert_at_page)
 
-                pages = [self.view.get_page_item(i) for i in range(self.view.get_page_count())]
-                for i, idx in enumerate(ids):
-                    self.view.pages[i] = pages[idx]
-                    self.view.pages[i].index = i
+                for view in self.views:
+                    pages = [view.get_page_item(i) for i in range(view.get_page_count())]
+                    for i, idx in enumerate(ids):
+                        view.pages[i] = pages[idx]
+                        view.pages[i].index = i
 
                 self.renderer.rearrange_pages(ids, False)
                 self.operation_done()
         elif self.state == self.STATE_RECT_SELECTION:
             self.view.scene().removeItem(self.rb)
             self.rb = None
+
+        self.state = None
 
     def rect_selection(self, rubberband):
         ci = self.rb.collidingItems()
@@ -151,7 +157,8 @@ class ToolRearrange(Tool):
         print("rubberband", rubberband, ci)
 
     def operation_done(self):
-        self.view.fully_update_layout()
+        for view in self.views:
+            view.fully_update_layout()
         self.leader_page = None
         self.insert_at_page = None
         self.pickup_point = None
@@ -169,17 +176,20 @@ class ToolRearrange(Tool):
         res = menu.exec_(event.globalPos())
         if res == delete:
             # Delete the selected pages
-            for p in self.selected:
-                self.view.pages.pop(p.index)
-                self.view.scene().removeItem(p)
+            for index in [p.index for p in self.selected]:
+                for view in self.views:
+                    page = view.get_page_item(index)
+                    view.pages.pop(page.index)
+                    view.scene().removeItem(page)
 
             # Rearrange the pages in the file with the remaining pages
             self.renderer.rearrange_pages([page.index for page in self.view.pages.values()], True)
 
             # Replace the pages in the dictionary to reflect the new number for each page
-            for i, page in enumerate(self.view.pages.values()):
-                self.view.pages[i] = page
-                page.index = i
+            for view in self.views:
+                for i, page in enumerate(view.pages.values()):
+                    view.pages[i] = page
+                    page.index = i
 
             self.operation_done()
         elif res == export:

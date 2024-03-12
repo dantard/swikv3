@@ -17,6 +17,7 @@ class GroupBox:
         self.buttons = []
         self.group = QButtonGroup()
         self.default = None
+        self.toolbar2 = QToolBar()
 
     def reclick(self):
         for btn in self.buttons:
@@ -62,9 +63,10 @@ class GroupBox:
                 return i
 
     def append(self, toolbar: QToolBar):
+
         for btn in self.buttons:
-            toolbar.addWidget(btn)
+            self.toolbar2.addWidget(btn)
+        toolbar.addWidget(self.toolbar2)
 
     def set_enabled(self, value):
-        for btn in self.buttons:
-            btn.setEnabled(value)
+        self.toolbar2.setEnabled(value)
