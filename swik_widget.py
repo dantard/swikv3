@@ -10,7 +10,8 @@ import pyclip
 from PyQt5 import QtGui
 from PyQt5.QtCore import QPointF, Qt, QTimer
 from PyQt5.QtGui import QPainter, QIcon, QKeySequence
-from PyQt5.QtWidgets import QApplication, QMainWindow, QShortcut, QFileDialog, QDialog, QMessageBox, QHBoxLayout, QWidget, QTabWidget, QVBoxLayout, QToolBar, \
+from PyQt5.QtWidgets import QApplication, QMainWindow, QShortcut, QFileDialog, QDialog, QMessageBox, QHBoxLayout, \
+    QWidget, QTabWidget, QVBoxLayout, QToolBar, \
     QPushButton, QSizePolicy, QTabBar, QProgressDialog, QSplitter, QGraphicsScene
 
 import utils
@@ -42,8 +43,6 @@ from renderer import MuPDFRenderer
 from toolbars.searchtoolbar import TextSearchToolbar
 
 
-
-
 class SwikWidget(QWidget):
 
     def __init__(self, window, tab_widget, config):
@@ -57,7 +56,8 @@ class SwikWidget(QWidget):
 
         self.scene = Scene()
         self.manager = Manager(self.renderer, self.config)
-        self.view = SwikGraphView(self.manager, self.renderer, self.scene, page=Page, mode=self.config.get('mode', LayoutManager.MODE_VERTICAL))
+        self.view = SwikGraphView(self.manager, self.renderer, self.scene, page=Page,
+                                  mode=self.config.get('mode', LayoutManager.MODE_VERTICAL))
         self.view.setRenderHint(QPainter.Antialiasing)
         self.view.setRenderHint(QPainter.TextAntialiasing)
         self.view.set_natural_hscroll(self.config.get('natural_hscroll'))
@@ -81,43 +81,50 @@ class SwikWidget(QWidget):
         self.font_manager.update_system_fonts()
         self.font_manager.update_swik_fonts()
 
-        self.manager.register_tool('text_selection', TextSelection(self.view, self.renderer, self.font_manager, self.config), True)
+        self.manager.register_tool('text_selection',
+                                   TextSelection(self.view, self.renderer, self.font_manager, self.config), True)
         self.manager.register_tool('sign', ToolSign(self.view, self.renderer, self.config), False)
-        self.manager.register_tool('rearrange', ToolRearrange([self.view, self.miniature_view], self.renderer, self.config), False)
+        self.manager.register_tool('rearrange',
+                                   ToolRearrange(self.view, [self.miniature_view], self.renderer, self.config), False)
         self.manager.register_tool('redact_annot', ToolRedactAnnotation(self.view, self.renderer, self.config), False)
         self.manager.register_tool('square_annot', ToolSquareAnnotation(self.view, self.renderer, self.config), False)
         self.manager.register_tool('crop', ToolCrop(self.view, self.renderer, self.config), False)
         self.manager.register_tool('drag', ToolDrag(self.view, self.renderer, self.config), False)
         self.manager.register_tool('insert_image', ToolInsertImage(self.view, self.renderer, self.config), False)
-        self.manager.register_tool('insert_signature_image', ToolInserSignatureImage(self.view, self.renderer, self.config), False)
+        self.manager.register_tool('insert_signature_image',
+                                   ToolInserSignatureImage(self.view, self.renderer, self.config), False)
 
         self.key_manager = KeyboardManager(self)
         self.key_manager.register_action(Qt.Key_Delete, self.delete_objects)
         self.key_manager.register_action(Qt.Key_Shift, lambda: self.manager.use_tool("drag"), self.manager.finished)
+        self.key_manager.register_combination_action('Ctrl+i', self.view.toggle_page_info)
         self.key_manager.register_combination_action('Ctrl+C', lambda: self.manager.keyboard('Ctrl+C'))
         self.key_manager.register_combination_action('Ctrl+V', lambda: self.manager.keyboard('Ctrl+V'))
         self.key_manager.register_combination_action('Ctrl+A', lambda: self.manager.keyboard('Ctrl+A'))
-        self.key_manager.register_combination_action('Ctrl+T', self.manager.get_tool("text_selection").iterate_selection_mode)
+        self.key_manager.register_combination_action('Ctrl+T',
+                                                     self.manager.get_tool("text_selection").iterate_selection_mode)
         self.key_manager.register_combination_action('Ctrl+M', self.iterate_mode)
         self.key_manager.register_combination_action('Ctrl+Z', self.scene.tracker().undo)
         self.key_manager.register_combination_action('Ctrl+Shift+Z', self.scene.tracker().redo)
 
-
         self.toolbar = QToolBar()
+        self.toolbar.addAction("cac", lambda: self.view.insert_blank_pages(2,4))
         self.toolbar.addAction("Open", self.open_file).setIcon(QIcon(":/icons/open.png"))
         self.save_btn = self.toolbar.addAction("Save", self.save_file)
         self.save_btn.setIcon(QIcon(":/icons/save.png"))
         self.toolbar.addSeparator()
-        #self.toolbar.addWidget(LongPressButton())
+        # self.toolbar.addWidget(LongPressButton())
 
         self.mode_group = GroupBox()
-        self.mode_group.add(self.manage_tool, True, icon=":/icons/text_cursor.png", text="Select Text", tool="text_selection")
+        self.mode_group.add(self.manage_tool, True, icon=":/icons/text_cursor.png", text="Select Text",
+                            tool="text_selection")
         self.sign_btn = self.mode_group.add(self.manage_tool, icon=":/icons/sign.png", text="Sign", tool="sign")
         self.mode_group.add(self.manage_tool, icon=":/icons/crop.png", text="Crop", tool="crop")
         self.mode_group.add(self.manage_tool, icon=":/icons/annotate.png", text="Annotate", tool="square_annot")
         self.mode_group.add(self.manage_tool, icon=":/icons/white.png", text="Anonymize", tool="redact_annot")
         self.mode_group.add(self.manage_tool, icon=":/icons/image.png", text="Insert Image", tool="insert_image")
-        self.image_sign_btn = self.mode_group.add(self.manage_tool, icon=":/icons/signature.png", text="Insert Signature", tool="insert_signature_image")
+        self.image_sign_btn = self.mode_group.add(self.manage_tool, icon=":/icons/signature.png",
+                                                  text="Insert Signature", tool="insert_signature_image")
         self.mode_group.add(self.manage_tool, icon=":/icons/shuffle.png", text="Shuffle Pages", tool="rearrange")
         print("puta iryo", self.config.get("p12"), )
         self.sign_btn.setEnabled(self.config.get("p12") is not None)

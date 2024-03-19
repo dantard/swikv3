@@ -15,6 +15,7 @@ class MiniaturePage(SimplePage):
         self.background = None
 
     def get_sep(self):
+        self.number.setPlainText(str(self.index + 1))
         return 60  # + 30 * self.get_scaling_ratio()
 
     def update_image(self, ratio):

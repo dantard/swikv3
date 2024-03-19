@@ -83,17 +83,17 @@ class SwikConfig(EasyConfig):
     def set_tabs(self, tabs):
         self.tabs.set_value(tabs)
 
-    def push_general_config(self, window, view, renderer):
-        self.set("Ratio", view.get_ratio())
-        self.set("mode", view.get_mode())
+    def push_window_config(self, window):
+        #self.set("Ratio", view.get_ratio())
+        #self.set("mode", view.get_mode())
         self.set("maximized", 1 if window.windowState() & QtCore.Qt.WindowMaximized else 0)
         self.set("width", window.geometry().width())
         self.set("height", window.geometry().height())
         self.set("x", window.geometry().x())
         self.set("y", window.geometry().y())
-        self.update_recent(renderer.get_filename())
+        #self.update_recent(renderer.get_filename())
 
-    def apply_general_config(self, window, view):
+    def apply_window_config(self, window):
         if self.get("maximized"):
             window.setWindowState(QtCore.Qt.WindowMaximized)
         elif self.get("x") is not None:

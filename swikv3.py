@@ -2,43 +2,17 @@ import os
 import subprocess
 import sys
 
-from PyQt5.QtNetwork import QUdpSocket, QHostAddress
-
-import resources
 import pyclip
 from PyQt5 import QtGui
-from PyQt5.QtCore import QPointF, Qt, QPoint
-from PyQt5.QtGui import QPainter, QIcon, QKeySequence, QCursor
-from PyQt5.QtWidgets import QApplication, QMainWindow, QShortcut, QFileDialog, QDialog, QMessageBox, QHBoxLayout, \
-    QWidget, QTabWidget, QVBoxLayout, QToolBar, \
-    QPushButton, QSizePolicy, QTabBar, QMenu
+from PyQt5.QtNetwork import QUdpSocket, QHostAddress
+from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog
+import resources
 
 import utils
-from GraphView import GraphView
-from LayoutManager import LayoutManager
-from SwikGraphView import SwikGraphView
-from changestracker import ChangesTracker
-from dialogs import PasswordDialog
-from font_manager import FontManager
-from groupbox import GroupBox
-from keyboard_manager import KeyboardManager
-from manager import Manager
-from scene import Scene
 from swik_tab_widget import SwikTabWidget
 from swik_widget import SwikWidget
-from toolbars.zoom_toolbar import ZoomToolbar
-from tools.tool_drag import ToolDrag
-from tools.toolcrop import ToolCrop
-from tools.toolrearranger import ToolRearrange
-from tools.toolredactannotation import ToolRedactAnnotation
-from tools.toolsign import ToolSign
-from tools.toolsquareannotation import ToolSquareAnnotation
-from tools.tooltextselection import TextSelection
-from toolbars.navigationtoolbar import NavigationToolbar
-from page import Page
-from renderer import MuPDFRenderer
-from toolbars.searchtoolbar import TextSearchToolbar
 from swikconfig import SwikConfig
+from tools.toolsign import ToolSign
 
 
 class MainWindow(QMainWindow):
@@ -123,6 +97,7 @@ class MainWindow(QMainWindow):
         # Done
 
         self.setCentralWidget(self.tab_widget)
+        self.config.apply_window_config(self)
 
         # Open last files if required
         print("hey")
@@ -194,6 +169,7 @@ class MainWindow(QMainWindow):
                 tabs.append(filename)
         print("tabs", tabs)
         self.config.set_tabs(tabs)
+        self.config.push_window_config(self)
         self.config.flush()
         super().closeEvent(a0)
 

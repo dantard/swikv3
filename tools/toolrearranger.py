@@ -1,6 +1,8 @@
 from PyQt5.QtCore import QPointF, Qt
 from PyQt5.QtWidgets import QGraphicsRectItem, QMenu, QFileDialog, QMessageBox
 
+from action import Action
+from interfaces import Undoable
 from selector import SelectorRectItem
 from simplepage import SimplePage
 from tools.tool import Tool
@@ -24,21 +26,20 @@ def move_numbers(vector, numbers_to_move, position):
     return vector
 
 
-class ToolRearrange(Tool):
+class ToolRearrange(Tool, Undoable):
     STATE_RECT_SELECTION = 0
     STATE_PAGE_SELECTION = 1
     STATE_PAGE_MOVING = 2
 
-    def __init__(self, views, renderer, config):
-        super().__init__(None, renderer, config)
+    def __init__(self, view, other_views, renderer, config):
+        super().__init__(view, renderer, config)
         self.selected = []
         self.pickup_point = None
         self.leader_page = None
         self.collider = None
         self.insert_at_page = None
         self.state = None
-        self.views = views if isinstance(views, list) else [views]
-        self.view = views[0]
+        self.views = [view] + other_views
 
     def init(self):
         self.collider = QGraphicsRectItem()
@@ -93,7 +94,8 @@ class ToolRearrange(Tool):
             self.pickup_point = event.pos()
 
             colliding_with = self.leader_page.collidingItems()
-            colliding_with = [item for item in colliding_with if isinstance(item, SimplePage) and item not in self.selected]
+            colliding_with = [item for item in colliding_with if
+                              isinstance(item, SimplePage) and item not in self.selected]
 
             if len(colliding_with) >= 1:
                 page = colliding_with[-1]
@@ -121,6 +123,7 @@ class ToolRearrange(Tool):
                 for view in self.views:
                     view.fully_update_layout()
             else:
+                # I'm actually change order of pages
                 for page in self.selected:
                     page.set_selected(False)
 
@@ -135,6 +138,8 @@ class ToolRearrange(Tool):
                         view.pages[i].index = i
 
                 self.renderer.rearrange_pages(ids, False)
+
+                self.notify_change(Action.PAGE_ORDER_CHANGED, list(range(len(self.view.pages))), ids, self.view.scene())
                 self.operation_done()
         elif self.state == self.STATE_RECT_SELECTION:
             self.view.scene().removeItem(self.rb)
@@ -173,39 +178,51 @@ class ToolRearrange(Tool):
         export = menu.addAction("Export" + " " + str(len(self.selected)) + " " + "pages")
         menu.addSeparator()
         delete = menu.addAction("Delete" + " " + str(len(self.selected)) + " " + "pages")
+        duplicate = menu.addAction("Duplicate" + " " + str(len(self.selected)) + " " + "pages")
+        insert_blank = menu.addAction("Insert a blank pages after")
         res = menu.exec_(event.globalPos())
         if res == delete:
             # Delete the selected pages
-            for index in [p.index for p in self.selected]:
-                for view in self.views:
-                    page = view.get_page_item(index)
-                    view.pages.pop(page.index)
-                    view.scene().removeItem(page)
-
-            # Rearrange the pages in the file with the remaining pages
-            self.renderer.rearrange_pages([page.index for page in self.view.pages.values()], True)
-
-            # Replace the pages in the dictionary to reflect the new number for each page
+            deleting = [p.index for p in self.selected]
+            remaining = [i for i in range(len(self.view.pages)) if i not in deleting]
+            self.renderer.rearrange_pages(remaining, False)
             for view in self.views:
-                for i, page in enumerate(view.pages.values()):
-                    view.pages[i] = page
-                    page.index = i
+                view.rearrange(remaining)
 
             self.operation_done()
         elif res == export:
-            filename, _ = QFileDialog.getSaveFileName(self.view, "Save PDF Document", self.renderer.get_filename(), "PDF Files (*.pdf)")
+            filename, _ = QFileDialog.getSaveFileName(self.view, "Save PDF Document", self.renderer.get_filename(),
+                                                      "PDF Files (*.pdf)")
             if filename:
                 if self.renderer.export([page.index for page in self.selected], filename):
-                    QMessageBox.information(self.view, "Export", "Exported" + " " + str(len(self.selected)) + " " + "pages to" + " " + filename)
+                    QMessageBox.information(self.view, "Export", "Exported" + " " + str(
+                        len(self.selected)) + " " + "pages to" + " " + filename)
                 else:
                     QMessageBox.critical(self.view, "Export", "Error exporting pages")
         elif res == export_and_open:
-            filename, _ = QFileDialog.getSaveFileName(self.view, "Save PDF Document", self.renderer.get_filename(), "PDF Files (*.pdf)")
+            filename, _ = QFileDialog.getSaveFileName(self.view, "Save PDF Document", self.renderer.get_filename(),
+                                                      "PDF Files (*.pdf)")
             if filename:
                 if self.renderer.export_pages([page.index for page in self.selected], filename):
                     self.renderer.open_pdf(filename)
                 else:
                     QMessageBox.critical(self.view, "Export", "Error exporting pages")
+        elif res == duplicate:
+            indices = [page.index for page in self.selected]
+            list_of_pages = list(range(len(self.view.pages)))
+            for index in indices:
+                where = list_of_pages.index(index)
+                list_of_pages.insert(where, index)
+
+            self.renderer.rearrange_pages(list_of_pages, False)
+            for view in self.views:
+                view.rearrange(list_of_pages)
+                view.fully_update_layout()
+        elif res == insert_blank:
+            pass
+
+    def undo(self, kind, info):
+        print(kind, info)
 
     def finish(self):
         self.pickup_point = None
@@ -216,3 +233,18 @@ class ToolRearrange(Tool):
         self.selected.clear()
         for page in self.selected:
             page.setZValue(0)
+
+
+'''
+            def insert_blank_pages(self, where, num):
+                last_page = self.append_blank_page()
+                # All but the last page
+                list_of_pages = list(range(len(self.pages) - 1))
+                for i in range(num):
+                    list_of_pages.insert(where, last_page)
+
+                self.renderer.rearrange_pages(list_of_pages, False)
+                self.rearrange(list_of_pages)
+
+            def duplicate(self, which):
+'''

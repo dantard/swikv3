@@ -176,6 +176,8 @@ class TextSelection(Tool):
             font, size, color = self.renderer.get_word_font(self.selected[0])
             print("Font: ", font, "Size: ", size, "Color: ", color)
             font_info = self.font_manager.get_font_info_from_name(font)
+            if not font_info:
+                font_info = self.font_manager.base14_fonts[0]
             SwikTextReplace(self.selected[0], self.font_manager, font_info.get('path'), size / 1.34)
 
     def mouse_double_clicked(self, event):

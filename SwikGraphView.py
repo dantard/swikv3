@@ -65,7 +65,6 @@ class SwikGraphView(GraphView):
             pages_to_refresh.add(page.get_index())
             self.scene().removeItem(image)
 
-
         for index in pages_to_refresh:
             self.pages[index].invalidate()
 
@@ -73,3 +72,9 @@ class SwikGraphView(GraphView):
         super().page_processed(page)
         self.renderer.get_annotations(page)
         self.renderer.get_widgets(page)
+
+    def toggle_page_info(self):
+        for page in self.pages.values():
+            page.toggle_info()
+
+

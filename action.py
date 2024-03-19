@@ -15,6 +15,7 @@ class Action(list):
     POSE_SHAPE_CHANGED = 5
     POSE_CHANGED = 6
     TEXT_CHANGED = 7
+    PAGE_ORDER_CHANGED = 8
 
     def __init__(self, item=None, kind=None, old=None, new=None):
         super().__init__()
