@@ -530,6 +530,7 @@ class MuPDFRenderer(QLabel):
         self.add_text(index, text)
 
     to_remove = []
+
     def get_widgets(self, page):
         page2 = self.document[page.index]
         pdf_widgets = list()
@@ -628,6 +629,7 @@ class MuPDFRenderer(QLabel):
         page_count = len(doc2)
         doc2.close()
         self.set_document(self.document, False)
+        print("Appended", page_count, "pages", len(self.document))
         return page_count
 
     def export_pages(self, order, filename):

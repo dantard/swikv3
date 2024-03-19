@@ -168,6 +168,8 @@ class ToolRearrange(Tool, Undoable):
         self.insert_at_page = None
         self.pickup_point = None
         self.selected.clear()
+        for p in self.selected:
+            p.set_selected(False)
 
     def context_menu(self, event):
         if len(self.selected) == 0:
