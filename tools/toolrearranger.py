@@ -8,14 +8,19 @@ from tools.tool import Tool
 
 def move_numbers(vector, numbers_to_move, position):
     # Remove the selected numbers from the vector
-    for number in numbers_to_move:
-        vector.remove(number)
+
 
     # Find the index where to insert the numbers
     if position == 0:
         insert_index = 0
+    elif position == len(vector):
+        insert_index = len(vector)
+
     else:
         insert_index = vector.index(position)
+
+    for number in numbers_to_move:
+        vector.remove(number)
 
     # Insert the numbers at the specified position
     for number in reversed(numbers_to_move):
@@ -135,6 +140,8 @@ class ToolRearrange(Tool):
         elif self.state == self.STATE_RECT_SELECTION:
             self.view.scene().removeItem(self.rb)
             self.rb = None
+
+        self.state = None
 
     def rect_selection(self, rubberband):
         ci = self.rb.collidingItems()
