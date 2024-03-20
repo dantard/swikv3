@@ -7,20 +7,16 @@ from tools.tool import Tool
 
 
 def move_numbers(vector, numbers_to_move, position):
+
     # Remove the selected numbers from the vector
-
-
-    # Find the index where to insert the numbers
-    if position == 0:
-        insert_index = 0
-    elif position == len(vector):
-        insert_index = len(vector)
-
-    else:
-        insert_index = vector.index(position)
-
     for number in numbers_to_move:
         vector.remove(number)
+
+    position, side = position
+
+    # Find the index where to insert the numbers
+    insert_index = vector.index(position)
+    insert_index = insert_index + 1  if side == 1 else insert_index
 
     # Insert the numbers at the specified position
     for number in reversed(numbers_to_move):
@@ -42,12 +38,15 @@ class ToolRearrange(Tool):
         self.collider = None
         self.insert_at_page = None
         self.state = None
+        self.orig_ratio = None
 
     def init(self):
         self.collider = QGraphicsRectItem()
         self.collider.setBrush(Qt.red)
         self.collider.setVisible(False)
         self.view.scene().addItem(self.collider)
+        self.orig_ratio = self.view.get_ratio()
+        self.view.set_ratio(0.25, True)
 
     def mouse_pressed(self, event):
         if event.button() != Qt.LeftButton:
@@ -103,10 +102,12 @@ class ToolRearrange(Tool):
 
                 if self.leader_page.pos().x() > page.pos().x() + page.get_scaled_width() / 2:
                     self.collider.setPos(page.pos().x() + page.get_scaled_width(), page.pos().y())
-                    self.insert_at_page = page.index + 1
+                    # Right of page page.index
+                    self.insert_at_page = (page.index, 1)
                 else:
                     self.collider.setPos(page.pos().x() - 10, page.pos().y())
-                    self.insert_at_page = page.index
+                    # Left of page page.index
+                    self.insert_at_page = (page.index, 0)
 
                 self.collider.setRect(0, 0, 10, page.get_scaled_height())
                 self.collider.setVisible(True)
@@ -200,6 +201,7 @@ class ToolRearrange(Tool):
             filename, _ = QFileDialog.getSaveFileName(self.view, "Save PDF Document", self.renderer.get_filename(), "PDF Files (*.pdf)")
             if filename:
                 if self.renderer.export_pages([page.index for page in self.selected], filename):
+                    self.finished.emit()
                     self.renderer.open_pdf(filename)
                 else:
                     QMessageBox.critical(self.view, "Export", "Error exporting pages")
@@ -213,3 +215,7 @@ class ToolRearrange(Tool):
         self.selected.clear()
         for page in self.selected:
             page.setZValue(0)
+
+        print("finishhhhh")
+        if self.view.get_ratio()==0.25:
+            self.view.set_ratio(self.orig_ratio, True)

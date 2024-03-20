@@ -11,7 +11,7 @@ from PyQt5 import QtGui
 from PyQt5.QtCore import QPointF, Qt, QTimer
 from PyQt5.QtGui import QPainter, QIcon, QKeySequence
 from PyQt5.QtWidgets import QApplication, QMainWindow, QShortcut, QFileDialog, QDialog, QMessageBox, QHBoxLayout, QWidget, QTabWidget, QVBoxLayout, QToolBar, \
-    QPushButton, QSizePolicy, QTabBar, QProgressDialog, QSplitter, QGraphicsScene
+    QPushButton, QSizePolicy, QTabBar, QProgressDialog, QSplitter, QGraphicsScene, QLabel
 
 import utils
 from GraphView import GraphView
