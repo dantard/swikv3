@@ -35,6 +35,9 @@ class HighlightAnnotation(QGraphicsRectItem, Undoable):
 
     def set_content(self, text):
         self.content = text
+        self.setToolTip(text)
+        for quad in self.quads:
+            quad.setToolTip(text)
 
     def get_content(self):
         return self.content

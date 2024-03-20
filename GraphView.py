@@ -121,7 +121,8 @@ class GraphView(QGraphicsView):
         ratio = min(max(self.m_layout.ratio_min, ratio), self.m_layout.ratio_max)
         if round(ratio, 2) != round(self.get_ratio(), 2):
 
-            if self.mode in [LayoutManager.MODE_VERTICAL, LayoutManager.MODE_VERTICAL_MULTIPAGE, LayoutManager.MODE_SINGLE_PAGE]:
+            if self.mode in [LayoutManager.MODE_VERTICAL, LayoutManager.MODE_VERTICAL_MULTIPAGE,
+                             LayoutManager.MODE_SINGLE_PAGE]:
                 percent = self.verticalScrollBar().value() / self.scene().height() if self.scene().height() != 0 else 1
             else:
                 percent = self.horizontalScrollBar().value() / self.scene().width() if self.scene().width() != 0 else 1
@@ -133,7 +134,8 @@ class GraphView(QGraphicsView):
 
             self.fully_update_layout()
 
-            if self.mode in [LayoutManager.MODE_VERTICAL, LayoutManager.MODE_VERTICAL_MULTIPAGE, LayoutManager.MODE_SINGLE_PAGE]:
+            if self.mode in [LayoutManager.MODE_VERTICAL, LayoutManager.MODE_VERTICAL_MULTIPAGE,
+                             LayoutManager.MODE_SINGLE_PAGE]:
                 self.verticalScrollBar().setValue(int(self.scene().height() * percent))
             else:
                 self.horizontalScrollBar().setValue(int(self.scene().width() * percent))
@@ -147,10 +149,15 @@ class GraphView(QGraphicsView):
 
     def page_processed(self, page):
         assert (isinstance(page, SimplePage))
+        self.finish_setup(page)
+        self.finish_processing(page)
+
+    def finish_setup(self, page):
         page.connect_signals()
         page.finish_setup()
         self.scene().addItem(page)
-        # print("page processed ****** ", page.index)
+
+    def finish_processing(self, page):
         self.update_layout(page)
 
         # self.page_changed.emit(0, self.renderer.get_num_of_pages())
@@ -466,3 +473,46 @@ class GraphView(QGraphicsView):
     def mouseDoubleClickEvent(self, event: QtGui.QMouseEvent) -> None:
         super().mouseDoubleClickEvent(event)
         self.manager.mouse_double_clicked(event)
+
+    def rearrange(self, indices):
+        # self.renderer.rearrange_pages(indices, False)
+        class Element:
+            def __init__(self, page, count=0):
+                self.page = page
+                self.count = count
+                self.prev_pos = page.index
+                self.current_pos = page.index
+
+        buffer = []
+
+        for page in self.pages.values():
+            buffer.append(Element(page))
+        self.pages.clear()
+
+        for i in range(len(indices)):
+            elem = buffer[indices[i]]
+            if elem.count == 0:
+                print("page", i, "copy")
+                self.pages[i] = elem.page
+                self.pages[i].index = i
+            else:
+                # Going to duplicate the page
+                print("page", i, "create")
+                page = self.page_object(i, self, self.manager, self.renderer, self.ratio)
+                self.finish_setup(page)
+                self.pages[i] = page
+            elem.current_pos = i
+            elem.count += 1
+
+        for elem in buffer:
+            if elem.count == 0:
+                self.scene().removeItem(elem.page)
+            elif elem.current_pos != elem.prev_pos:
+                elem.page.invalidate()
+
+    def append_blank_page(self):
+        last_page = len(self.pages)
+        page = self.page_object(last_page, self, self.manager, self.renderer, self.ratio)
+        self.finish_setup(page)
+        self.pages[last_page] = page
+        return last_page

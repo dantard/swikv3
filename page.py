@@ -1,5 +1,5 @@
 from PyQt5.QtCore import QRectF, Qt
-from PyQt5.QtWidgets import QGraphicsRectItem, QGraphicsItem
+from PyQt5.QtWidgets import QGraphicsRectItem, QGraphicsItem, QGraphicsTextItem
 
 from simplepage import SimplePage
 from utils import Signals
@@ -10,6 +10,16 @@ class Page(SimplePage):
         self.signals = Signals()
         super().__init__(index, view, manager, renderer, ratio)
         self.words = None
+        self.info = QGraphicsTextItem(self)
+        self.info.setPlainText(str(index))
+        font = self.info.font()
+        font.setPixelSize(40)
+        self.info.setFont(font)
+        self.info.setVisible(False)
+        self.info.setFlag(QGraphicsItem.ItemIgnoresTransformations)
+
+    def toggle_info(self):
+        self.info.setVisible(not self.info.isVisible())
 
     def mousePressEvent(self, event) -> None:
         super().mousePressEvent(event)

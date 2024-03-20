@@ -337,7 +337,7 @@ class MuPDFRenderer(QLabel):
 
     def rearrange_pages(self, order, emit):
         self.document.select(order)
-        # self.set_document(self.document, emit)
+        self.set_document(self.document, emit)
 
     def set_cropbox(self, page, rect: QRect, ratio, absolute=False):
 
@@ -530,6 +530,7 @@ class MuPDFRenderer(QLabel):
         self.add_text(index, text)
 
     to_remove = []
+
     def get_widgets(self, page):
         page2 = self.document[page.index]
         pdf_widgets = list()
@@ -628,6 +629,7 @@ class MuPDFRenderer(QLabel):
         page_count = len(doc2)
         doc2.close()
         self.set_document(self.document, False)
+        print("Appended", page_count, "pages", len(self.document))
         return page_count
 
     def export_pages(self, order, filename):
@@ -652,3 +654,7 @@ class MuPDFRenderer(QLabel):
         # Create a fitz.Pixmap from the bytes
         pixmap = fitz.Pixmap(byte_array.data())
         self.document[index].insert_image(rect, pixmap=pixmap)
+
+    def append_blank_page(self, width=595, height=842):
+        self.document.new_page(-1, width=width, height=height)
+        self.set_document(self.document, False)
