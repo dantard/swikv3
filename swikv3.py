@@ -83,6 +83,7 @@ class MainWindow(QMainWindow):
         self.tab_widget.add_menu_entry("Open copy in other window", self.TAB_MENU_OPEN_IN_OTHER_WINDOW)
         self.tab_widget.add_menu_entry('Locate in folder', self.TAB_MENU_LOCATE_IN_FOLDER)
         self.tab_widget.plus_clicked.connect(lambda: self.create_tab(None))
+        self.tab_widget.tab_close_requested.connect(self.close_tab)
 
         # Add open with menu
         command = self.config.get("other_pdf")
@@ -98,19 +99,15 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(self.tab_widget)
         self.config.apply_window_config(self)
+        self.update_interaction_status()
 
         # Open last files if required
-        print("hey")
         if self.config.get("open_last"):
-
             tabs = self.config.get_tabs()
-            print("he1", len(tabs))
-            if len(tabs) == 0:
-                self.create_tab()
-            else:
+            if len(tabs) > 0:
                 for tab in tabs:
                     self.create_tab(tab)
-            self.tab_widget.setCurrentIndex(0)
+                self.tab_widget.setCurrentIndex(0)
 
     def tab_menu(self, action, code, data, widget):
         print("tab_menu", action, code, data, widget)
@@ -135,31 +132,32 @@ class MainWindow(QMainWindow):
             "Swik" + (
                         " - " + self.tab_widget.currentWidget().get_filename()) if self.tab_widget.currentWidget().get_filename() is not None else "")
         enabled = self.current().is_interaction_enabled()
-        self.set_interaction_enabled()
+        self.update_interaction_status()
 
-    def set_interaction_enabled(self):
-        self.tool_menu.setEnabled(self.current().is_interaction_enabled())
+    def update_interaction_status(self):
+        value = self.current().is_interaction_enabled() if self.current() is not None else False
+        self.tool_menu.setEnabled(value)
         # self.edit_menu.setEnabled(self.current().is_interaction_enabled())
         for action in self.file_menu_actions:
-            action.setEnabled(self.current().is_interaction_enabled())
+            action.setEnabled(value)
 
     def create_tab(self, filename=None):
         widget = SwikWidget(self, self.tab_widget, self.config)
+        widget.interaction_changed.connect(self.update_interaction_status)
+
         self.tab_widget.new_tab(widget, filename)
         if filename is not None:
             widget.open_file(filename)
-            self.set_interaction_enabled()
+            self.update_interaction_status()
         return widget
 
     def close_tab(self, tab):
-        print("tab", tab, "closed")
-        if self.tab_widget.count() > 2:
-            index = self.tab_widget.indexOf(tab)
-            self.tab_widget.setCurrentIndex(index - 1)
-            self.tab_widget.removeTab(index)
+        self.tab_widget.close_tab(tab)
+        self.update_interaction_status()
 
-        filename = self.tab_widget.currentWidget().get_filename()
-        self.setWindowTitle("Swik" + (" - " + filename) if filename is not None else "")
+
+        #filename = self.tab_widget.currentWidget().get_filename()
+        #self.setWindowTitle("Swik" + (" - " + filename) if filename is not None else "")
 
     def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
         tabs = []
@@ -183,7 +181,7 @@ class MainWindow(QMainWindow):
             for widget in self.get_widgets():
                 if widget.get_filename() is None:
                     widget.open_file(filename)
-                    self.set_interaction_enabled()
+                    self.update_interaction_status()
                     break
             else:
                 self.create_tab(filename)

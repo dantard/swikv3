@@ -16,6 +16,7 @@ class MyAction(QAction):
 
 class SwikTabWidget(QTabWidget):
     plus_clicked = pyqtSignal()
+    tab_close_requested = pyqtSignal(QWidget)
 
     def __init__(self, parent=None):
         super(SwikTabWidget, self).__init__(parent)
@@ -68,6 +69,9 @@ class SwikTabWidget(QTabWidget):
         if res and self.menu_callback:
             self.menu_callback(res.text(), res.code, res.data, widget)
 
+    def close_tab_request(self, widget):
+        self.tab_close_requested.emit(widget)
+
     def close_tab(self, widget):
         index = self.indexOf(widget)
         if index != -1:
@@ -95,7 +99,7 @@ class SwikTabWidget(QTabWidget):
         close_button.setFixedSize(20, 20)
         close_button.setFlat(True)
         close_button.widget = widget
-        close_button.clicked.connect(lambda y, x=widget: self.close_tab(x))
+        close_button.clicked.connect(lambda y, x=widget: self.close_tab_request(x))
 
         other_button = QPushButton("▽")
         other_button.setContentsMargins(0, 0, 0, 0)

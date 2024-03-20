@@ -8,7 +8,7 @@ from PyQt5.QtNetwork import QUdpSocket, QHostAddress
 import resources
 import pyclip
 from PyQt5 import QtGui
-from PyQt5.QtCore import QPointF, Qt, QTimer
+from PyQt5.QtCore import QPointF, Qt, QTimer, pyqtSignal
 from PyQt5.QtGui import QPainter, QIcon, QKeySequence
 from PyQt5.QtWidgets import QApplication, QMainWindow, QShortcut, QFileDialog, QDialog, QMessageBox, QHBoxLayout, QWidget, QTabWidget, QVBoxLayout, QToolBar, \
     QPushButton, QSizePolicy, QTabBar, QProgressDialog, QSplitter, QGraphicsScene, QLabel
@@ -43,6 +43,8 @@ from toolbars.searchtoolbar import TextSearchToolbar
 
 
 class SwikWidget(QWidget):
+
+    interaction_changed = pyqtSignal(QWidget)
 
     def __init__(self, window, tab_widget, config):
         super().__init__()
@@ -107,7 +109,7 @@ class SwikWidget(QWidget):
         self.key_manager.register_combination_action('Ctrl+Shift+Z', self.scene.tracker().redo)
 
         self.toolbar = QToolBar()
-        self.toolbar.addAction("cac", lambda: self.view.insert_blank_pages(2,4))
+        #self.toolbar.addAction("cac", lambda: self.view.insert_blank_pages(2,4))
         self.toolbar.addAction("Open", self.open_file).setIcon(QIcon(":/icons/open.png"))
         self.save_btn = self.toolbar.addAction("Save", self.save_file)
         self.save_btn.setIcon(QIcon(":/icons/save.png"))
@@ -125,11 +127,10 @@ class SwikWidget(QWidget):
         self.image_sign_btn = self.mode_group.add(self.manage_tool, icon=":/icons/signature.png",
                                                   text="Insert Signature", tool="insert_signature_image")
         self.mode_group.add(self.manage_tool, icon=":/icons/shuffle.png", text="Shuffle Pages", tool="rearrange")
-        print("puta iryo", self.config.get("p12"), )
         self.sign_btn.setEnabled(self.config.get("p12") is not None)
         self.image_sign_btn.setEnabled(self.config.get("image_signature") is not None)
 
-        self.mode_group.append(self.toolbar)
+        #self.mode_group.append(self.toolbar)
         self.manager.tool_finished.connect(self.mode_group.reset)
         self.zoom_toolbar = ZoomToolbar(self.view, self.toolbar)
         self.nav_toolbar = NavigationToolbar(self.view, self.toolbar)
@@ -141,23 +142,34 @@ class SwikWidget(QWidget):
 
         self.layout().addWidget(self.splitter)
         helper = QWidget()
-        helper.setLayout(QVBoxLayout())
-        helper.layout().addWidget(self.toolbar)
-        helper.layout().addWidget(self.view)
+        helper_layout = QVBoxLayout()
+        helper.setLayout(helper_layout)
+        helper_layout.addWidget(self.toolbar)
+        other_layout = QHBoxLayout()
+        vertical_toolbar = QToolBar()
+        vertical_toolbar.addSeparator()
+        vertical_toolbar.setOrientation(Qt.Vertical)
+        self.mode_group.append(vertical_toolbar, Qt.Vertical)
+        other_layout.addWidget(vertical_toolbar)
+        other_layout.addWidget(self.view)
+        helper_layout.addLayout(other_layout)
+        #helper.layout().addWidget(self.view)
+
         helper.layout().setContentsMargins(2, 2, 2, 2)
 
         self.splitter.addWidget(self.miniature_view)
         self.splitter.addWidget(helper)
         self.layout().setContentsMargins(2, 2, 2, 2)
-        self.set_enable_interaction(False)
+        self.set_interactable(False)
 
-    def set_enable_interaction(self, enable):
+    def set_interactable(self, enable):
         self.mode_group.set_enabled(enable)
         self.zoom_toolbar.setEnabled(enable)
         self.nav_toolbar.setEnabled(enable)
         self.finder_toolbar.setEnabled(enable)
         self.save_btn.setEnabled(enable)
         self.interaction_enabled = enable
+        self.interaction_changed.emit(self)
 
     def is_interaction_enabled(self):
         return self.interaction_enabled
@@ -264,7 +276,7 @@ class SwikWidget(QWidget):
                     res = self.renderer.open_pdf(filename, dialog.getText())
 
             if res == MuPDFRenderer.OPEN_OK:
-                self.set_enable_interaction(True)
+                self.set_interactable(True)
                 self.config.set('last', self.renderer.get_filename())
                 self.config.flush()
             else:
