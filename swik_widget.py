@@ -130,7 +130,7 @@ class SwikWidget(QWidget):
         self.sign_btn.setEnabled(self.config.get("p12") is not None)
         self.image_sign_btn.setEnabled(self.config.get("image_signature") is not None)
 
-        #self.mode_group.append(self.toolbar)
+        self.mode_group.append(self.toolbar)
         self.manager.tool_finished.connect(self.mode_group.reset)
         self.zoom_toolbar = ZoomToolbar(self.view, self.toolbar)
         self.nav_toolbar = NavigationToolbar(self.view, self.toolbar)
@@ -142,19 +142,9 @@ class SwikWidget(QWidget):
 
         self.layout().addWidget(self.splitter)
         helper = QWidget()
-        helper_layout = QVBoxLayout()
-        helper.setLayout(helper_layout)
-        helper_layout.addWidget(self.toolbar)
-        other_layout = QHBoxLayout()
-        vertical_toolbar = QToolBar()
-        vertical_toolbar.addSeparator()
-        vertical_toolbar.setOrientation(Qt.Vertical)
-        self.mode_group.append(vertical_toolbar, Qt.Vertical)
-        other_layout.addWidget(vertical_toolbar)
-        other_layout.addWidget(self.view)
-        helper_layout.addLayout(other_layout)
-        #helper.layout().addWidget(self.view)
-
+        helper.setLayout(QVBoxLayout())
+        helper.layout().addWidget(self.toolbar)
+        helper.layout().addWidget(self.view)
         helper.layout().setContentsMargins(2, 2, 2, 2)
 
         self.splitter.addWidget(self.miniature_view)

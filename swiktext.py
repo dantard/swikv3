@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QGraphicsTextItem, QMenu, QGraphicsRectItem, QGraphi
 import utils
 from action import Action
 from colorwidget import FontPicker, Color
-from dialogs import ComposableDialog
+from dialogs import ComposableDialog, FontAndColorDialog
 from font_manager import FontManager
 from interfaces import Undoable
 
@@ -68,6 +68,7 @@ class SwikText(QGraphicsTextItem, Undoable):
         action = menu.addAction("Edit Font")
         res = menu.exec(event.screenPos())
         if res == action:
+            '''
             font_dialog = ComposableDialog(False)
             fp = font_dialog.add_row("Font", FontPicker())
             # fp.add_fonts_section("Current", [FontManager.get_font_info(self.get_ttf_filename())])
@@ -78,6 +79,12 @@ class SwikText(QGraphicsTextItem, Undoable):
             fp.set_default(self.get_ttf_filename(), self.get_font_size())
 
             font_dialog.add_row("Text Color", Color(self.defaultTextColor()))
+            if font_dialog.exec() == ComposableDialog.Accepted:
+                self.set_ttf_font(font_dialog.get("Font").get_font_filename(), font_dialog.get("Font").get_font_size())
+                self.setDefaultTextColor(font_dialog.get("Text Color").get_color())
+            '''
+            font_dialog = FontAndColorDialog(self.font_manager, self.get_ttf_filename(), self.get_font_size(),
+                                             self.defaultTextColor())
             if font_dialog.exec() == ComposableDialog.Accepted:
                 self.set_ttf_font(font_dialog.get("Font").get_font_filename(), font_dialog.get("Font").get_font_size())
                 self.setDefaultTextColor(font_dialog.get("Text Color").get_color())

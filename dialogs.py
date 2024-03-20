@@ -1,6 +1,8 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QFormLayout, QDialogButtonBox, QDialog, QLabel, QVBoxLayout, QGroupBox, QLineEdit, QCheckBox
 
+from colorwidget import FontPicker, Color
+
 
 class ComposableDialog(QDialog):
     def __init__(self, start_enabled=True):
@@ -67,3 +69,20 @@ class PasswordDialog(QDialog):
 
     def closeEvent(self, a0):
         pass
+
+
+class FontAndColorDialog(ComposableDialog):
+    def __init__(self, font_manager, default, font_size, text_color):
+        super().__init__()
+        self.font_manager = font_manager
+        fp = self.add_row("Font", FontPicker())
+        # fp.add_fonts_section("Current", [FontManager.get_font_info(self.get_ttf_filename())])
+        fp.add_fonts_section("Fully Embedded", self.font_manager.get_fully_embedded_fonts())
+        fp.add_fonts_section("Subset", self.font_manager.get_subset_fonts(), False)
+        fp.add_fonts_section("Swik Fonts", self.font_manager.get_swik_fonts())
+        fp.add_fonts_section("Base14 Fonts", self.font_manager.get_base14_fonts())
+        fp.set_default(default, font_size)
+        self.add_row("Text Color", Color(text_color))
+
+def FontTextAndColor(FontAndColorDialog):
+    pass

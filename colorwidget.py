@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import QPushButton, QColorDialog, QWidget, QSlider, QVBoxLa
 
 import utils
 from font_manager import FontManager
+from progressing import Progressing
 
 
 class ColorWidget(QPushButton):
@@ -150,9 +151,9 @@ class FontPicker(QWidget):
         self.list_widget.setStyleSheet("QListWidget::item { height: 40px; }")
         layout.addWidget(self.list_widget)
         size_layout = QHBoxLayout()
-        pb = QPushButton("Show System Fonts")
-        pb.clicked.connect(self.show_system_fonts)
-        layout.addWidget(pb)
+        #pb = QPushButton("Show System Fonts")
+        #pb.clicked.connect(self.show_system_fonts)
+        #layout.addWidget(pb)
         layout.addLayout(size_layout)
         self.size = QSlider(Qt.Horizontal)
         self.size.setRange(4, 72)
@@ -173,11 +174,16 @@ class FontPicker(QWidget):
         self.items = []
         self.list_widget.itemSelectionChanged.connect(self.change_font)
         self.list_widget.setStyleSheet("QTreeView::background-color{background-color:rgb(255,255,255);}")
+        self.show_system_fonts()
 
     def show_system_fonts(self):
-        self.sender().setEnabled(False)
+#        self.sender().setEnabled(False)
         QApplication.processEvents()
-        self.add_fonts_section("System", FontManager.get_system_fonts())
+        self.pg = Progressing(self, 100, "Loading System Fonts")
+        def add():
+            self.add_fonts_section("System", FontManager.get_system_fonts())
+        self.pg.start(add)
+
 
     def resizeEvent(self, a0: QtGui.QResizeEvent) -> None:
         super().resizeEvent(a0)

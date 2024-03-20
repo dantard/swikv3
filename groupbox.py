@@ -1,4 +1,4 @@
-from PyQt5.QtCore import QSize, Qt
+from PyQt5.QtCore import QSize
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QButtonGroup, QPushButton, QToolBar, QAction
 
@@ -62,12 +62,11 @@ class GroupBox:
             if btn.isChecked():
                 return i
 
-    def append(self, toolbar: QToolBar, orientation=Qt.Horizontal):
-        #self.toolbar2.setOrientation(orientation)
-        for btn in self.buttons:
-            toolbar.addWidget(btn)
-        #toolbar.addWidget(self.toolbar2)
+    def append(self, toolbar: QToolBar):
 
+        for btn in self.buttons:
+            self.toolbar2.addWidget(btn)
+        toolbar.addWidget(self.toolbar2)
 
     def set_enabled(self, value):
         self.toolbar2.setEnabled(value)
