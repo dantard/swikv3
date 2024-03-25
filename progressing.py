@@ -12,6 +12,7 @@ class Progressing:
         self.func = None
 
     def run(self):
+        self.update(0)
         self.func()
         self.close()
 

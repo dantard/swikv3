@@ -11,7 +11,7 @@ from PyQt5.QtGui import QPixmap, QImage, QBrush, QPen, QColor
 from PyQt5.QtWidgets import QLabel
 import fitz
 from fitz import PDF_ENCRYPT_KEEP, PDF_WIDGET_TYPE_TEXT, PDF_WIDGET_TYPE_CHECKBOX, PDF_WIDGET_TYPE_COMBOBOX, Font, PDF_ANNOT_IS_LOCKED, PDF_ANNOT_HIGHLIGHT, \
-    PDF_ANNOT_SQUARE, TEXTFLAGS_DICT, TEXT_PRESERVE_IMAGES
+    PDF_ANNOT_SQUARE, TEXTFLAGS_DICT, TEXT_PRESERVE_IMAGES, TextWriter
 
 import utils
 from annotations.highlight_annotation import HighlightAnnotation
@@ -105,6 +105,10 @@ class MuPDFRenderer(QLabel):
     OPEN_OK = 1
     OPEN_ERROR = 2
     OPEN_REQUIRES_PASSWORD = 3
+
+    FLATTEN_OK = 0
+    FLATTEN_WORKAROUND = 1
+    FLATTEN_ERROR = 2
 
     def __init__(self):
         super().__init__()
@@ -372,7 +376,7 @@ class MuPDFRenderer(QLabel):
         print("applying", index, rect, color)
         page = self.document[index]
         rect = utils.qrectf_to_fitz_rect(rect)
-        color = utils.qcolor_to_fitz_color(color)
+        color = utils.qcolor_to_fitz_color(QColor(color))
         page.add_redact_annot(rect, "", fill=color)
         page.apply_redactions()
 
@@ -526,7 +530,13 @@ class MuPDFRenderer(QLabel):
 
     def replace_word(self, index, text: SwikTextReplace):
         self.document[index].clean_contents()
-        self.add_redact_annot(index, text.get_patch_on_page(), text.get_patch_color())
+        # Make the patch just 2 pixels high
+        # This will remove the word but won't
+        # remove the adjacent words
+        patch = text.get_patch_on_page()
+        patch.setY(patch.center().y() - 1)
+        patch.setHeight(2)
+        self.add_redact_annot(index, patch, text.get_patch_color())
         self.add_text(index, text)
 
     to_remove = []
@@ -548,17 +558,17 @@ class MuPDFRenderer(QLabel):
                 text_field.set_info(field.field_name, field.field_flags)
                 pdf_widgets.append(text_field)
                 self.document[page.index].delete_widget(field)
-            '''
+
             elif field.field_type == PDF_WIDGET_TYPE_CHECKBOX:
                 rect = QRectF(field.rect[0], field.rect[1], field.rect[2] - field.rect[0],
                               field.rect[3] - field.rect[1])
                 cb_field = PdfCheckboxWidget(page, field.field_value, rect, field.text_fontsize)
-                cb_field.set_info(field.field_name, field.field_flags)
+                cb_field.set_info(field.field_name, 0)
                 pdf_widgets.append(cb_field)
-                #self.document[page.index].delete_widget(field)
+                self.document[page.index].delete_widget(field)
                 self.to_remove.append(field)
 
-
+            '''
             elif field.field_type == PDF_WIDGET_TYPE_COMBOBOX:
                 rect = QRectF(field.rect[0], field.rect[1], field.rect[2] - field.rect[0],
                               field.rect[3] - field.rect[1])
@@ -587,6 +597,7 @@ class MuPDFRenderer(QLabel):
             widget.field_type = PDF_WIDGET_TYPE_TEXT
         elif type(swik_widget) == PdfCheckboxWidget:
             widget.field_type = PDF_WIDGET_TYPE_CHECKBOX
+            # self.add_redact_annot(index, swik_widget.get_rect(), Qt.white)
         elif type(swik_widget) == PdfComboboxWidget:
             widget.field_type = PDF_WIDGET_TYPE_COMBOBOX
             widget.choice_values = swik_widget.get_items()
@@ -597,9 +608,42 @@ class MuPDFRenderer(QLabel):
 
     def flatten(self, filename):
         self.sync_requested.emit()
-        pdfbytes = self.document.convert_to_pdf()
-        with open(filename, "wb") as f:
-            f.write(pdfbytes)
+
+        pre = fitz.TOOLS.mupdf_warnings()
+        pdf_bytes = self.document.convert_to_pdf()
+        post = fitz.TOOLS.mupdf_warnings()
+
+        pdf = fitz.open("pdf", pdf_bytes)
+
+        # If MuPDF complains about missing fonts, try workaround the problem
+        if post != pre:
+            # Workaround for combo boxes that don't get redacted
+            for i, page in enumerate(self.document):
+                tw = fitz.TextWriter(pdf[i].rect)
+                for field in page.widgets():
+
+                    if field.field_type == PDF_WIDGET_TYPE_COMBOBOX:
+                        pdf[i].add_redact_annot(field.rect, field.field_value, fill=(1, 1, 1), fontsize=field.text_fontsize)
+                        pdf[i].apply_redactions()
+                    elif field.field_type == PDF_WIDGET_TYPE_CHECKBOX:
+                        x1, y1, x2, y2 = field.rect
+                        x2, y2 = x1 + min(x2 - x1, y2 - y1), y1 + min(x2 - x1, y2 - y1)
+                        pdf[i].add_redact_annot(field.rect, "", fill=(1, 1, 1), fontsize=field.text_fontsize)
+                        tw.append((x1, y2), "☑" if field.field_value != "Off" else "☐", fontsize=(y2 - y1) * 1.3)
+
+                pdf[i].apply_redactions()
+                tw.write_text(pdf[i])
+
+            ret_code = MuPDFRenderer.FLATTEN_WORKAROUND
+        else:
+            ret_code = MuPDFRenderer.FLATTEN_OK
+
+        try:
+            pdf.save(filename)
+        except:
+            ret_code = MuPDFRenderer.FLATTEN_ERROR
+
+        return ret_code
 
     def save_fonts(self, out_dir):
         font_xrefs = set()

@@ -92,7 +92,7 @@ class MainWindow(QMainWindow):
             for line in command.split("&&"):
                 data = line.split(" ")
                 actions.append((data[0], self.TAB_MENU_OPEN_WITH, data[1]) if len(data) == 2 else (
-                data[0], self.TAB_MENU_OPEN_WITH, data[0]))
+                    data[0], self.TAB_MENU_OPEN_WITH, data[0]))
             self.tab_widget.add_menu_submenu("Open with", actions)
         self.tab_widget.set_menu_callback(self.tab_menu)
         # Done
@@ -130,7 +130,7 @@ class MainWindow(QMainWindow):
     def tab_changed(self, index):
         self.setWindowTitle(
             "Swik" + (
-                        " - " + self.tab_widget.currentWidget().get_filename()) if self.tab_widget.currentWidget().get_filename() is not None else "")
+                    " - " + self.tab_widget.currentWidget().get_filename()) if self.tab_widget.currentWidget().get_filename() is not None else "")
         enabled = self.current().is_interaction_enabled()
         self.update_interaction_status()
 
@@ -144,6 +144,7 @@ class MainWindow(QMainWindow):
     def create_tab(self, filename=None):
         widget = SwikWidget(self, self.tab_widget, self.config)
         widget.interaction_changed.connect(self.update_interaction_status)
+        widget.open_requested.connect(self.open_requested)
 
         self.tab_widget.new_tab(widget, filename)
         if filename is not None:
@@ -151,13 +152,17 @@ class MainWindow(QMainWindow):
             self.update_interaction_status()
         return widget
 
+    def open_requested(self, filename, page, zoom):
+        widget = self.create_tab(filename)
+        widget.view.set_ratio(zoom, True)
+        widget.view.set_page(page)
+
     def close_tab(self, tab):
         self.tab_widget.close_tab(tab)
         self.update_interaction_status()
 
-
-        #filename = self.tab_widget.currentWidget().get_filename()
-        #self.setWindowTitle("Swik" + (" - " + filename) if filename is not None else "")
+        # filename = self.tab_widget.currentWidget().get_filename()
+        # self.setWindowTitle("Swik" + (" - " + filename) if filename is not None else "")
 
     def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
         tabs = []

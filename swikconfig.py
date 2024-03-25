@@ -11,6 +11,8 @@ from easyconfig.EasyConfig import EasyConfig
 
 
 # from Dialogs import TextDontShowAgainDialog
+# from gi.overrides.Gio import Gio
+# from gi.overrides.Gtk import Gtk
 
 
 class SwikConfig(EasyConfig):
@@ -84,14 +86,14 @@ class SwikConfig(EasyConfig):
         self.tabs.set_value(tabs)
 
     def push_window_config(self, window):
-        #self.set("Ratio", view.get_ratio())
-        #self.set("mode", view.get_mode())
+        # self.set("Ratio", view.get_ratio())
+        # self.set("mode", view.get_mode())
         self.set("maximized", 1 if window.windowState() & QtCore.Qt.WindowMaximized else 0)
         self.set("width", window.geometry().width())
         self.set("height", window.geometry().height())
         self.set("x", window.geometry().x())
         self.set("y", window.geometry().y())
-        #self.update_recent(renderer.get_filename())
+        # self.update_recent(renderer.get_filename())
 
     def apply_window_config(self, window):
         if self.get("maximized"):
@@ -111,8 +113,8 @@ class SwikConfig(EasyConfig):
         self.set("recent", recent)
 
         # Add to Gtk Recent
-        rec_mgr = Gtk.RecentManager.get_default()
-        rec_mgr.add_item(Gio.File.new_for_path(filename).get_uri())
+        # rec_mgr = Gtk.RecentManager.get_default()
+        # rec_mgr.add_item(Gio.File.new_for_path(filename).get_uri())
         # GLib.idle_add(Gtk.main_quit)
         # Gtk.main()
 

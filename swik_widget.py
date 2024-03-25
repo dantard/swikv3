@@ -8,7 +8,7 @@ from PyQt5.QtNetwork import QUdpSocket, QHostAddress
 import resources
 import pyclip
 from PyQt5 import QtGui
-from PyQt5.QtCore import QPointF, Qt, QTimer, pyqtSignal
+from PyQt5.QtCore import QPointF, Qt, QTimer, pyqtSignal, QRectF
 from PyQt5.QtGui import QPainter, QIcon, QKeySequence
 from PyQt5.QtWidgets import QApplication, QMainWindow, QShortcut, QFileDialog, QDialog, QMessageBox, QHBoxLayout, QWidget, QTabWidget, QVBoxLayout, QToolBar, \
     QPushButton, QSizePolicy, QTabBar, QProgressDialog, QSplitter, QGraphicsScene, QLabel
@@ -40,11 +40,12 @@ from toolbars.navigationtoolbar import NavigationToolbar
 from page import Page
 from renderer import MuPDFRenderer
 from toolbars.searchtoolbar import TextSearchToolbar
+from widgets.pdf_widget import PdfCheckboxWidget
 
 
 class SwikWidget(QWidget):
-
     interaction_changed = pyqtSignal(QWidget)
+    open_requested = pyqtSignal(str, int, float)
 
     def __init__(self, window, tab_widget, config):
         super().__init__()
@@ -98,6 +99,7 @@ class SwikWidget(QWidget):
         self.key_manager = KeyboardManager(self)
         self.key_manager.register_action(Qt.Key_Delete, self.delete_objects)
         self.key_manager.register_action(Qt.Key_Shift, lambda: self.manager.use_tool("drag"), self.manager.finished)
+        self.key_manager.register_combination_action('Ctrl+R', lambda: self.open_file(self.renderer.get_filename()))
         self.key_manager.register_combination_action('Ctrl+i', self.view.toggle_page_info)
         self.key_manager.register_combination_action('Ctrl+C', lambda: self.manager.keyboard('Ctrl+C'))
         self.key_manager.register_combination_action('Ctrl+V', lambda: self.manager.keyboard('Ctrl+V'))
@@ -109,11 +111,12 @@ class SwikWidget(QWidget):
         self.key_manager.register_combination_action('Ctrl+Shift+Z', self.scene.tracker().redo)
 
         self.toolbar = QToolBar()
-        #self.toolbar.addAction("cac", lambda: self.view.insert_blank_pages(2,4))
+        # self.toolbar.addAction("cac", lambda: self.view.insert_blank_pages(2,4))
         self.toolbar.addAction("Open", self.open_file).setIcon(QIcon(":/icons/open.png"))
         self.save_btn = self.toolbar.addAction("Save", self.save_file)
         self.save_btn.setIcon(QIcon(":/icons/save.png"))
         self.toolbar.addSeparator()
+        self.toolbar.addAction("cac", self.cac)
         # self.toolbar.addWidget(LongPressButton())
 
         self.mode_group = GroupBox()
@@ -151,6 +154,11 @@ class SwikWidget(QWidget):
         self.splitter.addWidget(helper)
         self.layout().setContentsMargins(2, 2, 2, 2)
         self.set_interactable(False)
+
+    def cac(self):
+        print("cac")
+        pf = PdfCheckboxWidget(self.view.pages[0], "True", QRectF(100, 100, 20, 20), 10)
+        pf.set_info("test", 0)
 
     def set_interactable(self, enable):
         self.mode_group.set_enabled(enable)
@@ -205,9 +213,19 @@ class SwikWidget(QWidget):
 
     def flatten(self, open=True):
         filename = self.renderer.get_filename().replace(".pdf", "-flat.pdf")
-        self.renderer.flatten(filename)
-        if open:
-            self.open_file(filename)
+
+        res = self.renderer.flatten(filename)
+
+        if res == MuPDFRenderer.FLATTEN_ERROR:
+            QMessageBox.critical(self, "Flatten", "Error while flattening the document", QMessageBox.Ok)
+            return
+
+        else:
+            if res == MuPDFRenderer.FLATTEN_WORKAROUND:
+                QMessageBox.warning(self, "Flatten", "Original PDF has problems, a workaround has been applied. Check result correctness.", QMessageBox.Ok)
+
+            if open:
+                self.open_requested.emit(filename, self.view.page, self.view.ratio)
 
     def extract_fonts(self):
         fonts = self.renderer.save_fonts(".")
@@ -268,6 +286,7 @@ class SwikWidget(QWidget):
             if res == MuPDFRenderer.OPEN_OK:
                 self.set_interactable(True)
                 self.config.set('last', self.renderer.get_filename())
+                self.config.update_recent(self.renderer.get_filename())
                 self.config.flush()
             else:
                 QMessageBox.warning(self, "Error", "Error opening file")

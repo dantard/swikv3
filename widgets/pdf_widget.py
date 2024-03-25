@@ -72,7 +72,8 @@ class PdfCheckboxWidget(PdfTextWidget):
         return cb
 
     def get_value(self):
-        return "Yes" if self.widget.isChecked() else "Off"
+        return self.widget.isChecked()
+        # return "Yes" if self.widget.isChecked() else "Off"
 
 
 class PdfComboboxWidget(PdfTextWidget):
@@ -95,5 +96,3 @@ class PdfComboboxWidget(PdfTextWidget):
 
     def get_value(self):
         return self.widget.currentText()
-
-

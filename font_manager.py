@@ -24,21 +24,22 @@ class FontManager(QObject):
         900: QFont.Black
     }
 
-    base14_fonts = [{'full_name': 'Courier', 'path': None, 'family': 'Courier', 'weight': 400, 'nickname': 'Courier', },
-                    {'full_name': 'Courier-Bold', 'path': None, 'family': 'Courier', 'weight': 700, 'nickname': 'Courier-Bold', },
-                    {'full_name': 'Courier-Oblique', 'path': None, 'family': 'Courier', 'weight': 400, 'nickname': 'Courier-Oblique', },
-                    {'full_name': 'Courier-BoldOblique', 'path': None, 'family': 'Courier', 'weight': 700, 'nickname': 'Courier-BoldOblique', },
-                    {'full_name': 'Helvetica', 'path': None, 'family': 'Helvetica', 'weight': 400, 'nickname': 'Helvetica', },
-                    {'full_name': 'Helvetica-Bold', 'path': None, 'family': 'Helvetica', 'weight': 700, 'nickname': 'Helvetica-Bold', },
-                    {'full_name': 'Helvetica-Oblique', 'path': None, 'family': 'Helvetica', 'weight': 400, 'nickname': 'Helvetica-Oblique', },
-                    {'full_name': 'Helvetica-BoldOblique', 'path': None, 'family': 'Helvetica', 'weight': 700, 'nickname': 'Helvetica-BoldOblique', },
-                    {'full_name': 'Times-Roman', 'path': None, 'family': 'Times', 'weight': 400, 'nickname': 'Times-Roman', },
-                    {'full_name': 'Times-Bold', 'path': None, 'family': 'Times', 'weight': 700, 'nickname': 'Times-Bold', },
-                    {'full_name': 'Times-Italic', 'path': None, 'family': 'Times', 'weight': 400, 'nickname': 'Times-Italic', },
-                    {'full_name': 'Times-BoldItalic', 'path': None, 'family': 'Times', 'weight': 700, 'nickname': 'Times-BoldItalic', },
-                    {'full_name': 'Symbol', 'path': None, 'family': 'Symbol', 'weight': 400, 'nickname': 'Symbol', },
-                    {'full_name': 'ZapfDingbats', 'path': None, 'family': 'ZapfDingbats', 'weight': 400, 'nickname': 'ZapfDingbats', }
-                    ]
+    base14_fonts = [
+        {'full_name': 'Helvetica', 'path': None, 'family': 'Helvetica', 'weight': 400, 'nickname': 'Helvetica', },
+        {'full_name': 'Helvetica-Bold', 'path': None, 'family': 'Helvetica', 'weight': 700, 'nickname': 'Helvetica-Bold', },
+        {'full_name': 'Helvetica-Oblique', 'path': None, 'family': 'Helvetica', 'weight': 400, 'nickname': 'Helvetica-Oblique', },
+        {'full_name': 'Helvetica-BoldOblique', 'path': None, 'family': 'Helvetica', 'weight': 700, 'nickname': 'Helvetica-BoldOblique', },
+        {'full_name': 'Courier', 'path': None, 'family': 'Courier', 'weight': 400, 'nickname': 'Courier', },
+        {'full_name': 'Courier-Bold', 'path': None, 'family': 'Courier', 'weight': 700, 'nickname': 'Courier-Bold', },
+        {'full_name': 'Courier-Oblique', 'path': None, 'family': 'Courier', 'weight': 400, 'nickname': 'Courier-Oblique', },
+        {'full_name': 'Courier-BoldOblique', 'path': None, 'family': 'Courier', 'weight': 700, 'nickname': 'Courier-BoldOblique', },
+        {'full_name': 'Times-Roman', 'path': None, 'family': 'Times', 'weight': 400, 'nickname': 'Times-Roman', },
+        {'full_name': 'Times-Bold', 'path': None, 'family': 'Times', 'weight': 700, 'nickname': 'Times-Bold', },
+        {'full_name': 'Times-Italic', 'path': None, 'family': 'Times', 'weight': 400, 'nickname': 'Times-Italic', },
+        {'full_name': 'Times-BoldItalic', 'path': None, 'family': 'Times', 'weight': 700, 'nickname': 'Times-BoldItalic', },
+        {'full_name': 'Symbol', 'path': None, 'family': 'Symbol', 'weight': 400, 'nickname': 'Symbol', },
+        {'full_name': 'ZapfDingbats', 'path': None, 'family': 'ZapfDingbats', 'weight': 400, 'nickname': 'ZapfDingbats', }
+    ]
 
     system_fonts = []
     swik_fonts = []
@@ -186,8 +187,9 @@ class FontManager(QObject):
                             pass
                             # traceback.print_exc()
                             # print("Error reading font: ", path)
-
-        return list(fonts.values())
+        fonts = list(fonts.values())
+        fonts.sort(key=lambda x: x['full_name'])
+        return fonts
 
     @staticmethod
     def get_system_font_list():
