@@ -86,6 +86,20 @@ class FontManager(QObject):
         for f in self.document_fonts:
             if f['nickname'] == name:
                 return f
+
+        for f in FontManager.base14_fonts:
+            if f['nickname'] == name:
+                return f
+
+        for f in FontManager.swik_fonts:
+            if f['nickname'] == name:
+                return f
+
+        for f in FontManager.system_fonts:
+            # print("System font: ", f['nickname'])
+            if f['nickname'] == name:
+                return f
+
         return None
 
     @staticmethod

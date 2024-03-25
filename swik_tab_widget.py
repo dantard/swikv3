@@ -2,7 +2,7 @@ import os
 import subprocess
 import sys
 
-from PyQt5 import QtCore
+from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import QPoint, Qt, pyqtSignal, QSize
 from PyQt5.QtWidgets import QTabWidget, QPushButton, QWidget, QHBoxLayout, QTabBar, QMenu, QAction, QLabel
 
@@ -131,3 +131,9 @@ class SwikTabWidget(QTabWidget):
         else:
             self.plusButton.show()
             self.cornerWidget().hide()
+
+    def mousePressEvent(self, a0: QtGui.QMouseEvent) -> None:
+        super().mousePressEvent(a0)
+        if a0.button() == Qt.MidButton:
+            tab = self.tabBar().tabAt(a0.pos())
+            self.close_tab(self.widget(tab))
