@@ -5,9 +5,10 @@ from PyQt5.QtWidgets import QButtonGroup, QPushButton, QToolBar, QAction
 
 class GroupBox:
     class Action:
-        def __init__(self, button, param):
+        def __init__(self, button, param, separator=False):
             self.button = button
             self.param = param
+            self.separator = separator
 
     def __init__(self, common_callback=None):
         self.actions = []
@@ -36,13 +37,13 @@ class GroupBox:
         elif self.common_callback is not None:
             self.common_callback(action.param)
 
-    def add(self, param, default=False, text="", icon=None, tool=None):
+    def add(self, param, default=False, text="", icon=None, separator=False):
         btn = QPushButton()
         btn.setContentsMargins(0, 0, 0, 0)
         btn.setIconSize(QSize(24, 24))
         btn.setFlat(True)
         btn.setCheckable(True)
-        action = self.Action(btn, param)
+        action = self.Action(btn, param, separator)
         btn.clicked.connect(lambda: self.local_callback(action))
 
         if (icon := QIcon(icon)) is not None:
@@ -70,10 +71,11 @@ class GroupBox:
                 return i
 
     def append(self, toolbar: QToolBar):
-
         for action in self.actions:
-            self.toolbar2.addWidget(action.button)
-        toolbar.addWidget(self.toolbar2)
+            action.button.setContentsMargins(0, 0, 0, 0)
+            toolbar.addWidget(action.button)
+            if action.separator:
+                toolbar.addSeparator()
 
     def set_enabled(self, value):
         self.toolbar2.setEnabled(value)

@@ -113,7 +113,7 @@ class SwikWidget(QWidget):
         self.toolbar.addAction("Open", self.open_file).setIcon(QIcon(":/icons/open.png"))
         self.save_btn = self.toolbar.addAction("Save", self.save_file)
         self.save_btn.setIcon(QIcon(":/icons/save.png"))
-        self.toolbar.addSeparator()
+        # self.toolbar.addSeparator()
         # self.toolbar.addWidget(LongPressButton())
 
         self.mode_group = GroupBox(self.manager.use_tool)
@@ -123,14 +123,12 @@ class SwikWidget(QWidget):
         self.mode_group.add(tool_sqan, icon=":/icons/annotate.png", text="Annotate")
         self.mode_group.add(tool_reda, icon=":/icons/white.png", text="Anonymize")
         self.mode_group.add(tool_imag, icon=":/icons/image.png", text="Insert Image")
-        self.image_sign_btn = self.mode_group.add(tool_sigi, icon=":/icons/signature.png", text="Insert Signature")
+        self.image_sign_btn = self.mode_group.add(tool_sigi, icon=":/icons/signature.png", text="Insert Signature", separator=True)
         self.mode_group.add(tool_rear, icon=":/icons/shuffle.png", text="Shuffle Pages")
+        # self.mode_group.append(self.toolbar)
 
-        #        self.sign_btn.setEnabled(self.config.get("p12") is not None)
-        #        self.image_sign_btn.setEnabled(self.config.get("image_signature") is not None)
-
-        self.mode_group.append(self.toolbar)
         self.manager.tool_finished.connect(self.mode_group.reset)
+
         self.zoom_toolbar = ZoomToolbar(self.view, self.toolbar)
         self.nav_toolbar = NavigationToolbar(self.view, self.toolbar)
         self.finder_toolbar = TextSearchToolbar(self.view, self.renderer, self.toolbar)
@@ -138,17 +136,27 @@ class SwikWidget(QWidget):
         self.splitter = QSplitter(Qt.Horizontal)
 
         self.setLayout(QVBoxLayout())
-
         self.layout().addWidget(self.splitter)
+
         helper = QWidget()
-        helper.setLayout(QVBoxLayout())
-        helper.layout().addWidget(self.toolbar)
-        helper.layout().addWidget(self.view)
-        helper.layout().setContentsMargins(2, 2, 2, 2)
+        self.helper_layout = QVBoxLayout()
+        helper.setLayout(self.helper_layout)
+        self.helper_layout.addWidget(self.toolbar)
+
+        self.lateral_bar_layout = QHBoxLayout()
+        self.helper_layout.addLayout(self.lateral_bar_layout)
+
+        # Lateral Bar
+        self.lateral_bar = QToolBar()
+        self.lateral_bar.addSeparator()
+        self.mode_group.append(self.lateral_bar)
+        self.update_lateral_bar_position()
+
+        for w in [self.helper_layout, self.lateral_bar_layout, self.splitter, helper, self.lateral_bar]:
+            w.setContentsMargins(0, 0, 0, 0)
 
         self.splitter.addWidget(self.miniature_view)
         self.splitter.addWidget(helper)
-        self.layout().setContentsMargins(2, 2, 2, 2)
         self.set_interactable(False)
         self.preferences_changed()
 
@@ -171,9 +179,31 @@ class SwikWidget(QWidget):
     def preferences_changed(self):
         self.sign_btn.setEnabled(self.manager.get_tool(ToolSign).usable())
         self.image_sign_btn.setEnabled(self.manager.get_tool(ToolInsertSignatureImage).usable())
+        self.update_lateral_bar_position()
 
-        # self.sign_btn.setEnabled(self.config.get("p12") is not None)
-        # self.image_sign_btn.setEnabled(self.config.get("image_signature") is not None)
+    def update_lateral_bar_position(self):
+        pos = self.config.general.get('lateral_bar_position', default=0)
+        if pos == 0:
+            self.lateral_bar.setOrientation(Qt.Vertical)
+            self.lateral_bar_layout.addWidget(self.lateral_bar)
+            self.lateral_bar_layout.addWidget(self.view)
+        elif pos == 1:
+            self.lateral_bar.setOrientation(Qt.Vertical)
+            self.lateral_bar_layout.addWidget(self.view)
+            self.lateral_bar_layout.addWidget(self.lateral_bar)
+        elif pos == 2:
+            self.lateral_bar.setOrientation(Qt.Horizontal)
+            self.helper_layout.addWidget(self.view)
+            self.helper_layout.addWidget(self.lateral_bar)
+        else:
+            self.lateral_bar.setOrientation(Qt.Horizontal)
+            self.helper_layout.addWidget(self.lateral_bar)
+            self.helper_layout.addWidget(self.view)
+
+    #
+
+    # self.sign_btn.setEnabled(self.config.get("p12") is not None)
+    # self.image_sign_btn.setEnabled(self.config.get("image_signature") is not None)
 
     def set_tab(self, tab):
         self.tab = tab
@@ -269,7 +299,7 @@ class SwikWidget(QWidget):
 
     def open_file(self, filename=None):
         if filename is None:
-            last_dir_for_open = self.config.get('last_dir_for_open', None)
+            last_dir_for_open = self.config.private.get('last_dir_for_open')
             filename, _ = QFileDialog.getOpenFileName(self, 'Open file', last_dir_for_open, 'PDF (*.pdf)')
 
         if filename:

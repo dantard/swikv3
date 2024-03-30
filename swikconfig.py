@@ -29,6 +29,7 @@ class SwikConfig(EasyConfig):
         self.general.addString("file_browser", pretty="File Browser", default="/usr/bin/nautilus")
         self.general.addEditBox("other_pdf", pretty="Other PDF readers", height=50)
         self.general.addCheckbox("open_last", pretty="Reopen Last opened", default=True)
+        self.general.addCombobox("lateral_bar_position", pretty="Lateral Bar Position", items=["Left", "Right", "Bottom", "Top"])
         self.general.addCheckbox("natural_hscroll", pretty="Natural H-Scroll")
         self.open_other_pdf_in = self.general.addCombobox("open_other_pdf_in", pretty="When opening other PDFs", items=["Same Window", "Other Window", "Ask"])
         self.flatten_before_sign = self.general.addCheckbox("flatten_before_sign", pretty="Flatten before signing", default=True)

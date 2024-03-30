@@ -225,40 +225,31 @@ class MainWindow(QMainWindow):
 
 def main():
     app = QApplication(sys.argv)
-    window = MainWindow()
 
     socket = QUdpSocket()
     socket.bind(QHostAddress.LocalHost, 0)
     socket.open(QUdpSocket.ReadWrite)
 
-    if len(sys.argv) > 1 and window.config.get("open_other_pdf_in") != 1:
+    if len(sys.argv) > 1:
         udp_port = utils.are_other_instances_running()
         if udp_port > 0:
             print("Another instance is running, sending filename to it")
-            socket.writeDatagram(" ".join(sys.argv[1:]).encode(), QHostAddress.LocalHost, udp_port)
-            if socket.waitForReadyRead(1000):
-                datagram, host, port = socket.readDatagram(socket.pendingDatagramSize())
-                socket.waitForReadyRead()
-                datagram, host, port = socket.readDatagram(socket.pendingDatagramSize())
-                if datagram.decode() == "QUIT":
-                    sys.exit(0)
+            filename = " ".join(sys.argv[1:])
+            filename = os.getcwd() + os.sep + filename if not os.path.isabs(filename) else filename
+            socket.writeDatagram(filename.encode(), QHostAddress.LocalHost, udp_port)
+            sys.exit(0)
+
+    window = MainWindow()
+    window.show()
 
     def received():
         while socket.hasPendingDatagrams():
             datagram, host, port = socket.readDatagram(socket.pendingDatagramSize())
-            socket.writeDatagram("OK".encode(), QHostAddress.LocalHost, port)
-
-            if window.config.get("open_other_pdf_in") == 0 or window.should_open_here(datagram.decode()):
-                socket.writeDatagram("QUIT".encode(), QHostAddress.LocalHost, port)
-                window.hide()
-                window.show()
-                window.open_file(datagram.decode())
-
-            else:
-                socket.writeDatagram("OPEN".encode(), QHostAddress.LocalHost, port)
+            window.hide()
+            window.show()
+            window.open_file(datagram.decode())
 
     socket.readyRead.connect(received)
-    window.show()
 
     if len(sys.argv) > 1:
         window.open_file(sys.argv[1])
