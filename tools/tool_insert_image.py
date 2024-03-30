@@ -36,6 +36,16 @@ class InsertImageRectItem(ResizableRectItem):
 
 
 class ToolInsertImage(Tool):
+    configured = False
+    signature = None
+
+    @staticmethod
+    def configure(config):
+        if not ToolInsertImage.configured:
+            ToolInsertImage.signature = config.root().addSubSection("Image Signature")
+            ToolInsertImage.signature.addFile("image_signature", pretty="Signature File", extension=["png", "jpg"], extension_name="Image")
+            ToolInsertImage.configured = True
+
     def __init__(self, view, renderer, config):
         super().__init__(view, renderer, config)
         self.rubberband = None
@@ -45,9 +55,6 @@ class ToolInsertImage(Tool):
         filename, _ = QFileDialog.getOpenFileName(None, "Select image", "", "Image files (*.png *.jpg *.jpeg *.bmp *.gif *.tiff *.tif)")
         if filename:
             self.image = QImage(filename)
-
-    def configure(self):
-        pass
 
     def mouse_pressed(self, event):
         page = self.view.get_page_at_pos(event.pos())
@@ -74,6 +81,7 @@ class ToolInsertImage(Tool):
     def finish(self):
         self.view.setCursor(Qt.ArrowCursor)
 
+
 class ToolInserSignatureImage(ToolInsertImage):
     def init(self):
-        self.image = QImage(self.config.get("image_signature", ""))
+        self.image = QImage(ToolInsertImage.signature.get("image_signature", default=""))

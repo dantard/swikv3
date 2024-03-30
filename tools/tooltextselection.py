@@ -2,11 +2,12 @@ import tempfile
 
 from PyQt5.QtCore import Qt, QPointF, QRectF
 from PyQt5.QtGui import QFont, QFontDatabase, QColor, QClipboard, QGuiApplication
-from PyQt5.QtWidgets import QMenu, QGraphicsRectItem, QGraphicsScene
+from PyQt5.QtWidgets import QMenu, QGraphicsRectItem, QGraphicsScene, QDialog, QMessageBox
 
 import utils
 from annotations.highlight_annotation import HighlightAnnotation
 from annotations.redactannotation import RedactAnnotation
+from dialogs import FontAndColorDialog
 from selector import SelectorRectItem
 from simplepage import SimplePage
 from swiktext import SwikText, SwikTextReplace
@@ -143,10 +144,9 @@ class TextSelection(Tool):
             copy = menu.addAction("Copy")
             anon = menu.addAction("Anonymyze")
             highlight = menu.addAction("Highlight Annotation")
-            if len(self.selected) == 1:
-                replace = menu.addAction("Replace")
+            replace = menu.addAction("Replace")
         else:
-            anon, highlight, copy = None, None, None
+            anon, highlight, copy, replace = None, None, None, None
 
         res = menu.exec(event.globalPos())
         if res is None:
@@ -173,14 +173,20 @@ class TextSelection(Tool):
             self.copy_selected_to_clipboard()
 
         elif res == replace:
-            font, size, color = self.renderer.get_word_font(self.selected[0])
+            first_font, first_size, first_color = self.renderer.get_word_font(self.selected[0])
+            for word in self.selected[1:]:
+                font, size, color = self.renderer.get_word_font(word)
+                if font != first_font or size != first_size or color != first_color:
+                    QMessageBox.warning(self.view, "Warning", "Selected words have different font, size or color.")
+                    break
 
-            font_info = self.font_manager.get_font_info_from_name(font)
-            print("Font: ", font, "Size: ", size, "Color: ", color, "Font Info: ", font_info)
-            if not font_info:
-                font_info = self.font_manager.base14_fonts[0]
-            SwikTextReplace(self.selected[0], self.font_manager, font_info.get('path'), size / 1.34)
-            self.clear_selection()
+            font = self.font_manager.get_font_info_from_name(first_font)
+            print("Font: ", font, "Size: ", first_size, "Color: ", first_color)
+            dialog = FontAndColorDialog(self.font_manager, font.get("path") if font is not None else None, first_size, first_color)
+            if dialog.exec() == QDialog.Accepted:
+                for word in self.selected:
+                    SwikTextReplace(word, self.font_manager, dialog.get_font_filename(), dialog.get_font_size() / 1.34, dialog.get_text_color())
+                    self.clear_selection()
 
     def mouse_double_clicked(self, event):
         scene_pos = self.view.mapToScene(event.pos())

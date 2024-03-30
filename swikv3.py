@@ -1,7 +1,6 @@
 import os
 import subprocess
 import sys
-
 import pyclip
 from PyQt5 import QtGui
 from PyQt5.QtNetwork import QUdpSocket, QHostAddress
@@ -12,6 +11,7 @@ import utils
 from swik_tab_widget import SwikTabWidget
 from swik_widget import SwikWidget
 from swikconfig import SwikConfig
+from tools.tool_insert_image import ToolInserSignatureImage
 from tools.toolsign import ToolSign
 
 
@@ -27,6 +27,7 @@ class MainWindow(QMainWindow):
         self.config = SwikConfig()
 
         ToolSign.configure(self.config)
+        ToolInserSignatureImage.configure(self.config)
 
         self.config.read()
 
@@ -40,7 +41,7 @@ class MainWindow(QMainWindow):
         save = file_menu.addAction('Save', self.save_file)
         save_as = file_menu.addAction('Save as', self.save_file_as)
         copy_path = file_menu.addAction('Copy path', lambda: pyclip.copy(self.renderer.filename))
-        command = self.config.get("other_pdf")
+        command = self.config.general.get("other_pdf")
         self.file_menu_actions = [save, save_as, copy_path]
 
         if command is not None and command != "None":
@@ -86,7 +87,7 @@ class MainWindow(QMainWindow):
         self.tab_widget.tab_close_requested.connect(self.close_tab)
 
         # Add open with menu
-        command = self.config.get("other_pdf")
+        command = self.config.general.get("other_pdf")
         if command is not None and command != "None":
             actions = []
             for line in command.split("&&"):
@@ -102,12 +103,13 @@ class MainWindow(QMainWindow):
         self.update_interaction_status()
 
         # Open last files if required
-        if self.config.get("open_last"):
+        if self.config.general.get("open_last"):
             tabs = self.config.get_tabs()
             if len(tabs) > 0:
                 for tab in tabs:
                     self.create_tab(tab)
                 self.tab_widget.setCurrentIndex(0)
+                self.tab_changed(0)
 
     def tab_menu(self, action, code, data, widget):
         print("tab_menu", action, code, data, widget)
@@ -128,10 +130,13 @@ class MainWindow(QMainWindow):
         return self.tab_widget.currentWidget()
 
     def tab_changed(self, index):
-        self.setWindowTitle(
-            "Swik" + (
-                    " - " + self.tab_widget.currentWidget().get_filename()) if self.tab_widget.currentWidget().get_filename() is not None else "")
-        enabled = self.current().is_interaction_enabled()
+        self.update_title()
+
+    def update_title(self):
+        title = "Swik"
+        if self.tab_widget.currentWidget() is not None and self.tab_widget.currentWidget().get_filename() is not None:
+            title += " - " + self.tab_widget.currentWidget().get_filename()
+        self.setWindowTitle(title)
         self.update_interaction_status()
 
     def update_interaction_status(self):
@@ -145,6 +150,7 @@ class MainWindow(QMainWindow):
         widget = SwikWidget(self, self.tab_widget, self.config)
         widget.interaction_changed.connect(self.update_interaction_status)
         widget.open_requested.connect(self.open_requested)
+        widget.file_changed.connect(self.update_title)
 
         self.tab_widget.new_tab(widget, filename)
         if filename is not None:
@@ -159,7 +165,7 @@ class MainWindow(QMainWindow):
 
     def close_tab(self, tab):
         self.tab_widget.close_tab(tab)
-        self.update_interaction_status()
+        self.update_title()
 
         # filename = self.tab_widget.currentWidget().get_filename()
         # self.setWindowTitle("Swik" + (" - " + filename) if filename is not None else "")
@@ -186,7 +192,6 @@ class MainWindow(QMainWindow):
             for widget in self.get_widgets():
                 if widget.get_filename() is None:
                     widget.open_file(filename)
-                    self.update_interaction_status()
                     break
             else:
                 self.create_tab(filename)

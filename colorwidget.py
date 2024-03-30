@@ -14,7 +14,7 @@ class ColorWidget(QPushButton):
 
     def __init__(self, color, text=True):
         super().__init__()
-        self.color = color
+        self.color = QColor(color)
         self.has_text = text
         self.opacity = 255
         self.order = 0
@@ -39,7 +39,7 @@ class ColorWidget(QPushButton):
         self.order = order
 
     def choose_color(self):
-        color = QColorDialog.getColor()
+        color = QColorDialog.getColor(self.color)
         # color.setAlpha(self.opacity_slider.value())
         if color.isValid():
             self.set_color(color)
@@ -73,7 +73,7 @@ class Color(QWidget):
 
     def __init__(self, color):
         super().__init__()
-        r, g, b, a = color.getRgb()
+        r, g, b, a = QColor(color).getRgb()
         print(r, g, b, a, "color")
         self.color_widget = ColorWidget(color)
         self.color_widget.set_order(2)
@@ -136,7 +136,8 @@ class FontPicker(QWidget):
 
         def selectionCommand(self, index, event=None):
             item = self.itemFromIndex(index)
-            if self.indexOfTopLevelItem(item) > 0:  # Check if it's a top-level item
+            print("selectionCommand", item, event)
+            if item.parent() is None:  # Check if it's a top-level item
                 return QItemSelectionModel.NoUpdate
             elif item.path is None:
                 return QItemSelectionModel.NoUpdate
@@ -148,6 +149,7 @@ class FontPicker(QWidget):
         layout = QVBoxLayout()
         self.setLayout(layout)
         self.list_widget = self.TreeWidget()
+        self.list_widget.header().hide()
         self.list_widget.setStyleSheet("QListWidget::item { height: 40px; }")
         layout.addWidget(self.list_widget)
         size_layout = QHBoxLayout()
@@ -211,11 +213,11 @@ class FontPicker(QWidget):
                 self.list_widget.setItemWidget(item, 0, label)
                 self.items.append(item)
 
-    def set_default(self, ttf_fil_name, size):
-        self.size.setValue(size)
+    def set_default(self, ttf_file_name, size):
+        self.size.setValue(int(size))
         for item in self.items:
-            print("test", item.path, ttf_fil_name)
-            if item.path == ttf_fil_name:
+            print("test", item.path, ttf_file_name)
+            if item.path == ttf_file_name:
                 print("done")
                 self.list_widget.setCurrentItem(item)
                 item.parent().setExpanded(True)

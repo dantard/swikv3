@@ -24,7 +24,6 @@ class SignerRectItem(ResizableRectItem):
 
 
 class ToolSign(Tool):
-
     (configured, cfg_p12, cfg_password, cfg_signed_suffix,
      cfg_signature_border, cfg_text_font_size, cfg_text,
      cfg_text_stretch, cfg_text_timestamp, cfg_image_file,
@@ -37,24 +36,25 @@ class ToolSign(Tool):
 
     @staticmethod
     def configure(config):
-        signature = config.root().addSubSection("Digital Signature")
-        ToolSign.cfg_p12 = signature.addFile("p12", pretty="Signature File", extension=["p12", "pfx"], extension_name="PKCS#12")
-        ToolSign.cfg_password = signature.addPassword("password", pretty='Password')
-        ToolSign.cfg_signed_suffix = signature.addString("signed_suffix", pretty="Signed File Suffix", default="-signed")
-        appearance = signature.addSubSection("Appearance")
+        if not ToolSign.configured:
+            signature = config.root().addSubSection("Digital Signature")
+            ToolSign.cfg_p12 = signature.addFile("p12", pretty="Signature File", extension=["p12", "pfx"], extension_name="PKCS#12")
+            ToolSign.cfg_password = signature.addPassword("password", pretty='Password')
+            ToolSign.cfg_signed_suffix = signature.addString("signed_suffix", pretty="Signed File Suffix", default="-signed")
+            appearance = signature.addSubSection("Appearance")
 
-        ToolSign.cfg_signature_border = appearance.addInt("signature_border", pretty="Border width", default=0)
-        text = appearance.addSubSection("Text")
-        ToolSign.cfg_text_font_size = text.addInt("text_font_size", pretty="Font Size", default=11, max=85)
-        ToolSign.cfg_text = text.addEditBox("text_signature", pretty="Text",
-                                        default='Signed by&&%(signer)s&&Time: %(ts)s'.replace('\n', '\\n'))
-        ToolSign.cfg_text_stretch = text.addCheckbox("text_stretch", pretty="Stretch")
-        ToolSign.cfg_text_timestamp = text.addString("text_timestamp", default="%d/%m/%Y")
+            ToolSign.cfg_signature_border = appearance.addInt("signature_border", pretty="Border width", default=0)
+            text = appearance.addSubSection("Text")
+            ToolSign.cfg_text_font_size = text.addInt("text_font_size", pretty="Font Size", default=11, max=85)
+            ToolSign.cfg_text = text.addEditBox("text_signature", pretty="Text",
+                                                default='Signed by&&%(signer)s&&Time: %(ts)s'.replace('\n', '\\n'))
+            ToolSign.cfg_text_stretch = text.addCheckbox("text_stretch", pretty="Stretch")
+            ToolSign.cfg_text_timestamp = text.addString("text_timestamp", default="%d/%m/%Y")
 
-        image = appearance.addSubSection("Image")
-        ToolSign.cfg_image_file = image.addFile("image_file", pretty="File", extension="png")
-        ToolSign.cfg_image_stretch = image.addCheckbox("image_stretch", pretty="Stretch")
-        ToolSign.configured = True
+            image = appearance.addSubSection("Image")
+            ToolSign.cfg_image_file = image.addFile("image_file", pretty="File", extension="png")
+            ToolSign.cfg_image_stretch = image.addCheckbox("image_stretch", pretty="Stretch")
+            ToolSign.configured = True
 
     def mouse_pressed(self, event):
         page = self.view.get_page_at_pos(event.pos())
@@ -155,7 +155,7 @@ class ToolSign(Tool):
                 image_mode = SignerRectItem.IMAGE_MODE_STRETCH if self.cfg_image_stretch.get_value() else SignerRectItem.IMAGE_MODE_MAINTAIN_RATIO
 
                 rubberband.apply_kwargs(text=text, image=image, max_font_size=max_font_size, text_mode=text_mode,
-                                             image_mode=image_mode)
+                                        image_mode=image_mode)
                 rubberband.update()
 
 

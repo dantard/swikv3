@@ -336,7 +336,7 @@ class MuPDFRenderer(QLabel):
                                 b = h & 255
                                 g = (h >> 8) & 255
                                 r = (h >> 16) & 255
-                                return span.get('font'), span.get('size'), (r / 255, g / 255, b / 255)
+                                return span.get('font'), span.get('size'), QColor(r, g, b)
         return None, None, None
 
     def rearrange_pages(self, order, emit):

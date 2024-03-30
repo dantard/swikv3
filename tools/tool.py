@@ -1,5 +1,4 @@
 from PyQt5.QtCore import QObject, pyqtSignal
-from easyconfig import EasyConfig
 
 
 class BasicTool(QObject):
@@ -9,9 +8,13 @@ class BasicTool(QObject):
         super(BasicTool, self).__init__()
         self.view = view
         self.renderer = renderer
-        self.config: EasyConfig = config
+        self.config = config
+
     @staticmethod
     def configure(self):
+        pass
+
+    def preference_changed(self):
         pass
 
     def init(self):
@@ -40,5 +43,3 @@ class Tool(BasicTool):
 
     def mouse_double_clicked(self, event):
         pass
-
-

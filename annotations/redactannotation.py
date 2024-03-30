@@ -10,6 +10,7 @@ from resizeable import ResizableRectItem
 
 
 class RedactAnnotation(ResizableRectItem, Copyable):
+    initial_color = Qt.black
 
     def change_color(self):
         before = self.brush().color()
@@ -18,7 +19,9 @@ class RedactAnnotation(ResizableRectItem, Copyable):
         color.add_row("Fill", Color(self.brush().color()))
 
         if color.exec() == QDialog.Accepted:
-            self.set_fill_color(color.get("Fill").get_color())
+            new_color = color.get("Fill").get_color()
+            self.set_fill_color(new_color)
+            RedactAnnotation.initial_color = new_color
 
             if before != self.brush().color():
                 self.notify_change(Action.ACTION_COLOR_CHANGED, before, self.brush().color())

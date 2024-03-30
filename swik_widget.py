@@ -46,6 +46,7 @@ from widgets.pdf_widget import PdfCheckboxWidget
 class SwikWidget(QWidget):
     interaction_changed = pyqtSignal(QWidget)
     open_requested = pyqtSignal(str, int, float)
+    file_changed = pyqtSignal()
 
     def __init__(self, window, tab_widget, config):
         super().__init__()
@@ -59,10 +60,10 @@ class SwikWidget(QWidget):
         self.scene = Scene()
         self.manager = Manager(self.renderer, self.config)
         self.view = SwikGraphView(self.manager, self.renderer, self.scene, page=Page,
-                                  mode=self.config.get('mode', LayoutManager.MODE_VERTICAL))
+                                  mode=self.config.private.get('mode', default=LayoutManager.MODE_VERTICAL))
         self.view.setRenderHint(QPainter.Antialiasing)
         self.view.setRenderHint(QPainter.TextAntialiasing)
-        self.view.set_natural_hscroll(self.config.get('natural_hscroll'))
+        self.view.set_natural_hscroll(self.config.general.get('natural_hscroll'))
 
         self.miniature_view = MiniatureView(self.manager, self.renderer, QGraphicsScene())
         self.miniature_view.setRenderHint(QPainter.Antialiasing)
@@ -83,18 +84,15 @@ class SwikWidget(QWidget):
         self.font_manager.update_system_fonts()
         self.font_manager.update_swik_fonts()
 
-        self.manager.register_tool('text_selection',
-                                   TextSelection(self.view, self.renderer, self.font_manager, self.config), True)
-        self.manager.register_tool('sign', ToolSign(self.view, self.renderer, self.config), False)
-        self.manager.register_tool('rearrange',
-                                   ToolRearrange(self.view, [self.miniature_view], self.renderer, self.config), False)
-        self.manager.register_tool('redact_annot', ToolRedactAnnotation(self.view, self.renderer, self.config), False)
-        self.manager.register_tool('square_annot', ToolSquareAnnotation(self.view, self.renderer, self.config), False)
-        self.manager.register_tool('crop', ToolCrop(self.view, self.renderer, self.config), False)
-        self.manager.register_tool('drag', ToolDrag(self.view, self.renderer, self.config), False)
-        self.manager.register_tool('insert_image', ToolInsertImage(self.view, self.renderer, self.config), False)
-        self.manager.register_tool('insert_signature_image',
-                                   ToolInserSignatureImage(self.view, self.renderer, self.config), False)
+        self.manager.register_tool(TextSelection(self.view, self.renderer, self.font_manager, self.config), True)
+        self.manager.register_tool('sign', ToolSign(self.view, self.renderer, self.config))
+        self.manager.register_tool('rearrange', ToolRearrange(self.view, [self.miniature_view], self.renderer, self.config))
+        self.manager.register_tool('redact_annot', ToolRedactAnnotation(self.view, self.renderer, self.config))
+        self.manager.register_tool('square_annot', ToolSquareAnnotation(self.view, self.renderer, self.config))
+        self.manager.register_tool('crop', ToolCrop(self.view, self.renderer, self.config))
+        self.manager.register_tool('drag', ToolDrag(self.view, self.renderer, self.config))
+        self.manager.register_tool('insert_image', ToolInsertImage(self.view, self.renderer, self.config))
+        self.manager.register_tool('insert_signature_image', ToolInserSignatureImage(self.view, self.renderer, self.config))
 
         self.key_manager = KeyboardManager(self)
         self.key_manager.register_action(Qt.Key_Delete, self.delete_objects)
@@ -130,8 +128,8 @@ class SwikWidget(QWidget):
         self.image_sign_btn = self.mode_group.add(self.manage_tool, icon=":/icons/signature.png",
                                                   text="Insert Signature", tool="insert_signature_image")
         self.mode_group.add(self.manage_tool, icon=":/icons/shuffle.png", text="Shuffle Pages", tool="rearrange")
-        self.sign_btn.setEnabled(self.config.get("p12") is not None)
-        self.image_sign_btn.setEnabled(self.config.get("image_signature") is not None)
+        #        self.sign_btn.setEnabled(self.config.get("p12") is not None)
+        #        self.image_sign_btn.setEnabled(self.config.get("image_signature") is not None)
 
         self.mode_group.append(self.toolbar)
         self.manager.tool_finished.connect(self.mode_group.reset)
@@ -173,8 +171,11 @@ class SwikWidget(QWidget):
         return self.interaction_enabled
 
     def preferences_changed(self):
-        self.sign_btn.setEnabled(self.config.get("p12") is not None)
-        self.image_sign_btn.setEnabled(self.config.get("image_signature") is not None)
+        for tool in self.manager.tools.values():
+            tool.preferences_changed()
+
+        # self.sign_btn.setEnabled(self.config.get("p12") is not None)
+        # self.image_sign_btn.setEnabled(self.config.get("image_signature") is not None)
 
     def set_tab(self, tab):
         self.tab = tab
@@ -285,7 +286,8 @@ class SwikWidget(QWidget):
 
             if res == MuPDFRenderer.OPEN_OK:
                 self.set_interactable(True)
-                self.config.set('last', self.renderer.get_filename())
+                self.file_changed.emit()
+                self.config.private.set('last', self.renderer.get_filename())
                 self.config.update_recent(self.renderer.get_filename())
                 self.config.flush()
             else:

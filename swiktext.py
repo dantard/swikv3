@@ -180,7 +180,7 @@ class SwikText(QGraphicsTextItem, Undoable):
 
 
 class SwikTextReplace(SwikText):
-    def __init__(self, word, font_manager, path, size):
+    def __init__(self, word, font_manager, path, size, color=Qt.black):
         super(SwikTextReplace, self).__init__(word.get_text(), word.parentItem(), font_manager, path, size)
         self.setFlag(QGraphicsItem.ItemIsMovable, False)
         self.setZValue(1)
@@ -192,6 +192,7 @@ class SwikTextReplace(SwikText):
         self.bg.setZValue(-1)
         self.bg.setRect(word.rect())
         self.bg.setPos(QPointF(size / 3.5, size / 3.5))
+        self.setDefaultTextColor(QColor(color))
 
     def get_patch_on_page(self):
         pos_on_page = self.parentItem().mapFromScene(self.bg.scenePos())

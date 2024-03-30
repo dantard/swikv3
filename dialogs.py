@@ -5,15 +5,18 @@ from colorwidget import FontPicker, Color
 
 
 class ComposableDialog(QDialog):
-    def __init__(self, start_enabled=True):
+    def __init__(self, start_enabled=True, title="Edit"):
         super().__init__()
         self.rows = {}
-        self.initUI()
+        self.initUI(title)
         if not start_enabled:
             self.button_box.button(QDialogButtonBox.Ok).setEnabled(False)
 
-    def initUI(self):
-        self.setWindowTitle('Simple Dialog')
+    def set_ok_enabled(self, enabled):
+        self.button_box.button(QDialogButtonBox.Ok).setEnabled(enabled)
+
+    def initUI(self, title):
+        self.setWindowTitle(title)
 
         layout = QVBoxLayout()
 
@@ -83,6 +86,17 @@ class FontAndColorDialog(ComposableDialog):
         fp.add_fonts_section("Base14 Fonts", self.font_manager.get_base14_fonts())
         fp.set_default(default, font_size)
         self.add_row("Text Color", Color(text_color))
+        self.set_ok_enabled(default is not None)
+
+    def get_font_filename(self):
+        return self.get('Font').get_font_filename()
+
+    def get_font_size(self):
+        return self.get('Font').get_font_size()
+
+    def get_text_color(self):
+        return self.get('Text Color').get_color()
+
 
 def FontTextAndColor(FontAndColorDialog):
     pass
