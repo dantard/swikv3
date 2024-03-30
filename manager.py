@@ -42,20 +42,21 @@ class Manager(QObject):
         else:
             self.current.keyboard(action)
 
-    def register_tool(self, name, tool, default=False):
-        self.tools[name] = tool
+    def register_tool(self, tool, default=False):
+        self.tools[type(tool)] = tool
         tool.finished.connect(self.finished)
         if default:
             self.default = tool
-            self.use_tool(name)
+            self.use_tool(tool)
+        return tool
 
-    def get_tool(self, name):
-        return self.tools[name]
+    def get_tool(self, kind):
+        return self.tools[kind]
 
     def use_tool(self, name):
         if self.current is not None:
             self.current.finish()
-        self.current = self.tools[name]
+        self.current = name
         self.current.init()
 
     def mouse_pressed(self, event):

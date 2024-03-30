@@ -29,6 +29,9 @@ class BasicTool(QObject):
     def context_menu(self, event):
         pass
 
+    def usable(self):
+        return True
+
 
 class Tool(BasicTool):
 

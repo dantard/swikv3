@@ -3,40 +3,47 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QButtonGroup, QPushButton, QToolBar, QAction
 
 
-class GroupButton(QPushButton):
-    def __init__(self, tool=None):
-        super().__init__()
-        self.tool = tool
-
-    def get_tool(self):
-        return self.tool
-
-
 class GroupBox:
-    def __init__(self):
-        self.buttons = []
+    class Action:
+        def __init__(self, button, param):
+            self.button = button
+            self.param = param
+
+    def __init__(self, common_callback=None):
+        self.actions = []
         self.group = QButtonGroup()
         self.default = None
         self.toolbar2 = QToolBar()
+        self.param = None
+        self.common_callback = common_callback
 
     def reclick(self):
-        for btn in self.buttons:
+        for btn in self.actions:
             if btn.isChecked():
                 print("re-fucking-click")
                 btn.click()
                 break
 
+    def set_common_callback(self, callback):
+        self.common_callback = callback
+
     def on_any_button_clicked(self, callback):
         self.group.buttonClicked.connect(callback)
 
-    def add(self, callback, default=False, text="", icon=None, tool=None):
-        btn = GroupButton(tool)
+    def local_callback(self, action):
+        if callable(action.param):
+            action.param()
+        elif self.common_callback is not None:
+            self.common_callback(action.param)
+
+    def add(self, param, default=False, text="", icon=None, tool=None):
+        btn = QPushButton()
         btn.setContentsMargins(0, 0, 0, 0)
         btn.setIconSize(QSize(24, 24))
         btn.setFlat(True)
         btn.setCheckable(True)
-        if callback is not None:
-            btn.clicked.connect(callback)
+        action = self.Action(btn, param)
+        btn.clicked.connect(lambda: self.local_callback(action))
 
         if (icon := QIcon(icon)) is not None:
             btn.setIcon(icon)
@@ -47,25 +54,25 @@ class GroupBox:
         if default:
             btn.setChecked(True)
             self.default = btn
-        self.buttons.append(btn)
+        self.actions.append(action)
         self.group.addButton(btn)
         return btn
 
     def click(self, value):
-        self.buttons[value].click()
+        self.actions[value].click()
 
     def reset(self):
         self.default.click()
 
     def get_selected(self):
-        for i, btn in enumerate(self.buttons):
-            if btn.isChecked():
+        for i, actions in enumerate(self.actions):
+            if actions.button.isChecked():
                 return i
 
     def append(self, toolbar: QToolBar):
 
-        for btn in self.buttons:
-            self.toolbar2.addWidget(btn)
+        for action in self.actions:
+            self.toolbar2.addWidget(action.button)
         toolbar.addWidget(self.toolbar2)
 
     def set_enabled(self, value):

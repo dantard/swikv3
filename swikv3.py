@@ -11,7 +11,7 @@ import utils
 from swik_tab_widget import SwikTabWidget
 from swik_widget import SwikWidget
 from swikconfig import SwikConfig
-from tools.tool_insert_image import ToolInserSignatureImage
+from tools.tool_insert_image import ToolInsertSignatureImage
 from tools.toolsign import ToolSign
 
 
@@ -27,7 +27,7 @@ class MainWindow(QMainWindow):
         self.config = SwikConfig()
 
         ToolSign.configure(self.config)
-        ToolInserSignatureImage.configure(self.config)
+        ToolInsertSignatureImage.configure(self.config)
 
         self.config.read()
 

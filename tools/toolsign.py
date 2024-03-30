@@ -30,10 +30,6 @@ class ToolSign(Tool):
      cfg_image_stretch) = (False, None, None, None,
                            None, None, None, None, None, None, None)
 
-    def __init__(self, view, renderer, config):
-        super().__init__(view, renderer, config)
-        self.rubberband = None
-
     @staticmethod
     def configure(config):
         if not ToolSign.configured:
@@ -55,6 +51,13 @@ class ToolSign(Tool):
             ToolSign.cfg_image_file = image.addFile("image_file", pretty="File", extension="png")
             ToolSign.cfg_image_stretch = image.addCheckbox("image_stretch", pretty="Stretch")
             ToolSign.configured = True
+
+    def __init__(self, view, renderer, config):
+        super().__init__(view, renderer, config)
+        self.rubberband = None
+
+    def usable(self):
+        return self.cfg_p12.get_value() is not None
 
     def mouse_pressed(self, event):
         page = self.view.get_page_at_pos(event.pos())

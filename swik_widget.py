@@ -29,13 +29,13 @@ from progressing import Progressing
 from scene import Scene
 from toolbars.zoom_toolbar import ZoomToolbar
 from tools.tool_drag import ToolDrag
-from tools.tool_insert_image import ToolInsertImage, ToolInserSignatureImage
+from tools.tool_insert_image import ToolInsertImage, ToolInsertSignatureImage
 from tools.toolcrop import ToolCrop
 from tools.toolrearranger import ToolRearrange
 from tools.toolredactannotation import ToolRedactAnnotation
 from tools.toolsign import ToolSign
 from tools.toolsquareannotation import ToolSquareAnnotation
-from tools.tooltextselection import TextSelection
+from tools.tooltextselection import ToolTextSelection
 from toolbars.navigationtoolbar import NavigationToolbar
 from page import Page
 from renderer import MuPDFRenderer
@@ -84,26 +84,25 @@ class SwikWidget(QWidget):
         self.font_manager.update_system_fonts()
         self.font_manager.update_swik_fonts()
 
-        self.manager.register_tool(TextSelection(self.view, self.renderer, self.font_manager, self.config), True)
-        self.manager.register_tool('sign', ToolSign(self.view, self.renderer, self.config))
-        self.manager.register_tool('rearrange', ToolRearrange(self.view, [self.miniature_view], self.renderer, self.config))
-        self.manager.register_tool('redact_annot', ToolRedactAnnotation(self.view, self.renderer, self.config))
-        self.manager.register_tool('square_annot', ToolSquareAnnotation(self.view, self.renderer, self.config))
-        self.manager.register_tool('crop', ToolCrop(self.view, self.renderer, self.config))
-        self.manager.register_tool('drag', ToolDrag(self.view, self.renderer, self.config))
-        self.manager.register_tool('insert_image', ToolInsertImage(self.view, self.renderer, self.config))
-        self.manager.register_tool('insert_signature_image', ToolInserSignatureImage(self.view, self.renderer, self.config))
+        tool_drag = self.manager.register_tool(ToolDrag(self.view, self.renderer, self.config))
+        tool_text = self.manager.register_tool(ToolTextSelection(self.view, self.renderer, self.font_manager, self.config), True)
+        tool_sign = self.manager.register_tool(ToolSign(self.view, self.renderer, self.config))
+        tool_rear = self.manager.register_tool(ToolRearrange(self.view, [self.miniature_view], self.renderer, self.config))
+        tool_reda = self.manager.register_tool(ToolRedactAnnotation(self.view, self.renderer, self.config))
+        tool_sqan = self.manager.register_tool(ToolSquareAnnotation(self.view, self.renderer, self.config))
+        tool_crop = self.manager.register_tool(ToolCrop(self.view, self.renderer, self.config))
+        tool_imag = self.manager.register_tool(ToolInsertImage(self.view, self.renderer, self.config))
+        tool_sigi = self.manager.register_tool(ToolInsertSignatureImage(self.view, self.renderer, self.config))
 
         self.key_manager = KeyboardManager(self)
         self.key_manager.register_action(Qt.Key_Delete, self.delete_objects)
-        self.key_manager.register_action(Qt.Key_Shift, lambda: self.manager.use_tool("drag"), self.manager.finished)
+        self.key_manager.register_action(Qt.Key_Shift, lambda: self.manager.use_tool(tool_drag), self.manager.finished)
         self.key_manager.register_combination_action('Ctrl+R', lambda: self.open_file(self.renderer.get_filename()))
         self.key_manager.register_combination_action('Ctrl+i', self.view.toggle_page_info)
         self.key_manager.register_combination_action('Ctrl+C', lambda: self.manager.keyboard('Ctrl+C'))
         self.key_manager.register_combination_action('Ctrl+V', lambda: self.manager.keyboard('Ctrl+V'))
         self.key_manager.register_combination_action('Ctrl+A', lambda: self.manager.keyboard('Ctrl+A'))
-        self.key_manager.register_combination_action('Ctrl+T',
-                                                     self.manager.get_tool("text_selection").iterate_selection_mode)
+        self.key_manager.register_combination_action('Ctrl+T', self.manager.get_tool(ToolTextSelection).iterate_selection_mode)
         self.key_manager.register_combination_action('Ctrl+M', self.iterate_mode)
         self.key_manager.register_combination_action('Ctrl+Z', self.scene.tracker().undo)
         self.key_manager.register_combination_action('Ctrl+Shift+Z', self.scene.tracker().redo)
@@ -117,17 +116,16 @@ class SwikWidget(QWidget):
         self.toolbar.addAction("cac", self.cac)
         # self.toolbar.addWidget(LongPressButton())
 
-        self.mode_group = GroupBox()
-        self.mode_group.add(self.manage_tool, True, icon=":/icons/text_cursor.png", text="Select Text",
-                            tool="text_selection")
-        self.sign_btn = self.mode_group.add(self.manage_tool, icon=":/icons/sign.png", text="Sign", tool="sign")
-        self.mode_group.add(self.manage_tool, icon=":/icons/crop.png", text="Crop", tool="crop")
-        self.mode_group.add(self.manage_tool, icon=":/icons/annotate.png", text="Annotate", tool="square_annot")
-        self.mode_group.add(self.manage_tool, icon=":/icons/white.png", text="Anonymize", tool="redact_annot")
-        self.mode_group.add(self.manage_tool, icon=":/icons/image.png", text="Insert Image", tool="insert_image")
-        self.image_sign_btn = self.mode_group.add(self.manage_tool, icon=":/icons/signature.png",
-                                                  text="Insert Signature", tool="insert_signature_image")
-        self.mode_group.add(self.manage_tool, icon=":/icons/shuffle.png", text="Shuffle Pages", tool="rearrange")
+        self.mode_group = GroupBox(self.manager.use_tool)
+        self.mode_group.add(tool_text, icon=":/icons/text_cursor.png", text="Select Text", default=True)
+        self.sign_btn = self.mode_group.add(tool_sign, icon=":/icons/sign.png", text="Sign")
+        self.mode_group.add(tool_crop, icon=":/icons/crop.png", text="Crop")
+        self.mode_group.add(tool_sqan, icon=":/icons/annotate.png", text="Annotate")
+        self.mode_group.add(tool_reda, icon=":/icons/white.png", text="Anonymize")
+        self.mode_group.add(tool_imag, icon=":/icons/image.png", text="Insert Image")
+        self.image_sign_btn = self.mode_group.add(tool_sigi, icon=":/icons/signature.png", text="Insert Signature")
+        self.mode_group.add(tool_rear, icon=":/icons/shuffle.png", text="Shuffle Pages")
+
         #        self.sign_btn.setEnabled(self.config.get("p12") is not None)
         #        self.image_sign_btn.setEnabled(self.config.get("image_signature") is not None)
 
@@ -152,6 +150,7 @@ class SwikWidget(QWidget):
         self.splitter.addWidget(helper)
         self.layout().setContentsMargins(2, 2, 2, 2)
         self.set_interactable(False)
+        self.preferences_changed()
 
     def cac(self):
         print("cac")
@@ -171,8 +170,8 @@ class SwikWidget(QWidget):
         return self.interaction_enabled
 
     def preferences_changed(self):
-        for tool in self.manager.tools.values():
-            tool.preferences_changed()
+        self.sign_btn.setEnabled(self.manager.get_tool(ToolSign).usable())
+        self.image_sign_btn.setEnabled(self.manager.get_tool(ToolInsertSignatureImage).usable())
 
         # self.sign_btn.setEnabled(self.config.get("p12") is not None)
         # self.image_sign_btn.setEnabled(self.config.get("image_signature") is not None)
@@ -254,10 +253,8 @@ class SwikWidget(QWidget):
     def get_filename(self):
         return self.renderer.get_filename()
 
-    def manage_tool(self):
-        button = self.sender()
-        if button is not None:
-            self.manager.use_tool(button.get_tool())
+    def manage_tool(self, tool):
+        self.manager.use_tool(tool)
 
     def keyPressEvent(self, a0: QtGui.QKeyEvent) -> None:
         super().keyPressEvent(a0)

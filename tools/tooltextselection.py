@@ -15,16 +15,16 @@ from tools.tool import Tool
 from word import Word
 
 
-class TextSelection(Tool):
+class ToolTextSelection(Tool):
     SELECTION_MODE_NATURAL = 0
     SELECTION_MODE_RECT = 1
 
     def __init__(self, view, renderer, font_manager, config):
-        super(TextSelection, self).__init__(view, renderer, config)
+        super(ToolTextSelection, self).__init__(view, renderer, config)
         print("Manager created")
         self.rubberband = None
         self.font_manager = font_manager
-        self.selection_mode = TextSelection.SELECTION_MODE_RECT
+        self.selection_mode = ToolTextSelection.SELECTION_MODE_RECT
         self.selected = []
         self.multiple_selection = []
 
@@ -75,7 +75,7 @@ class TextSelection(Tool):
                     self.selected.append(word)
 
             if len(self.selected) > 1:
-                if self.selection_mode == TextSelection.SELECTION_MODE_NATURAL:
+                if self.selection_mode == ToolTextSelection.SELECTION_MODE_NATURAL:
                     # Clear the selection to restore order
                     begin, end = self.selected[0].seq, self.selected[-1].seq
                     self.selected.clear()
@@ -107,7 +107,7 @@ class TextSelection(Tool):
             else:
                 self.multiple_selection.clear()
 
-            if self.selection_mode == TextSelection.SELECTION_MODE_NATURAL:
+            if self.selection_mode == ToolTextSelection.SELECTION_MODE_NATURAL:
                 self.rubberband = SelectorRectItem(pen=Qt.transparent)
                 self.view.setCursor(Qt.IBeamCursor)
             else:

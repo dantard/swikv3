@@ -42,8 +42,8 @@ class ToolInsertImage(Tool):
     @staticmethod
     def configure(config):
         if not ToolInsertImage.configured:
-            ToolInsertImage.signature = config.root().addSubSection("Image Signature")
-            ToolInsertImage.signature.addFile("image_signature", pretty="Signature File", extension=["png", "jpg"], extension_name="Image")
+            section = config.root().addSubSection("Image Signature")
+            ToolInsertImage.signature = section.addFile("image_signature", pretty="Signature File", extension=["png", "jpg"], extension_name="Image")
             ToolInsertImage.configured = True
 
     def __init__(self, view, renderer, config):
@@ -82,6 +82,9 @@ class ToolInsertImage(Tool):
         self.view.setCursor(Qt.ArrowCursor)
 
 
-class ToolInserSignatureImage(ToolInsertImage):
+class ToolInsertSignatureImage(ToolInsertImage):
     def init(self):
-        self.image = QImage(ToolInsertImage.signature.get("image_signature", default=""))
+        self.image = QImage(ToolInsertImage.signature.get_value())
+
+    def usable(self):
+        return ToolInsertImage.signature.get_value() is not None
