@@ -74,7 +74,6 @@ class MainWindow(QMainWindow):
 
         self.setWindowTitle("Swik")
         self.setGeometry(100, 100, 640, 480)
-        self.setAcceptDrops(True)
 
         self.tab_widget = SwikTabWidget()
         # self.tab_widget.addTab(QWidget(), "+")
@@ -151,6 +150,7 @@ class MainWindow(QMainWindow):
         widget.interaction_changed.connect(self.update_interaction_status)
         widget.open_requested.connect(self.open_requested)
         widget.file_changed.connect(self.update_title)
+        # widget.
 
         self.tab_widget.new_tab(widget, filename)
         if filename is not None:

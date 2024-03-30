@@ -89,8 +89,8 @@ class GraphView(QGraphicsView):
 
     # ## DOCUMENT
 
-    def dropEvent(self, event: QtGui.QDropEvent) -> None:
-        self.drop_event.emit(event)
+    #    def dropEvent(self, event: QtGui.QDropEvent) -> None:
+    #        self.drop_event.emit(event)
 
     def get_width(self):
         return self.geometry().width()

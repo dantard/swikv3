@@ -1,3 +1,5 @@
+from PyQt5.QtCore import pyqtSignal
+
 from GraphView import GraphView
 from LayoutManager import LayoutManager
 from annotations.highlight_annotation import HighlightAnnotation
@@ -11,10 +13,31 @@ from widgets.pdf_widget import PdfWidget
 
 
 class SwikGraphView(GraphView):
+    drop_event = pyqtSignal(list)
 
     def __init__(self, manager, renderer, scene, page=SimplePage, mode=LayoutManager.MODE_VERTICAL_MULTIPAGE):
         super(SwikGraphView, self).__init__(manager, renderer, scene, page, mode)
         self.renderer.sync_requested.connect(self.sync_requested)
+        self.setAcceptDrops(True)
+
+    def dropEvent(self, event) -> None:
+        event.accept()
+        if event.mimeData().hasUrls():
+            urls = event.mimeData().urls()
+            paths = []
+            for url in urls:
+                if url.isLocalFile():
+                    paths.append(url.toLocalFile())
+            if len(paths) > 0:
+                self.drop_event.emit(paths)
+
+    def dragEnterEvent(self, event) -> None:
+        event.accept()
+
+    def dragMoveEvent(self, event) -> None:
+        event.accept()
+
+        # Here you can process the file path as needed
 
     def sync_requested(self):
         items = self.scene().items()
@@ -76,5 +99,3 @@ class SwikGraphView(GraphView):
     def toggle_page_info(self):
         for page in self.pages.values():
             page.toggle_info()
-
-

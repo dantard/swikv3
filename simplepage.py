@@ -71,7 +71,6 @@ class SimplePage(QGraphicsRectItem):
         self.shadow_bottom.setPen(Qt.transparent)
         self.box.setVisible(False)
         self.setSelected(False)
-        self.setAcceptDrops(True)
         # self.paint_accessories()
 
     def get_index(self):

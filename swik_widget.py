@@ -64,6 +64,7 @@ class SwikWidget(QWidget):
         self.view.setRenderHint(QPainter.Antialiasing)
         self.view.setRenderHint(QPainter.TextAntialiasing)
         self.view.set_natural_hscroll(self.config.general.get('natural_hscroll'))
+        self.view.drop_event.connect(self.drop_event_received)
 
         self.miniature_view = MiniatureView(self.manager, self.renderer, QGraphicsScene())
         self.miniature_view.setRenderHint(QPainter.Antialiasing)
@@ -113,7 +114,6 @@ class SwikWidget(QWidget):
         self.save_btn = self.toolbar.addAction("Save", self.save_file)
         self.save_btn.setIcon(QIcon(":/icons/save.png"))
         self.toolbar.addSeparator()
-        self.toolbar.addAction("cac", self.cac)
         # self.toolbar.addWidget(LongPressButton())
 
         self.mode_group = GroupBox(self.manager.use_tool)
@@ -152,10 +152,9 @@ class SwikWidget(QWidget):
         self.set_interactable(False)
         self.preferences_changed()
 
-    def cac(self):
-        print("cac")
-        pf = PdfCheckboxWidget(self.view.pages[0], "True", QRectF(100, 100, 20, 20), 10)
-        pf.set_info("test", 0)
+    def drop_event_received(self, vector):
+        for file in vector:
+            self.open_requested.emit(file, 0, self.view.get_ratio())
 
     def set_interactable(self, enable):
         self.mode_group.set_enabled(enable)
