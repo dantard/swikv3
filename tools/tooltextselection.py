@@ -1,7 +1,7 @@
 import tempfile
 
-from PyQt5.QtCore import Qt, QPointF, QRectF
-from PyQt5.QtGui import QFont, QFontDatabase, QColor, QClipboard, QGuiApplication
+from PyQt5.QtCore import Qt, QPointF, QRectF, QUrl
+from PyQt5.QtGui import QFont, QFontDatabase, QColor, QClipboard, QGuiApplication, QDesktopServices
 from PyQt5.QtWidgets import QMenu, QGraphicsRectItem, QGraphicsScene, QDialog, QMessageBox
 
 import utils
@@ -145,12 +145,22 @@ class ToolTextSelection(Tool):
             anon = menu.addAction("Anonymyze")
             highlight = menu.addAction("Highlight Annotation")
             replace = menu.addAction("Replace")
+            menu.addSeparator()
+            web_search = menu.addAction("Web Search")
         else:
-            anon, highlight, copy, replace = None, None, None, None
+            anon, highlight, copy, replace, web_search = None, None, None, None, None
 
         res = menu.exec(event.globalPos())
         if res is None:
             pass
+        elif res == web_search:
+            text = str()
+            for word in self.selected:
+                text += word.get_text() + " "
+            text.rstrip(" ")
+            if (query:=self.config.general.get("web_search")) is not None:
+                QDesktopServices.openUrl(QUrl(query + text))
+
         elif res == anon:
             for word in self.selected:  # type: Word
                 r = RedactAnnotation(word.parentItem(), brush=Qt.black)

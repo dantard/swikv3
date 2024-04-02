@@ -2,6 +2,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QFormLayout, QDialogButtonBox, QDialog, QLabel, QVBoxLayout, QGroupBox, QLineEdit, QCheckBox
 
 from colorwidget import FontPicker, Color
+from dict_editor import DictTreeWidget
 
 
 class ComposableDialog(QDialog):
@@ -100,3 +101,30 @@ class FontAndColorDialog(ComposableDialog):
 
 def FontTextAndColor(FontAndColorDialog):
     pass
+
+
+class ReplaceFontsDialog(QDialog):
+    def __init__(self, data):
+        super().__init__()
+
+        # Initialize the dialog window
+        self.setWindowTitle("My Dialog")
+
+        # Create a QTreeWidget
+        self.treeWidget = DictTreeWidget()
+        self.treeWidget.setHeaderLabels(["Items"])
+        self.treeWidget.set_data(data)
+
+        # Create standard OK and Cancel buttons
+        buttonBox = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttonBox.accepted.connect(self.accept)
+        buttonBox.rejected.connect(self.reject)
+
+        # Set up the layout
+        layout = QVBoxLayout()
+        layout.addWidget(self.treeWidget)
+        layout.addWidget(buttonBox)
+        self.setLayout(layout)
+
+    def get_data(self):
+        return  self.treeWidget.traverse_tree(self.treeWidget.invisibleRootItem().child(0))

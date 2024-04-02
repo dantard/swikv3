@@ -27,6 +27,7 @@ class SwikConfig(EasyConfig):
 
         self.general = self.root().addSubSection("General")
         self.general.addString("file_browser", pretty="File Browser", default="/usr/bin/nautilus")
+        self.general.addString("web_search", pretty="Web Search query", default="https://www.google.com/search?q=")
         self.general.addEditBox("other_pdf", pretty="Other PDF readers", height=50)
         self.general.addCheckbox("open_last", pretty="Reopen Last opened", default=True)
         self.general.addCombobox("lateral_bar_position", pretty="Lateral Bar Position", items=["Left", "Right", "Bottom", "Top"])

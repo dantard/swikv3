@@ -28,6 +28,7 @@ from miniature_view import MiniatureView
 from progressing import Progressing
 from scene import Scene
 from toolbars.zoom_toolbar import ZoomToolbar
+from tools.replace_fonts.tool_replace_fonts import ToolReplaceFonts
 from tools.tool_drag import ToolDrag
 from tools.tool_insert_image import ToolInsertImage, ToolInsertSignatureImage
 from tools.toolcrop import ToolCrop
@@ -94,6 +95,9 @@ class SwikWidget(QWidget):
         tool_crop = self.manager.register_tool(ToolCrop(self.view, self.renderer, self.config))
         tool_imag = self.manager.register_tool(ToolInsertImage(self.view, self.renderer, self.config))
         tool_sigi = self.manager.register_tool(ToolInsertSignatureImage(self.view, self.renderer, self.config))
+        tool_font = self.manager.register_tool(ToolReplaceFonts(self.view, self.renderer, self.config))
+        tool_font: ToolReplaceFonts
+        tool_font.file_generate.connect(self.open_requested.emit)
 
         self.key_manager = KeyboardManager(self)
         self.key_manager.register_action(Qt.Key_Delete, self.delete_objects)
@@ -125,6 +129,7 @@ class SwikWidget(QWidget):
         self.mode_group.add(tool_imag, icon=":/icons/image.png", text="Insert Image")
         self.image_sign_btn = self.mode_group.add(tool_sigi, icon=":/icons/signature.png", text="Insert Signature", separator=True)
         self.mode_group.add(tool_rear, icon=":/icons/shuffle.png", text="Shuffle Pages")
+        self.mode_group.add(tool_font, icon=":/icons/shuffle.png", text="Replace Fonts")
         # self.mode_group.append(self.toolbar)
 
         self.manager.tool_finished.connect(self.mode_group.reset)
