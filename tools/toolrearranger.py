@@ -1,4 +1,5 @@
 from PyQt5.QtCore import QPointF, Qt
+from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QGraphicsRectItem, QMenu, QFileDialog, QMessageBox
 
 from action import Action
@@ -9,7 +10,6 @@ from tools.tool import Tool
 
 
 def move_numbers(vector, numbers_to_move, position):
-
     # Remove the selected numbers from the vector
     for number in numbers_to_move:
         vector.remove(number)
@@ -18,7 +18,7 @@ def move_numbers(vector, numbers_to_move, position):
 
     # Find the index where to insert the numbers
     insert_index = vector.index(position)
-    insert_index = insert_index + 1  if side == 1 else insert_index
+    insert_index = insert_index + 1 if side == 1 else insert_index
 
     # Insert the numbers at the specified position
     for number in reversed(numbers_to_move):
@@ -41,10 +41,12 @@ class ToolRearrange(Tool, Undoable):
         self.insert_at_page = None
         self.state = None
         self.orig_ratio = None
+        self.views = [view] + other_views
 
     def init(self):
         self.collider = QGraphicsRectItem()
-        self.collider.setBrush(Qt.red)
+        self.collider.setBrush(QColor(0, 255, 0, 128))
+        self.collider.setPen(Qt.transparent)
         self.collider.setVisible(False)
         self.view.scene().addItem(self.collider)
         self.orig_ratio = self.view.get_ratio()
@@ -103,7 +105,7 @@ class ToolRearrange(Tool, Undoable):
             if len(colliding_with) >= 1:
                 page = colliding_with[-1]
 
-                if self.leader_page.pos().x() > page.pos().x() + page.get_scaled_width() / 2:
+                if self.leader_page.pos().x() + self.leader_page.get_scaled_width() / 2 > page.pos().x() + page.get_scaled_width() / 2:
                     self.collider.setPos(page.pos().x() + page.get_scaled_width(), page.pos().y())
                     # Right of page page.index
                     self.insert_at_page = (page.index, 1)
@@ -186,6 +188,7 @@ class ToolRearrange(Tool, Undoable):
         menu.addSeparator()
         delete = menu.addAction("Delete" + " " + str(len(self.selected)) + " " + "pages")
         duplicate = menu.addAction("Duplicate" + " " + str(len(self.selected)) + " " + "pages")
+        rotate = menu.addAction("Rotate 90" + " " + str(len(self.selected)) + " " + "pages")
         insert_blank = menu.addAction("Insert a blank pages after")
         res = menu.exec_(event.globalPos())
         if res == delete:
@@ -228,6 +231,11 @@ class ToolRearrange(Tool, Undoable):
                 view.fully_update_layout()
         elif res == insert_blank:
             pass
+        elif res == rotate:
+            for page in self.selected:
+                self.renderer.rotate_page(page.index, 90)
+                page.invalidate()
+            self.view.fully_update_layout()
 
     def undo(self, kind, info):
         print(kind, info)
@@ -238,10 +246,12 @@ class ToolRearrange(Tool, Undoable):
         self.view.scene().removeItem(self.collider)
         self.collider = None
         self.insert_at_page = None
+        for page in self.selected:
+            page.set_selected(False)
         self.selected.clear()
         for page in self.selected:
             page.setZValue(0)
 
         print("finishhhhh")
-        if self.view.get_ratio()==0.25:
+        if self.view.get_ratio() == 0.25:
             self.view.set_ratio(self.orig_ratio, True)

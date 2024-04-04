@@ -158,7 +158,7 @@ class ToolTextSelection(Tool):
             for word in self.selected:
                 text += word.get_text() + " "
             text.rstrip(" ")
-            if (query:=self.config.general.get("web_search")) is not None:
+            if (query := self.config.general.get("web_search")) is not None:
                 QDesktopServices.openUrl(QUrl(query + text))
 
         elif res == anon:
@@ -190,7 +190,7 @@ class ToolTextSelection(Tool):
                     QMessageBox.warning(self.view, "Warning", "Selected words have different font, size or color.")
                     break
 
-            font = self.font_manager.get_font_info_from_name(first_font)
+            font = self.font_manager.get_font_info_from_nickname(first_font)
             print("Font: ", font, "Size: ", first_size, "Color: ", first_color)
             dialog = FontAndColorDialog(self.font_manager, font.get("path") if font is not None else None, first_size, first_color)
             if dialog.exec() == QDialog.Accepted:

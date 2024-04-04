@@ -1,6 +1,6 @@
 import typing
 from PyQt5 import QtGui
-from PyQt5.QtCore import Qt, QPointF, QRectF
+from PyQt5.QtCore import Qt, QPointF, QRectF, pyqtSignal, QObject
 from PyQt5.QtGui import QFontDatabase, QFont, QColor, QPen
 from PyQt5.QtWidgets import QGraphicsTextItem, QMenu, QGraphicsRectItem, QGraphicsItem
 
@@ -63,31 +63,19 @@ class SwikText(QGraphicsTextItem, Undoable):
         self.setTextInteractionFlags(Qt.NoTextInteraction)
         # This Line specifies that the event has been already handled
         event.accept()
+        self.popup_context_menu(QMenu(), event)
 
-        menu = QMenu()
+    def popup_context_menu(self, menu, event):
         action = menu.addAction("Edit Font")
         res = menu.exec(event.screenPos())
         if res == action:
-            '''
-            font_dialog = ComposableDialog(False)
-            fp = font_dialog.add_row("Font", FontPicker())
-            # fp.add_fonts_section("Current", [FontManager.get_font_info(self.get_ttf_filename())])
-            fp.add_fonts_section("Fully Embedded", self.font_manager.get_fully_embedded_fonts())
-            fp.add_fonts_section("Subset", self.font_manager.get_subset_fonts(), False)
-            fp.add_fonts_section("Swik Fonts", self.font_manager.get_swik_fonts())
-            fp.add_fonts_section("Base14 Fonts", self.font_manager.get_base14_fonts())
-            fp.set_default(self.get_ttf_filename(), self.get_font_size())
-
-            font_dialog.add_row("Text Color", Color(self.defaultTextColor()))
-            if font_dialog.exec() == ComposableDialog.Accepted:
-                self.set_ttf_font(font_dialog.get("Font").get_font_filename(), font_dialog.get("Font").get_font_size())
-                self.setDefaultTextColor(font_dialog.get("Text Color").get_color())
-            '''
             font_dialog = FontAndColorDialog(self.font_manager, self.get_ttf_filename(), self.get_font_size(),
                                              self.defaultTextColor())
             if font_dialog.exec() == ComposableDialog.Accepted:
                 self.set_ttf_font(font_dialog.get("Font").get_font_filename(), font_dialog.get("Font").get_font_size())
                 self.setDefaultTextColor(font_dialog.get("Text Color").get_color())
+
+        return res
 
     def mouseDoubleClickEvent(self, event: 'QGraphicsSceneMouseEvent') -> None:
         super().mouseDoubleClickEvent(event)
@@ -200,3 +188,72 @@ class SwikTextReplace(SwikText):
 
     def get_patch_color(self):
         return self.bg.brush().color()
+
+
+class SwikTextNumerate(SwikText):
+    class Signals(QObject):
+        moved = pyqtSignal(object, QPointF)
+        font_changed = pyqtSignal(object, QFont)
+        action = pyqtSignal(object, str)
+
+    ANCHOR_TOP_LEFT = 0
+    ANCHOR_TOP_RIGHT = 1
+    ANCHOR_BOTTOM_LEFT = 2
+    ANCHOR_BOTTOM_RIGHT = 3
+    ANCHOR_TOP_CENTER = 4
+    ANCHOR_BOTTOM_CENTER = 5
+
+    def __init__(self, text, parent, font_manager, path, size):
+        super(SwikTextNumerate, self).__init__(text, parent, font_manager, path, size)
+        self.signals = self.Signals()
+        self.emit_block = False
+        self.anchor = SwikTextNumerate.ANCHOR_TOP_LEFT
+
+    def block_emit(self, value):
+        self.emit_block = value
+
+    def itemChange(self, change: 'QGraphicsItem.GraphicsItemChange', value: typing.Any) -> typing.Any:
+        res = super().itemChange(change, value)
+        if change == QGraphicsItem.ItemPositionChange:
+            if not self.emit_block:
+                self.signals.moved.emit(self, self.pos())
+        return res
+
+    def popup_context_menu(self, menu, event):
+        start_here = menu.addAction("Start Here")
+        remove = menu.addAction("Remove")
+        remove_all = menu.addAction("Remove all")
+        center = menu.addAction("Center")
+        menu_anchor = menu.addMenu("Anchor")
+        top_left = menu_anchor.addAction("Top Left")
+        top_right = menu_anchor.addAction("Top Right")
+        bottom_left = menu_anchor.addAction("Bottom Left")
+        bottom_right = menu_anchor.addAction("Bottom Right")
+        top_center = menu_anchor.addAction("Top Center")
+        bottom_center = menu_anchor.addAction("Bottom Center")
+
+        anchor = [top_left, top_right, bottom_left, bottom_right, top_center, bottom_center]
+        for a in anchor:
+            a.setCheckable(True)
+            if anchor.index(a) == self.anchor:
+                a.setChecked(True)
+
+        menu.addSeparator()
+        before = (self.font(), self.defaultTextColor())
+
+        res = super().popup_context_menu(menu, event)
+
+        if res == start_here:
+            self.signals.action.emit(self, "start_here")
+        elif res == remove_all:
+            self.signals.action.emit(self, 'remove_all')
+        elif res == remove:
+            self.signals.action.emit(self, 'remove')
+        elif res in anchor:
+            self.anchor = anchor.index(res)
+            self.signals.action.emit(self, 'anchor_changed')
+        elif res == center:
+            self.signals.action.emit(self, 'center')
+
+        if before != (self.font(), self.defaultTextColor()):
+            self.signals.font_changed.emit(self, self.font())

@@ -268,6 +268,24 @@ class MuPDFRenderer(QLabel):
     def get_filename(self):
         return self.filename
 
+    def extract_spans(self, page_id):
+
+        class Span:
+            __slots__ = "rect", "text", "font", "size", "color"
+
+        spans = []
+        boxes = self.document[page_id].get_text("dict", sort=True, flags=TEXTFLAGS_DICT & ~TEXT_PRESERVE_IMAGES)["blocks"]
+        for box in boxes:
+            for line in box.get("lines", []):
+                for span in line.get("spans", []):
+                    a = Span()
+                    x1, y1, x2, y2 = span["bbox"]
+                    a.text = span["text"]
+                    a.rect = QRectF(x1, y1, x2 - x1, y2 - y1)
+                    a.font = span["font"]
+                    spans.append(a)
+        return spans
+
     def extract_words(self, page_id):
         boxes = self.document[page_id].get_text("words", sort=True, flags=TEXTFLAGS_DICT & ~TEXT_PRESERVE_IMAGES)
 
@@ -701,4 +719,8 @@ class MuPDFRenderer(QLabel):
 
     def append_blank_page(self, width=595, height=842):
         self.document.new_page(-1, width=width, height=height)
+        self.set_document(self.document, False)
+
+    def rotate_page(self, index, angle):
+        self.document[index].set_rotation(angle)
         self.set_document(self.document, False)

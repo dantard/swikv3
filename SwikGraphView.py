@@ -7,7 +7,7 @@ from annotations.redactannotation import RedactAnnotation
 from annotations.squareannotation import SquareAnnotation
 from page import Page
 from simplepage import SimplePage
-from swiktext import SwikText, SwikTextReplace
+from swiktext import SwikText, SwikTextReplace, SwikTextNumerate
 from tools.tool_insert_image import InsertImageRectItem
 from widgets.pdf_widget import PdfWidget
 
@@ -72,6 +72,13 @@ class SwikGraphView(GraphView):
         for text in swik_text_replace:
             page: Page = text.parentItem()
             self.renderer.replace_word(page.get_index(), text)
+            pages_to_refresh.add(page.get_index())
+            self.scene().removeItem(text)
+
+        swik_text_numerate = [item for item in items if type(item) == SwikTextNumerate]
+        for text in swik_text_numerate:
+            page: Page = text.parentItem()
+            self.renderer.add_text(page.get_index(), text)
             pages_to_refresh.add(page.get_index())
             self.scene().removeItem(text)
 

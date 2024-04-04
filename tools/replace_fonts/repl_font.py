@@ -246,22 +246,22 @@ def cont_clean(page, fontrefs):
                         found = False  # switch off
                         continue  # next line
                 if found == True and (
-                    lines[i].endswith(
-                        (
-                            b"TJ",
-                            b"Tj",
-                            b"TL",
-                            b"Tc",
-                            b"Td",
-                            b"Tm",
-                            b"T*",
-                            b"Ts",
-                            b"Tw",
-                            b"Tz",
-                            b"'",
-                            b'"',
+                        lines[i].endswith(
+                            (
+                                    b"TJ",
+                                    b"Tj",
+                                    b"TL",
+                                    b"Tc",
+                                    b"Td",
+                                    b"Tm",
+                                    b"T*",
+                                    b"Ts",
+                                    b"Tw",
+                                    b"Tz",
+                                    b"'",
+                                    b'"',
+                            )
                         )
-                    )
                 ):  # write command for our font?
                     lines[i] = b""  # remove it
                     changed = True  # tell we have changed
@@ -395,12 +395,18 @@ def get_page_fontrefs(page):
 # main
 # ------------------
 def repl_font(infilename, fontdicts, outfilename):
+    times = []
+
+    font_subsets.clear()
+    font_buffers.clear()
+    new_fontnames.clear()
+
     indoc = fitz.open(infilename)  # input PDF
 
     build_repl_table(indoc, fontdicts)
 
     if new_fontnames == {}:
-        #sys.exit("\n***** There are no fonts to replace. *****")
+        # sys.exit("\n***** There are no fonts to replace. *****")
         return
     print(
         "Processing PDF '%s' with %i page%s.\n"
@@ -431,7 +437,6 @@ def repl_font(infilename, fontdicts, outfilename):
                     for c in text:
                         subset.add(ord(c))  # add any new unicode values
                     font_subsets[new_fontname] = subset  # store back extended set
-
 
     times.append(("Analyzing:", timer()))
     print("Font replacement overview:")
@@ -502,7 +507,7 @@ def repl_font(infilename, fontdicts, outfilename):
 
     times.append(("Rebuilding:", timer()))
     print("Phase 3: Build font subsets.")
-    indoc.subset_fonts()
+    #    indoc.subset_fonts()
     times.append(("Font subsetting:", timer()))
 
     indoc.save(

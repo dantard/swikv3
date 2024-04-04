@@ -31,6 +31,7 @@ from toolbars.zoom_toolbar import ZoomToolbar
 from tools.replace_fonts.tool_replace_fonts import ToolReplaceFonts
 from tools.tool_drag import ToolDrag
 from tools.tool_insert_image import ToolInsertImage, ToolInsertSignatureImage
+from tools.tool_numerate import ToolNumerate
 from tools.toolcrop import ToolCrop
 from tools.toolrearranger import ToolRearrange
 from tools.toolredactannotation import ToolRedactAnnotation
@@ -86,6 +87,8 @@ class SwikWidget(QWidget):
         self.font_manager.update_system_fonts()
         self.font_manager.update_swik_fonts()
 
+        self.lateral_bar_layout = QHBoxLayout()
+
         tool_drag = self.manager.register_tool(ToolDrag(self.view, self.renderer, self.config))
         tool_text = self.manager.register_tool(ToolTextSelection(self.view, self.renderer, self.font_manager, self.config), True)
         tool_sign = self.manager.register_tool(ToolSign(self.view, self.renderer, self.config))
@@ -95,9 +98,10 @@ class SwikWidget(QWidget):
         tool_crop = self.manager.register_tool(ToolCrop(self.view, self.renderer, self.config))
         tool_imag = self.manager.register_tool(ToolInsertImage(self.view, self.renderer, self.config))
         tool_sigi = self.manager.register_tool(ToolInsertSignatureImage(self.view, self.renderer, self.config))
-        tool_font = self.manager.register_tool(ToolReplaceFonts(self.view, self.renderer, self.config, font_manager=self.font_manager))
-        tool_font: ToolReplaceFonts
+        tool_font = self.manager.register_tool(
+            ToolReplaceFonts(self.view, self.renderer, self.config, font_manager=self.font_manager, layout=self.lateral_bar_layout))
         tool_font.file_generate.connect(self.open_requested.emit)
+        tool_nume = self.manager.register_tool(ToolNumerate(self.view, self.renderer, self.config, font_manager=self.font_manager))
 
         self.key_manager = KeyboardManager(self)
         self.key_manager.register_action(Qt.Key_Delete, self.delete_objects)
@@ -130,6 +134,7 @@ class SwikWidget(QWidget):
         self.image_sign_btn = self.mode_group.add(tool_sigi, icon=":/icons/signature.png", text="Insert Signature", separator=True)
         self.mode_group.add(tool_rear, icon=":/icons/shuffle.png", text="Shuffle Pages")
         self.mode_group.add(tool_font, icon=":/icons/replace_fonts.png", text="Replace Fonts")
+        self.mode_group.add(tool_nume, icon=":/icons/numerate.png", text="Replace Fonts")
         # self.mode_group.append(self.toolbar)
 
         self.manager.tool_finished.connect(self.mode_group.reset)
@@ -148,7 +153,6 @@ class SwikWidget(QWidget):
         helper.setLayout(self.helper_layout)
         self.helper_layout.addWidget(self.toolbar)
 
-        self.lateral_bar_layout = QHBoxLayout()
         self.helper_layout.addLayout(self.lateral_bar_layout)
 
         # Lateral Bar

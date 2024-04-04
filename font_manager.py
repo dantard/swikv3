@@ -25,7 +25,7 @@ class FontManager(QObject):
     }
 
     base14_fonts = [
-        {'full_name': 'Helvetica', 'path': None, 'family': 'Helvetica', 'weight': 400, 'nickname': 'Helvetica', },
+        {'full_name': 'Helvetica', 'path': None, 'family': 'Helvetica', 'weight': 400, 'nickname': 'helv', },
         {'full_name': 'Helvetica-Bold', 'path': None, 'family': 'Helvetica', 'weight': 700, 'nickname': 'Helvetica-Bold', },
         {'full_name': 'Helvetica-Oblique', 'path': None, 'family': 'Helvetica', 'weight': 400, 'nickname': 'Helvetica-Oblique', },
         {'full_name': 'Helvetica-BoldOblique', 'path': None, 'family': 'Helvetica', 'weight': 700, 'nickname': 'Helvetica-BoldOblique', },
@@ -85,7 +85,7 @@ class FontManager(QObject):
     def get_all_available_fonts(self):
         return FontManager.base14_fonts + FontManager.swik_fonts + FontManager.system_fonts
 
-    def get_font_info_from_name(self, name):
+    def get_font_info_from_nickname(self, name):
         for f in self.document_fonts:
             if f['nickname'] == name:
                 return f
@@ -101,6 +101,45 @@ class FontManager(QObject):
         for f in FontManager.system_fonts:
             # print("System font: ", f['nickname'])
             if f['nickname'] == name:
+                return f
+
+        return None
+
+    def get_filename_from_nickname(self, name):
+        for f in self.document_fonts:
+            if f['nickname'] == name:
+                return f['path']
+
+        for f in FontManager.base14_fonts:
+            if f['nickname'] == name:
+                return f['path']
+
+        for f in FontManager.swik_fonts:
+            if f['nickname'] == name:
+                return f['path']
+
+        for f in FontManager.system_fonts:
+            if f['nickname'] == name:
+                return f['path']
+
+        return None
+
+    def get_font_info_from_full_name(self, name):
+        for f in self.document_fonts:
+            if f['full_name'] == name:
+                return f
+
+        for f in FontManager.base14_fonts:
+            if f['full_name'] == name:
+                return f
+
+        for f in FontManager.swik_fonts:
+            if f['full_name'] == name:
+                return f
+
+        for f in FontManager.system_fonts:
+            # print("System font: ", f['nickname'])
+            if f['full_name'] == name:
                 return f
 
         return None

@@ -1,27 +1,29 @@
-<!DOCTYPE RCC><RCC version="1.0">
-<qresource>
-    <file>icons/crop.png</file>
-    <file>icons/rearrange.png</file>
-    <file>icons/annotate.png</file>
-    <file>icons/sign.png</file>
-    <file>icons/open.png</file>
-    <file>icons/save.png</file>
-    <file>icons/ibeam.png</file>
-    <file>icons/text.png</file>
-    <file>icons/zoom-in.png</file>
-    <file>icons/zoom-out.png</file>
-    <file>icons/left.png</file>
-    <file>icons/right.png</file>
-    <file>icons/anon.png</file>
-    <file>icons/check.png</file>
-    <file>icons/x.png</file>
-    <file>icons/signature.png</file>
-    <file>icons/print.png</file>
-    <file>icons/white.png</file>
-    <file>icons/image.png</file>
-    <file>icons/shuffle.png</file>
-    <file>icons/text_cursor.png</file>
-    <file>icons/replace_fonts.png</file>
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource>
+        <file>icons/crop.png</file>
+        <file>icons/rearrange.png</file>
+        <file>icons/annotate.png</file>
+        <file>icons/sign.png</file>
+        <file>icons/open.png</file>
+        <file>icons/save.png</file>
+        <file>icons/ibeam.png</file>
+        <file>icons/text.png</file>
+        <file>icons/zoom-in.png</file>
+        <file>icons/zoom-out.png</file>
+        <file>icons/left.png</file>
+        <file>icons/right.png</file>
+        <file>icons/anon.png</file>
+        <file>icons/check.png</file>
+        <file>icons/x.png</file>
+        <file>icons/signature.png</file>
+        <file>icons/print.png</file>
+        <file>icons/white.png</file>
+        <file>icons/image.png</file>
+        <file>icons/shuffle.png</file>
+        <file>icons/text_cursor.png</file>
+        <!--<file>icons/replace_fonts.png</file>-->
+        <file>icons/numerate.png</file>
 
-</qresource>
+    </qresource>
 </RCC>

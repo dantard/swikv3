@@ -5,6 +5,7 @@ import subprocess
 import sys
 import pyclip
 from PyQt5 import QtGui
+from PyQt5.QtGui import QGuiApplication
 from PyQt5.QtNetwork import QUdpSocket, QHostAddress
 from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog
 import resources
@@ -42,7 +43,7 @@ class MainWindow(QMainWindow):
         open_recent.aboutToShow.connect(lambda: self.config.fill_recent(self, open_recent))
         save = file_menu.addAction('Save', self.save_file)
         save_as = file_menu.addAction('Save as', self.save_file_as)
-        copy_path = file_menu.addAction('Copy path', lambda: pyclip.copy(self.renderer.filename))
+        copy_path = file_menu.addAction('Copy path', self.copy_path)
         command = self.config.general.get("other_pdf")
         self.file_menu_actions = [save, save_as, copy_path]
 
@@ -132,6 +133,10 @@ class MainWindow(QMainWindow):
 
     def tab_changed(self, index):
         self.update_title()
+
+    def copy_path(self):
+        clipboard = QGuiApplication.clipboard()
+        clipboard.setText(self.current().get_filename())
 
     def update_title(self):
         title = "Swik"
