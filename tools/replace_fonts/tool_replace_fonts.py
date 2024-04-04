@@ -14,22 +14,28 @@ from tools.tool import BasicTool, Tool
 class ToolReplaceFonts(Tool):
 
     file_generate = pyqtSignal(str, int, float)
-    def __init__(self, name, icon, parent):
-        super(ToolReplaceFonts, self).__init__(name, icon, parent)
+    def __init__(self, view, icon, parent, **kwargs):
+        super(ToolReplaceFonts, self).__init__(view, icon, parent, **kwargs)
+        self.placeholder = None
+        self.font_manager = kwargs.get('font_manager')
 
     def init(self):
         data = repl_fontnames(self.renderer.get_filename())
-        editor = ReplaceFontsDialog(data)
+        editor = ReplaceFontsDialog(self.font_manager, data)
         res = editor.exec()
         if res == QDialog.Accepted:
             in_name = self.renderer.get_filename()
             out_name = in_name.replace(".pdf", "_replaced.pdf")
-            self.p = Progressing(self.view)
+            self.placeholder = Progressing(self.view)
             def do():
                 repl_font(in_name, editor.get_data(), out_name)
+                self.finished.emit()
                 self.file_generate.emit(out_name, self.view.get_page(), self.view.get_ratio())
 
-            self.p.start(do)
+            self.placeholder.start(do)
+        else:
+            self.finished.emit()
+
 
 
 

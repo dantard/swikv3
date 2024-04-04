@@ -95,7 +95,7 @@ class SwikWidget(QWidget):
         tool_crop = self.manager.register_tool(ToolCrop(self.view, self.renderer, self.config))
         tool_imag = self.manager.register_tool(ToolInsertImage(self.view, self.renderer, self.config))
         tool_sigi = self.manager.register_tool(ToolInsertSignatureImage(self.view, self.renderer, self.config))
-        tool_font = self.manager.register_tool(ToolReplaceFonts(self.view, self.renderer, self.config))
+        tool_font = self.manager.register_tool(ToolReplaceFonts(self.view, self.renderer, self.config, font_manager=self.font_manager))
         tool_font: ToolReplaceFonts
         tool_font.file_generate.connect(self.open_requested.emit)
 
@@ -129,7 +129,7 @@ class SwikWidget(QWidget):
         self.mode_group.add(tool_imag, icon=":/icons/image.png", text="Insert Image")
         self.image_sign_btn = self.mode_group.add(tool_sigi, icon=":/icons/signature.png", text="Insert Signature", separator=True)
         self.mode_group.add(tool_rear, icon=":/icons/shuffle.png", text="Shuffle Pages")
-        self.mode_group.add(tool_font, icon=":/icons/shuffle.png", text="Replace Fonts")
+        self.mode_group.add(tool_font, icon=":/icons/replace_fonts.png", text="Replace Fonts")
         # self.mode_group.append(self.toolbar)
 
         self.manager.tool_finished.connect(self.mode_group.reset)

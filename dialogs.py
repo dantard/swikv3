@@ -1,5 +1,6 @@
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QFormLayout, QDialogButtonBox, QDialog, QLabel, QVBoxLayout, QGroupBox, QLineEdit, QCheckBox
+from PyQt5.QtWidgets import QFormLayout, QDialogButtonBox, QDialog, QLabel, QVBoxLayout, QGroupBox, QLineEdit, QCheckBox, QTreeWidget, QTreeWidgetItem, \
+    QComboBox
 
 from colorwidget import FontPicker, Color
 from dict_editor import DictTreeWidget
@@ -103,7 +104,7 @@ def FontTextAndColor(FontAndColorDialog):
     pass
 
 
-class ReplaceFontsDialog(QDialog):
+class ReplaceFontsDialog2(QDialog):
     def __init__(self, data):
         super().__init__()
 
@@ -125,6 +126,60 @@ class ReplaceFontsDialog(QDialog):
         layout.addWidget(self.treeWidget)
         layout.addWidget(buttonBox)
         self.setLayout(layout)
+
+    def get_data(self):
+        return  self.treeWidget.traverse_tree(self.treeWidget.invisibleRootItem().child(0))
+
+
+class ReplaceFontsDialog(QDialog):
+    def __init__(self, font_manager, data):
+        super().__init__()
+        self.font_manager = font_manager
+
+        # Initialize the dialog window
+        self.setWindowTitle("My Dialog")
+
+        # Create a QTreeWidget
+        self.treeWidget = QTreeWidget()
+        self.treeWidget.setHeaderLabels(["Items"])
+        self.treeWidget.setColumnCount(2)
+        self.treeWidget.itemExpanded.connect(self.resize_columns)
+        for value in data:
+            item = QTreeWidgetItem()
+            combobox = QComboBox()
+            combobox.addItem("Keep")
+            for font in self.font_manager.get_all_available_fonts():
+                #combobox.addItem(font.)
+                combobox.addItem(font.get("full_name"))
+            oldfonts = str()
+            for oldfont in value.get("oldfont"):
+                oldfonts += oldfont + ", "
+            oldfonts = oldfonts[:-2]
+            item.setText(0, oldfonts)
+            item.setText(1, value.get("newfont"))
+            item2 = QTreeWidgetItem()
+            item2.setText(0, value.get("info"))
+            item.addChild(item2)
+            self.treeWidget.invisibleRootItem().addChild(item)
+            self.treeWidget.setItemWidget(item, 1, combobox)
+
+
+        self.resize_columns()
+
+        # Create standard OK and Cancel buttons
+        buttonBox = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttonBox.accepted.connect(self.accept)
+        buttonBox.rejected.connect(self.reject)
+
+        # Set up the layout
+        layout = QVBoxLayout()
+        layout.addWidget(self.treeWidget)
+        layout.addWidget(buttonBox)
+        self.setLayout(layout)
+
+    def resize_columns(self):
+        self.treeWidget.resizeColumnToContents(0)
+        self.treeWidget.resizeColumnToContents(1)
 
     def get_data(self):
         return  self.treeWidget.traverse_tree(self.treeWidget.invisibleRootItem().child(0))

@@ -82,6 +82,9 @@ class FontManager(QObject):
     def get_subset_fonts(self):
         return [f for f in self.document_fonts if f['subset']]
 
+    def get_all_available_fonts(self):
+        return FontManager.base14_fonts + FontManager.swik_fonts + FontManager.system_fonts
+
     def get_font_info_from_name(self, name):
         for f in self.document_fonts:
             if f['nickname'] == name:

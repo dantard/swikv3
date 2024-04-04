@@ -4,7 +4,7 @@ from PyQt5.QtCore import QObject, pyqtSignal
 class BasicTool(QObject):
     finished = pyqtSignal()
 
-    def __init__(self, view, renderer, config):
+    def __init__(self, view, renderer, config, **kwargs):
         super(BasicTool, self).__init__()
         self.view = view
         self.renderer = renderer
