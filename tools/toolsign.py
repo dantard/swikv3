@@ -27,17 +27,17 @@ class ToolSign(Tool):
     (configured, cfg_p12, cfg_password, cfg_signed_suffix,
      cfg_signature_border, cfg_text_font_size, cfg_text,
      cfg_text_stretch, cfg_text_timestamp, cfg_image_file,
-     cfg_image_stretch) = (False, None, None, None,
-                           None, None, None, None, None, None, None)
+     cfg_image_stretch, signature) = (False, None, None, None,
+                           None, None, None, None, None, None, None, None)
 
     @staticmethod
     def configure(config):
         if not ToolSign.configured:
-            signature = config.root().addSubSection("Digital Signature")
-            ToolSign.cfg_p12 = signature.addFile("p12", pretty="Signature File", extension=["p12", "pfx"], extension_name="PKCS#12")
-            ToolSign.cfg_password = signature.addPassword("password", pretty='Password')
-            ToolSign.cfg_signed_suffix = signature.addString("signed_suffix", pretty="Signed File Suffix", default="-signed")
-            appearance = signature.addSubSection("Appearance")
+            ToolSign.signature = config.root().addSubSection("Digital Signature")
+            ToolSign.cfg_p12 = ToolSign.signature.addFile("p12", pretty="Signature File", extension=["p12", "pfx"], extension_name="PKCS#12")
+            ToolSign.cfg_password = ToolSign.signature.addPassword("password", pretty='Password')
+            ToolSign.cfg_signed_suffix = ToolSign.signature.addString("signed_suffix", pretty="Signed File Suffix", default="-signed")
+            appearance = ToolSign.signature.addSubSection("Appearance")
 
             ToolSign.cfg_signature_border = appearance.addInt("signature_border", pretty="Border width", default=0)
             text = appearance.addSubSection("Text")
@@ -96,7 +96,7 @@ class ToolSign(Tool):
         filename = self.renderer.get_filename()
 
         password_to_save = None
-        if (password := self.config.get('password')) is None:
+        if (password := self.signature.get('password')) is None:
             dialog = PasswordDialog(parent=self.view)
             if dialog.exec() == QDialog.Accepted:
                 password = dialog.getText()
@@ -107,7 +107,7 @@ class ToolSign(Tool):
         else:
             password = base64.decodebytes(password.encode()).decode()
 
-        suffix = self.config.get('signed_suffix')
+        suffix = self.signature.get('signed_suffix')
         output_filename = filename.replace(".pdf", suffix + ".pdf")
 
         res = self.apply_signature(filename, index, rect,
@@ -131,7 +131,7 @@ class ToolSign(Tool):
 
     def apply_signature(self, filename, index, rect, password, output_filename, **kwargs):
 
-        if (p12_file := self.config.get('p12')) is None:
+        if (p12_file := self.signature.get('p12')) is None:
             self.config.edit()
             return
 

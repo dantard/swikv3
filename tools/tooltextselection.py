@@ -150,9 +150,22 @@ class ToolTextSelection(Tool):
         else:
             anon, highlight, copy, replace, web_search = None, None, None, None, None
 
+        if  QGuiApplication.clipboard().text() != "":
+            paste = menu.addAction("Paste")
+        else:
+            paste = None
+
+
         res = menu.exec(event.globalPos())
         if res is None:
             pass
+        elif res == paste:
+            text = QGuiApplication.clipboard().text()
+            for i, word in enumerate(text.split("\n")):
+                st = SwikText(word, page, self.font_manager, "fonts/Arial.ttf", 11)
+                on_scene = self.view.mapToScene(event.pos())
+                st.setPos(st.mapFromScene(on_scene) + QPointF(15*i, 15*i))
+
         elif res == web_search:
             text = str()
             for word in self.selected:

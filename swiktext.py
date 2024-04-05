@@ -25,7 +25,7 @@ class SwikText(QGraphicsTextItem, Undoable):
         document = self.document()
         document.setDocumentMargin(9)
         self.setDocument(document)
-        self.setDefaultTextColor(Qt.red)
+        self.setDefaultTextColor(Qt.black)
         self.document().setPlainText(text)
         self.setFlag(QGraphicsTextItem.ItemIsSelectable, True)
         self.setFlag(QGraphicsTextItem.ItemIsFocusable, True)
