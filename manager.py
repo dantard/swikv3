@@ -85,12 +85,15 @@ class Manager(QObject):
 
     def key_pressed(self, event):
         print("pressed", event.key())
+        return False
 
     def key_released(self, event):
         print("released", event.key(), Qt.Key_Escape, Qt.Key_Escape == event.key())
 
         if event.key() == Qt.Key_Escape:
             self.finished()
+            return True
+        return False
 
     def finished(self):
         self.tool_finished.emit()

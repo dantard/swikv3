@@ -252,6 +252,10 @@ class ResizableRectItem(PaintableSelectorRectItem, Undoable):
             self.setRect(info[0])
             self.setPos(info[1])
 
+    def contextMenuEvent(self, event: 'QGraphicsSceneContextMenuEvent') -> None:
+        if not self.isSelected():
+            self.setSelected(True)
+
 
 class MainWindow(QGraphicsView):
     def __init__(self):

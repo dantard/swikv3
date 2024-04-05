@@ -10,6 +10,7 @@ class SquareAnnotation(Annotation, Copyable):
         super().__init__(parent, **kwargs)
 
     def contextMenuEvent(self, event: 'QGraphicsSceneContextMenuEvent') -> None:
+        super().contextMenuEvent(event)
         menu = QMenu("Square Annotation")
         menu.addAction("Edit", self.change_color)
         menu.addSeparator()

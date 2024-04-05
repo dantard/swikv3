@@ -8,8 +8,8 @@ from PyQt5.QtNetwork import QUdpSocket, QHostAddress
 import resources
 import pyclip
 from PyQt5 import QtGui
-from PyQt5.QtCore import QPointF, Qt, QTimer, pyqtSignal, QRectF
-from PyQt5.QtGui import QPainter, QIcon, QKeySequence
+from PyQt5.QtCore import QPointF, Qt, QTimer, pyqtSignal, QRectF, QEvent
+from PyQt5.QtGui import QPainter, QIcon, QKeySequence, QKeyEvent
 from PyQt5.QtWidgets import QApplication, QMainWindow, QShortcut, QFileDialog, QDialog, QMessageBox, QHBoxLayout, QWidget, QTabWidget, QVBoxLayout, QToolBar, \
     QPushButton, QSizePolicy, QTabBar, QProgressDialog, QSplitter, QGraphicsScene, QLabel
 
@@ -104,7 +104,7 @@ class SwikWidget(QWidget):
         tool_nume = self.manager.register_tool(ToolNumerate(self.view, self.renderer, self.config, font_manager=self.font_manager))
 
         self.key_manager = KeyboardManager(self)
-        self.key_manager.register_action(Qt.Key_Delete, self.delete_objects)
+
         self.key_manager.register_action(Qt.Key_Shift, lambda: self.manager.use_tool(tool_drag), self.manager.finished)
         self.key_manager.register_combination_action('Ctrl+R', lambda: self.open_file(self.renderer.get_filename()))
         self.key_manager.register_combination_action('Ctrl+i', self.view.toggle_page_info)
@@ -220,12 +220,6 @@ class SwikWidget(QWidget):
     def statusBar(self):
         return self.win.statusBar()
 
-    def delete_objects(self):
-        items = self.view.scene().selectedItems()
-        self.scene.tracker().items_removed(items)
-        for item in items:
-            self.view.scene().removeItem(item)
-
     def should_open_here(self, filename):
         msg_box = QMessageBox(self)
         msg_box.setIcon(QMessageBox.Question)
@@ -294,15 +288,21 @@ class SwikWidget(QWidget):
     def manage_tool(self, tool):
         self.manager.use_tool(tool)
 
+    '''
     def keyPressEvent(self, a0: QtGui.QKeyEvent) -> None:
-        super().keyPressEvent(a0)
-        if not self.key_manager.key_pressed(a0):
-            self.manager.key_pressed(a0)
+
+        print("swik_widge1t", a0)
+        if not self.key_manager.key_pressed(a0) and not self.manager.key_pressed(a0):
+            super().keyPressEvent(a0)
 
     def keyReleaseEvent(self, a0: QtGui.QKeyEvent) -> None:
-        super().keyReleaseEvent(a0)
-        if not self.key_manager.key_released(a0):
-            self.manager.key_released(a0)
+        print("swik_widget2", a0)
+        a0.setAccepted(False)
+        return
+
+        if not self.key_manager.key_released(a0) and not self.manager.key_released(a0):
+            super().keyReleaseEvent(a0)
+    '''
 
     # ### Tools
 

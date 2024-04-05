@@ -5,6 +5,7 @@ from LayoutManager import LayoutManager
 from annotations.highlight_annotation import HighlightAnnotation
 from annotations.redactannotation import RedactAnnotation
 from annotations.squareannotation import SquareAnnotation
+from bunch import NumerateBunch
 from page import Page
 from simplepage import SimplePage
 from swiktext import SwikText, SwikTextReplace, SwikTextNumerate
@@ -81,6 +82,7 @@ class SwikGraphView(GraphView):
             self.renderer.add_text(page.get_index(), text)
             pages_to_refresh.add(page.get_index())
             self.scene().removeItem(text)
+        self.scene().remove_bunches(NumerateBunch)
 
         widgets = [item for item in items if isinstance(item, PdfWidget)]
         for widget in widgets:

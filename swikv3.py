@@ -5,6 +5,7 @@ import subprocess
 import sys
 import pyclip
 from PyQt5 import QtGui
+from PyQt5.QtCore import QEvent
 from PyQt5.QtGui import QGuiApplication
 from PyQt5.QtNetwork import QUdpSocket, QHostAddress
 from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog
@@ -33,7 +34,7 @@ class MainWindow(QMainWindow):
         ToolInsertSignatureImage.configure(self.config)
 
         self.config.read()
-
+        self.current_event_filter = None
         menu_bar = self.menuBar()
 
         # Setup file menu
@@ -134,6 +135,10 @@ class MainWindow(QMainWindow):
     def tab_changed(self, index):
         self.update_title()
 
+    #        self.removeEventFilter(self.current_event_filter)
+    #        self.installEventFilter(self.current())
+    #        self.current_event_filter = self.current()
+
     def copy_path(self):
         clipboard = QGuiApplication.clipboard()
         clipboard.setText(self.current().get_filename())
@@ -229,6 +234,17 @@ class MainWindow(QMainWindow):
         if filename:
             self.current().append_pdf(filename)
 
+    def eventFilter(self, a0: 'QObject', a1: 'QEvent') -> bool:
+        if a1.type() == QEvent.KeyPress:
+            a = self.current().key_manager.key_pressed(a1)
+            print("pessed return", a1)
+            return a
+        elif a1.type() == QEvent.KeyRelease:
+            a = self.current().key_manager.key_released(a1)
+            print("released return", a0, a1.key())
+            return a
+        return False
+
 
 def main():
     app = QApplication(sys.argv)
@@ -248,6 +264,8 @@ def main():
 
     window = MainWindow()
     window.show()
+
+    # app.installEventFilter(window)
 
     def received():
         while socket.hasPendingDatagrams():
