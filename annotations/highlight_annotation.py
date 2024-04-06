@@ -29,6 +29,7 @@ class HighlightAnnotation(QGraphicsRectItem, Undoable):
         self.setBrush(Qt.transparent)
         self.setPen(Qt.transparent)
         self.content = str()
+        self.notify_creation(self)
 
     def get_full_state(self):
         return {"color": self.color, "content": self.content}

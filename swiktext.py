@@ -40,6 +40,7 @@ class SwikText(QGraphicsTextItem, Undoable):
         self.setFlag(QGraphicsTextItem.ItemIsFocusable, True)
         self.setFlag(QGraphicsTextItem.ItemSendsGeometryChanges, True)
         self.set_ttf_font(font, size)
+        self.notify_creation(self)
         self.current_pose = None
         self.current_state = None
 
@@ -176,18 +177,21 @@ class SwikText(QGraphicsTextItem, Undoable):
     def get_font_size(self):
         return self.font().pointSize()
 
+    # State management
     def get_full_state(self):
         return {"text": self.toPlainText(), "font_ttf_filename": self.ttf_filename, "font_size": self.font().pointSize(), "text_color": self.defaultTextColor()}
 
     def set_full_state(self, state):
-        self.set_ttf_font(state["font_ttf_filename"], state["font_size"])
-        self.setDefaultTextColor(state["text_color"])
-        self.document().setPlainText(state["text"])
+        self.set_common_state(state)
+        self.document().setPlainText(state["text"] if "state" in state else self.document().toPlainText())
 
     def set_common_state(self, state):
         if "font_ttf_filename" in state:
             self.set_ttf_font(state["font_ttf_filename"], state["font_size"] if "font_size" in state else None)
         self.setDefaultTextColor(state["text_color"] if "text_color" in state else self.defaultTextColor())
+
+    def get_common_state(self):
+        return {"font_ttf_filename": self.ttf_filename, "font_size": self.get_font_size(), "text_color": self.defaultTextColor()}
 
 
 class SwikTextReplace(SwikText):

@@ -5,7 +5,7 @@ import typing
 from PyQt5 import QtGui, QtCore
 from PyQt5.QtGui import QImage, QFont, QFontMetrics, QColor, QBrush, QPen
 from PyQt5.QtWidgets import QApplication, QGraphicsView, QGraphicsScene, QGraphicsRectItem, QWidget, QStyle, QMenu, QDialog, QSlider, QGraphicsItem
-from PyQt5.QtCore import Qt, QPointF, QRectF, QTimer, QObject, pyqtSignal
+from PyQt5.QtCore import Qt, QPointF, QRectF, QTimer, QObject, pyqtSignal, QEvent
 
 from action import Action
 from coloreable import ColoreableRectItem
@@ -59,7 +59,6 @@ class ResizableRectItem(PaintableSelectorRectItem, Undoable):
     def __init__(self, parent=None, **kwargs):
         super().__init__(parent, **kwargs)
         super(Undoable).__init__()
-
         self.resizeable = True
         self.movable = True
         self.setFlags(QGraphicsRectItem.ItemIsSelectable | QGraphicsRectItem.ItemSendsGeometryChanges | QGraphicsRectItem.ItemIsMovable)
@@ -251,21 +250,23 @@ class ResizableRectItem(PaintableSelectorRectItem, Undoable):
     def contextMenuEvent(self, event: 'QGraphicsSceneContextMenuEvent') -> None:
         if not self.isSelected():
             self.setSelected(True)
+        # self.scene().context_menu(event)
 
+    # State management
     def get_full_state(self):
-        return {"rect": self.rect(), "brush": self.brush(), "pen": self.pen(), "text": self.text, "font": self.get_font()}
+        common = self.get_common_state()
+        common.update({"rect": self.rect()})
+        return common
 
     def set_full_state(self, state):
-        self.setRect(state["rect"])
-        self.setBrush(state["brush"])
-        self.setPen(state["pen"])
-        self.text = state["text"]
-        self.set_font(state["font"])
+        self.set_common_state(state)
+        self.setRect(state["rect"] if "rect" in state else self.rect())
 
     def set_common_state(self, state):
         self.setBrush(state["brush"] if "brush" in state else self.brush())
-        self.setPen(state["pen"] if "pen" in state else self.pen())
-        self.set_font(state["font"] if "font" in state else self.get_font())
+
+    def get_common_state(self):
+        return {"brush": self.brush()}
 
     def undo(self, action, previous_state):
         self.set_full_state(previous_state)

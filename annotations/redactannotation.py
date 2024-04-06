@@ -1,4 +1,4 @@
-from PyQt5.QtCore import Qt, QPointF
+from PyQt5.QtCore import Qt, QPointF, QEvent, pyqtSignal
 from PyQt5.QtWidgets import QDialog, QMenu
 
 from action import Action

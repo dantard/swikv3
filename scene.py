@@ -1,10 +1,12 @@
 import typing
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal, QRectF, QPointF
-from PyQt5.QtWidgets import QGraphicsScene, QGraphicsItem, QGraphicsItemGroup, QGraphicsRectItem
+from PyQt5.QtWidgets import QGraphicsScene, QGraphicsItem, QGraphicsItemGroup, QGraphicsRectItem, QMenu
 
 from action import Action
 from changestracker import ChangesTracker
+from colorwidget import Color
+from dialogs import ComposableDialog
 from utils import Signals
 
 
@@ -25,7 +27,7 @@ class Scene(QGraphicsScene):
         self.tracker().item_changed(action)
         full_state = item.get_full_state()
         for elem in self.selectedItems():
-            if elem is not item:
+            if elem is not item and type(elem) == type(item):
                 old = elem.get_full_state()
                 elem.set_common_state(full_state)
                 action.push(elem, kind, old, elem.get_full_state())
@@ -99,3 +101,27 @@ class Scene(QGraphicsScene):
 
     def keyReleaseEvent(self, event) -> None:
         return
+
+    # TODO: to be completed
+    '''
+    def context_menu(self, event):
+        items = self.selectedItems()
+        if len(items) == 1:
+            intersection = items[0].get_full_state().keys()
+        else:
+            intersection = None
+            for item in self.selectedItems():
+                state = item.get_common_state().keys()
+                intersection = list(set(state) & set(intersection)) if intersection is not None else state
+
+        print("intersection", intersection)
+        menu = QMenu()
+        edit = menu.addAction("Edit", self.delete_objects)
+        delete = menu.addAction("Delete", self.delete_objects)
+        res = menu.exec(event.screenPos())
+        if res == edit:
+            dialog = ComposableDialog()
+            for row in intersection:
+                if row == "brush":
+                    dialog.add_row("Brush", Color(self.brush().color()))
+    '''

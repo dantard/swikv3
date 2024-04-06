@@ -108,3 +108,7 @@ def are_other_instances_running():
         swik = psutil.Process(pids[-1])
         # Get other instance port
         return swik.connections()[0][3][1]
+
+
+def update_value(method, dictionary, key):
+    method(dictionary[key] if key in dictionary else None)
