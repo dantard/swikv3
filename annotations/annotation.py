@@ -23,7 +23,7 @@ class Annotation(ResizableRectItem):
         self.change_color()
 
     def change_color(self):
-        before = [self.brush().color(), self.pen().color(), self.pen().width(), self.content]
+        before = self.get_full_state()
 
         color = ComposableDialog()
         color.add_row("Content", TextLineEdit(self.content))
@@ -39,26 +39,11 @@ class Annotation(ResizableRectItem):
             self.set_content(color.get("Content").get_text())
             self.setToolTip(self.get_content())
 
-        after = [self.brush().color(), self.pen().color(), self.pen().width(), self.content]
-
-        if after != before:
-            self.notify_change(Action.ACTION_ANNOT_CHANGED, before, after)
+        if self.get_full_state() != before:
+            self.notify_change(Action.ACTION_ANNOT_CHANGED, before, self.get_full_state())
 
     def undo(self, kind, info):
         super().undo(kind, info)
-        if kind == Action.ACTION_ANNOT_CHANGED:
-            self.set_fill_color(info[0])
-            self.set_border_color(info[1])
-            self.set_border_width(info[2])
-            self.set_content(info[3])
-
-    def redo(self, kind, info):
-        super().redo(kind, info)
-        if kind == Action.ACTION_ANNOT_CHANGED:
-            self.set_fill_color(info[0])
-            self.set_border_color(info[1])
-            self.set_border_width(info[2])
-            self.set_content(info[3])
-
+        self.set_full_state(info)
 
 # Compare this snippet from annotations/annotation.py:

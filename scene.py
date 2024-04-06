@@ -1,7 +1,9 @@
+import typing
 from PyQt5 import QtCore
-from PyQt5.QtCore import pyqtSignal
-from PyQt5.QtWidgets import QGraphicsScene, QGraphicsItem
+from PyQt5.QtCore import pyqtSignal, QRectF, QPointF
+from PyQt5.QtWidgets import QGraphicsScene, QGraphicsItem, QGraphicsItemGroup, QGraphicsRectItem
 
+from action import Action
 from changestracker import ChangesTracker
 from utils import Signals
 
@@ -14,24 +16,37 @@ class Scene(QGraphicsScene):
         self.changes_tracker = ChangesTracker(self)
         self.bunches = []
         self.prev_selection = []
-        # self.selectionChanged.connect(self.selection_changed)
+        self.selectionChanged.connect(self.selection_changed)
+        self.group = None
+        self.poses = {}
 
-    '''
+    def notify_change(self, item, kind, old, new):
+        action = Action(item, kind, old, new)
+        self.tracker().item_changed(action)
+        full_state = item.get_full_state()
+        for elem in self.selectedItems():
+            if elem is not item:
+                old = elem.get_full_state()
+                elem.set_common_state(full_state)
+                action.push(elem, kind, old, elem.get_full_state())
+
+    def notify_position_change(self, item, old, new):
+        action = Action(item, Action.POSE_CHANGED, old, new)
+
+        for elem in self.selectedItems():
+            if elem is not item and elem in self.poses and elem.pos() != self.poses[elem]:
+                action.push(elem, Action.POSE_CHANGED, self.poses[elem], elem.pos())
+
+        self.tracker().item_changed(action)
+
+    def mousePressEvent(self, event: 'QGraphicsSceneMouseEvent') -> None:
+        print("mouse press on scene", event.scenePos())
+        super(Scene, self).mousePressEvent(event)
+
     def selection_changed(self):
-        for elem in self.prev_selection:
-            try:
-                elem.signals.font_changed.disconnect(self.font_changed)
-            except:
-                pass
+        self.poses.clear()
         for elem in self.selectedItems():
-            elem.signals.font_changed.connect(self.font_changed)
-
-        self.prev_selection = self.selectedItems()
-    '''
-
-    def font_changed(self, item):
-        for elem in self.selectedItems():
-            elem.setFont(item.font())
+            self.poses[elem] = elem.pos()
 
     def tracker(self) -> ChangesTracker:
         return self.changes_tracker

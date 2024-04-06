@@ -144,16 +144,15 @@ class PaintableSelectorRectItem(SelectorRectItem):
 
                 qr = QRectF(self.rect().x(), self.rect().y(), iw * ratio, ih * ratio)
                 image_rect, img = qr, self.image
-                #painter.drawImage(qr, self.image)
+                # painter.drawImage(qr, self.image)
         elif self.image_mode == self.IMAGE_MODE_STRETCH:
             image_rect, img = self.rect(), self.image
-            #painter.drawImage(self.rect(), self.image)
+            # painter.drawImage(self.rect(), self.image)
         elif self.image_mode == self.IMAGE_MODE_MAINTAIN_SIZE:
             w = min(self.rect().width(), self.image.width())
             h = min(self.rect().height(), self.image.height())
             img = self.image.copy(0, 0, int(w), int(h))
             image_rect = QRectF(self.rect().x(), self.rect().y(), w, h)
-
 
         return image_rect, img
 
@@ -168,7 +167,6 @@ class PaintableSelectorRectItem(SelectorRectItem):
 
     def paint(self, painter: QtGui.QPainter, option, widget: typing.Optional[QWidget] = ...) -> None:
         super().paint(painter, option, widget)
-
 
         if self.image is not None:
             rect, image = self.compute_image()
@@ -202,38 +200,3 @@ class PaintableSelectorRectItem(SelectorRectItem):
         else:
             return self.parentItem().mapRectFromItem(self, rect)
 
-    def serialize(self, info):
-        super().serialize(info)
-        info["image_mode"] = self.image_mode
-        info["image"] = self.image
-        info["text"] = self.text
-        info["text_mode"] = self.text_mode
-        info["max_font_size"] = self.max_font_size
-        info["font"] = self.font
-
-    def deserialize(self, info):
-        super().deserialize(info)
-        self.image_mode = info["image_mode"]
-        self.image = info["image"]
-        self.text = info["text"]
-        self.text_mode = info["text_mode"]
-        self.max_font_size = info["max_font_size"]
-        self.font = info["font"]
-        self.update()
-
-    def to_yaml(self, info):
-        super().to_yaml(info)
-        info["image_mode"] = self.image_mode
-        info["image"] = self.image
-        info["text"] = self.text
-        info["text_mode"] = self.text_mode
-        info["max_font_size"] = self.max_font_size
-
-    def from_yaml(self, info):
-        super().from_yaml(info)
-        self.image_mode = info["image_mode"]
-        self.image = info["image"]
-        self.text = info["text"]
-        self.text_mode = info["text_mode"]
-        self.max_font_size = info["max_font_size"]
-        self.update()

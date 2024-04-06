@@ -29,24 +29,25 @@ class HandleItem(QGraphicsRectItem):
     def hoverEnterEvent(self, event):
         self.setBrush(Qt.black)
         super().hoverEnterEvent(event)
-        self.parentItem().hoverEnterEvent(event)
+        self.parentItem().handle_hover_enter(self, event)
 
     def hoverLeaveEvent(self, event):
         self.setBrush(Qt.white)
         super().hoverLeaveEvent(event)
-        self.parentItem().hoverLeaveEvent(event)
+        self.parentItem().handle_hover_leave(self, event)
 
     def mousePressEvent(self, event):
         super(HandleItem, self).mousePressEvent(event)
-        self.parentItem().mousePressEvent(event)
+        # self.parentItem().mousePressEvent(event)
+        self.parentItem().handle_press(self, event)
 
     def mouseMoveEvent(self, event):
         super(HandleItem, self).mouseMoveEvent(event)
-        self.parentItem().mouseMoveEvent(event)
+        self.parentItem().handle_move(self, event)
 
     def mouseReleaseEvent(self, event):
         super(HandleItem, self).mouseReleaseEvent(event)
-        self.parentItem().mouseReleaseEvent(event)
+        self.parentItem().handle_release(self, event)
 
     def paint(self, painter: QtGui.QPainter, option, widget: typing.Optional[QWidget] = ...) -> None:
         option.state = QStyle.State_None
@@ -62,13 +63,15 @@ class ResizableRectItem(PaintableSelectorRectItem, Undoable):
         self.resizeable = True
         self.movable = True
         self.setFlags(QGraphicsRectItem.ItemIsSelectable | QGraphicsRectItem.ItemSendsGeometryChanges | QGraphicsRectItem.ItemIsMovable)
-        self.setFlag(QGraphicsRectItem.ItemSendsGeometryChanges)
         self.setAcceptHoverEvents(True)
         self.handle_size = 10  # Size of resize handles
-        self.handle_pressed = None
         self.handles_enabled = True
         self.handles = []
         self.pos_before = None
+        self.current_pose = None
+        self.selected_handle_pos = None
+        self.handle_pressed = False
+        self.current_state = None
 
         self.timer = QTimer()
         self.timer.setSingleShot(True)
@@ -135,77 +138,83 @@ class ResizableRectItem(PaintableSelectorRectItem, Undoable):
         else:
             self.setCursor(Qt.ArrowCursor)
 
-    def mousePressEvent(self, event):
-        self.pos_before = (self.rect(), self.pos())
+    # event.scenePos()
 
-        for handle in self.handles:
-            if handle.contains(handle.mapFromScene(event.scenePos())):
-                self.handle_pressed: HandleItem = handle
-                self.prev_pos = self.mapFromScene(handle.sceneBoundingRect().center())  # event.scenePos()
-                break
-        else:
-            super().mousePressEvent(event)
+    def mousePressEvent(self, event):
+        super().mousePressEvent(event)
+        self.setFlag(QGraphicsItem.ItemIsMovable, True)
+        self.current_pose = self.pos()
 
     def mouseMoveEvent(self, event):
         super().mouseMoveEvent(event)
         self.set_handle_visibility(True)
         self.timer.stop()
 
-        if self.handle_pressed:
-            x, y = event.scenePos().x(), event.scenePos().y()
-            if self.parentItem() is not None:
-                x, y = check_parent_limits(self.parentItem(), x, y)
-
-            new_pos = self.mapFromScene(x, y)
-
-            delta = new_pos - self.prev_pos
-            rect = self.rect()
-
-            if self.handle_pressed == self.handles[0]:
-                rect.setTopLeft(rect.topLeft() + delta)
-            elif self.handle_pressed == self.handles[1]:
-                rect.setTop(rect.top() + delta.y())
-            elif self.handle_pressed == self.handles[2]:
-                rect.setTopRight(rect.topRight() + delta)
-            elif self.handle_pressed == self.handles[3]:
-                rect.setRight(rect.right() + delta.x())
-            elif self.handle_pressed == self.handles[4]:
-                rect.setBottomRight(rect.bottomRight() + delta)
-            elif self.handle_pressed == self.handles[5]:
-                rect.setBottom(rect.bottom() + delta.y())
-            elif self.handle_pressed == self.handles[6]:
-                rect.setBottomLeft(rect.bottomLeft() + delta)
-            elif self.handle_pressed == self.handles[7]:
-                rect.setLeft(rect.left() + delta.x())
-
-            if self.parentItem() is not None:
-                rect = self.mapRectToScene(rect)
-                x1, y1, x2, y2 = rect.x(), rect.y(), rect.x() + rect.width(), rect.y() + rect.height()
-
-                x1, y1 = check_parent_limits(self.parentItem(), x1, y1)
-                x2, y2 = check_parent_limits(self.parentItem(), x2, y2)
-
-                rect = self.mapFromScene(QRectF(x1, y1, x2 - x1, y2 - y1).normalized()).boundingRect()
-
-            self.setRect(rect.normalized())
-            self.update_handles_position()
-            self.prev_pos = new_pos
-            self.signals.resizing.emit(self)
-
-        else:
-            self.setFlag(QGraphicsItem.ItemIsMovable, True)
-            self.timer.start()
-
     def mouseReleaseEvent(self, event):
         super().mouseReleaseEvent(event)
-        self.setFlag(QGraphicsItem.ItemIsMovable, False)
+        print('mouse release')
         self.setPos(self.pos().x() + self.rect().x(), self.pos().y() + self.rect().y())
         self.setRect(QRectF(0, 0, self.rect().width(), self.rect().height()))
         self.update_handles_position()
-        self.handle_pressed = None
+        if self.current_pose != self.pos():
+            self.notify_position_change(self.current_pose, self.pos())
+
+    # Handles
+
+    def handle_press(self, handle, event):
+        self.handle_pressed = True
+        self.selected_handle_pos = self.mapFromScene(handle.sceneBoundingRect().center())
+        self.current_state = self.get_full_state()
+        self.setFlag(QGraphicsItem.ItemIsMovable, False)
+        self.timer.stop()
+
+    def handle_move(self, handle_pressed, event):
+        x, y = event.scenePos().x(), event.scenePos().y()
+        if self.parentItem() is not None:
+            x, y = check_parent_limits(self.parentItem(), x, y)
+
+        new_pos = self.mapFromScene(x, y)
+
+        delta = new_pos - self.selected_handle_pos
+        rect = self.rect()
+
+        if handle_pressed == self.handles[0]:
+            rect.setTopLeft(rect.topLeft() + delta)
+        elif handle_pressed == self.handles[1]:
+            rect.setTop(rect.top() + delta.y())
+        elif handle_pressed == self.handles[2]:
+            rect.setTopRight(rect.topRight() + delta)
+        elif handle_pressed == self.handles[3]:
+            rect.setRight(rect.right() + delta.x())
+        elif handle_pressed == self.handles[4]:
+            rect.setBottomRight(rect.bottomRight() + delta)
+        elif handle_pressed == self.handles[5]:
+            rect.setBottom(rect.bottom() + delta.y())
+        elif handle_pressed == self.handles[6]:
+            rect.setBottomLeft(rect.bottomLeft() + delta)
+        elif handle_pressed == self.handles[7]:
+            rect.setLeft(rect.left() + delta.x())
+
+        if self.parentItem() is not None:
+            rect = self.mapRectToScene(rect)
+            x1, y1, x2, y2 = rect.x(), rect.y(), rect.x() + rect.width(), rect.y() + rect.height()
+
+            x1, y1 = check_parent_limits(self.parentItem(), x1, y1)
+            x2, y2 = check_parent_limits(self.parentItem(), x2, y2)
+
+            rect = self.mapFromScene(QRectF(x1, y1, x2 - x1, y2 - y1).normalized()).boundingRect()
+
+        self.setRect(rect.normalized())
+        self.update_handles_position()
+        self.selected_handle_pos = new_pos
+        self.signals.resizing.emit(self)
+
+    def handle_release(self, handle, event):
+        self.setFlag(QGraphicsItem.ItemIsMovable, True)
         self.timer.start()
-        if (self.rect, self.pos()) != self.pos_before:
-            self.notify_change(Action.POSE_SHAPE_CHANGED, self.pos_before, (self.rect(), self.pos()))
+        self.handle_pressed = False
+        if self.current_state != self.get_full_state():
+            self.notify_change(Action.FULL_STATE, self.current_state, self.get_full_state())
 
     def view_mouse_release_event(self, view, event):
         super(ResizableRectItem, self).view_mouse_release_event(view, event)
@@ -215,18 +224,17 @@ class ResizableRectItem(PaintableSelectorRectItem, Undoable):
         for handle in self.handles:
             handle.setVisible(visible and self.handles_enabled)
 
+    def handle_hover_enter(self, handle, event):
+        self.set_handle_visibility(True)
+
+    def handle_hover_leave(self, handle, event):
+        pass  # self.set_handle_visibility(False)
+
     def hoverEnterEvent(self, event) -> None:
         self.set_handle_visibility(True)
 
-    def serialize(self, info):
-        super().serialize(info)
-        info["movable"] = self.movable
-
-    def deserialize(self, info):
-        super().deserialize(info)
-        self.movable = info["movable"]
-
     def itemChange(self, change: 'QGraphicsItem.GraphicsItemChange', value: typing.Any) -> typing.Any:
+
         if self.parentItem() is not None and change == QGraphicsItem.ItemPositionChange:
             if value.x() < 0:
                 value = QPointF(0, value.y())
@@ -240,21 +248,27 @@ class ResizableRectItem(PaintableSelectorRectItem, Undoable):
 
         return super().itemChange(change, value)
 
-    def undo(self, kind, info):
-        super().undo(kind, info)
-        if kind == Action.POSE_SHAPE_CHANGED:
-            self.setRect(info[0])
-            self.setPos(info[1])
-
-    def redo(self, kind, info):
-        super().redo(kind, info)
-        if kind == Action.POSE_SHAPE_CHANGED:
-            self.setRect(info[0])
-            self.setPos(info[1])
-
     def contextMenuEvent(self, event: 'QGraphicsSceneContextMenuEvent') -> None:
         if not self.isSelected():
             self.setSelected(True)
+
+    def get_full_state(self):
+        return {"rect": self.rect(), "brush": self.brush(), "pen": self.pen(), "text": self.text, "font": self.get_font()}
+
+    def set_full_state(self, state):
+        self.setRect(state["rect"])
+        self.setBrush(state["brush"])
+        self.setPen(state["pen"])
+        self.text = state["text"]
+        self.set_font(state["font"])
+
+    def set_common_state(self, state):
+        self.setBrush(state["brush"] if "brush" in state else self.brush())
+        self.setPen(state["pen"] if "pen" in state else self.pen())
+        self.set_font(state["font"] if "font" in state else self.get_font())
+
+    def undo(self, action, previous_state):
+        self.set_full_state(previous_state)
 
 
 class MainWindow(QGraphicsView):

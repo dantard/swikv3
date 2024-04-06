@@ -35,6 +35,8 @@ class ChangesTracker(QObject):
                         atom.item.setParentItem(atom.old)
                     else:
                         self.scene.addItem(atom.item)
+                elif atom.kind == Action.POSE_CHANGED:
+                    atom.item.setPos(atom.old)
                 else:
                     atom.item.undo(atom.kind, atom.old)
 
@@ -51,6 +53,8 @@ class ChangesTracker(QObject):
                         self.scene.addItem(atom.item)
                 elif atom.kind == Action.ACTION_REMOVE:
                     self.scene.removeItem(atom.item)
+                elif atom.kind == Action.POSE_CHANGED:
+                    atom.item.setPos(atom.new)
                 else:
                     atom.item.redo(atom.kind, atom.new)
             self.undo_stack.append(action)

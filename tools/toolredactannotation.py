@@ -1,14 +1,6 @@
-import base64
-
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QImage
-from PyQt5.QtWidgets import QMenu, QDialog, QMessageBox
 
 from annotations.redactannotation import RedactAnnotation
-from dialogs import PasswordDialog
-from renderer import convert_box_to_upside_down
-from resizeable import ResizableRectItem
-from signer import P12Signer
 from tools.tool import Tool
 
 
@@ -21,7 +13,7 @@ class ToolRedactAnnotation(Tool):
         pass
 
     def mouse_pressed(self, event):
-        page = self.view.get_page_at_pos(event.pos())
+        page = self.view.over_a_page(event)
 
         if page is None:
             return
@@ -40,7 +32,7 @@ class ToolRedactAnnotation(Tool):
         if self.rubberband is not None:
             self.rubberband.view_mouse_release_event(self.view, event)
             self.rubberband = None
-            self.finished.emit()
+            # self.finished.emit()
 
     def finish(self):
         self.view.setCursor(Qt.ArrowCursor)

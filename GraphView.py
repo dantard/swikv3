@@ -11,6 +11,7 @@ from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsRectItem, QA
 from LayoutManager import LayoutManager
 from simplepage import SimplePage
 from SyncDict import SyncDict
+from word import Word
 
 
 class GraphView(QGraphicsView):
@@ -368,6 +369,12 @@ class GraphView(QGraphicsView):
                 return True
         return False
 
+    def over_a_page(self, event):
+        if self.there_is_any_other_than(event.pos(), (SimplePage, SimplePage.MyImage, Word)):
+            return None
+        else:
+            return self.get_page_at_pos(event.pos())
+
     def fully_update_layout(self):
 
         self.m_layout.clear()
@@ -451,6 +458,7 @@ class GraphView(QGraphicsView):
         self.move_to_page(index)
 
     def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
+        print("View mouse pressed")
         super().mousePressEvent(event)
         self.manager.mouse_pressed(event)
         page = self.get_items_at_pos(event.pos(), SimplePage, 0, False)

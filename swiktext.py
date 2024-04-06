@@ -17,6 +17,8 @@ class SwikText(QGraphicsTextItem, Undoable):
         moved = pyqtSignal(object, QPointF)
         font_changed = pyqtSignal(object, QFont)
         action = pyqtSignal(object, str)
+        move_started = pyqtSignal(object)
+        move_finished = pyqtSignal(object)
 
     def __init__(self, text, parent, font_manager, font, size=11):
         super(SwikText, self).__init__()
@@ -38,7 +40,8 @@ class SwikText(QGraphicsTextItem, Undoable):
         self.setFlag(QGraphicsTextItem.ItemIsFocusable, True)
         self.setFlag(QGraphicsTextItem.ItemSendsGeometryChanges, True)
         self.set_ttf_font(font, size)
-        self.before = None
+        self.current_pose = None
+        self.current_state = None
 
     def set_background_color(self, color: Color):
         self.bg_color = QColor(color)
@@ -78,16 +81,16 @@ class SwikText(QGraphicsTextItem, Undoable):
     def popup_context_menu(self, menu, event):
         action = menu.addAction("Edit Font")
         res = menu.exec(event.screenPos())
-        before = self.get_full_state()
+        self.current_state = self.get_full_state()
         if res == action:
-            font_dialog = FontAndColorDialog(self.font_manager, self.get_ttf_filename(), self.get_font_size(),
-                                             self.defaultTextColor())
+            font_dialog = FontAndColorDialog(self.font_manager, self.get_ttf_filename(), self.get_font_size(), self.defaultTextColor())
             if font_dialog.exec() == ComposableDialog.Accepted:
                 self.set_ttf_font(font_dialog.get("Font").get_font_filename(), font_dialog.get("Font").get_font_size())
                 self.setDefaultTextColor(font_dialog.get("Text Color").get_color())
                 self.signals.font_changed.emit(self, self.font())
-                if before != self.get_full_state():
-                    self.notify_change(Action.FULL_STATE, before, self.get_full_state())
+
+                if self.current_state != self.get_full_state():
+                    self.notify_change(Action.FULL_STATE, self.current_state, self.get_full_state())
 
         return res
 
@@ -98,23 +101,15 @@ class SwikText(QGraphicsTextItem, Undoable):
 
     def mousePressEvent(self, event: 'QGraphicsSceneMouseEvent') -> None:
         super().mousePressEvent(event)
-        self.before = self.get_full_state()
+        self.current_pose = self.pos()
 
     def mouseReleaseEvent(self, event: 'QGraphicsSceneMouseEvent') -> None:
         super().mouseReleaseEvent(event)
-        if self.before != self.get_full_state():
-            # self.notify_change(Action.POSE_CHANGED, self.before, self.pos())
-            self.notify_change(Action.FULL_STATE, self.before, self.get_full_state())
+        if self.current_pose != self.pos():
+            self.notify_position_change(self.current_pose, self.pos())
 
     def undo(self, kind, info):
         self.set_full_state(info)
-        # if kind == Action.POSE_CHANGED:
-        #    self.setPos(info)
-        # elif kind == Action.TEXT_CHANGED:
-        #    self.document().setPlainText(info)
-
-    def redo(self, kind, info):
-        self.undo(kind, info)
 
     def set_check_parent_limits(self, check):
         self.check_parent_limits = check
@@ -136,15 +131,13 @@ class SwikText(QGraphicsTextItem, Undoable):
     def focusOutEvent(self, event: QtGui.QFocusEvent) -> None:
         super().focusOutEvent(event)
         self.setTextInteractionFlags(Qt.NoTextInteraction)
-        if self.before != self.get_full_state():
-            # self.notify_change(Action.TEXT_CHANGED, self.text_before, self.toPlainText())
-            self.notify_change(Action.FULL_STATE, self.before, self.get_full_state())
+        if self.current_state != self.get_full_state():
+            self.notify_change(Action.FULL_STATE, self.current_state, self.get_full_state())
         self.update()
 
     def focusInEvent(self, event: QtGui.QFocusEvent) -> None:
         super().focusInEvent(event)
-        print("Focus in")
-        self.before = self.get_full_state()
+        self.current_state = self.get_full_state()
         self.update()
 
     def get_rect_on_parent(self):
@@ -184,17 +177,17 @@ class SwikText(QGraphicsTextItem, Undoable):
         return self.font().pointSize()
 
     def get_full_state(self):
-        return {"text": self.toPlainText(), "font": self.ttf_filename, "size": self.font().pointSize(), "pos": self.pos(), "color": self.defaultTextColor()}
+        return {"text": self.toPlainText(), "font_ttf_filename": self.ttf_filename, "font_size": self.font().pointSize(), "text_color": self.defaultTextColor()}
 
     def set_full_state(self, state):
-        self.setPos(state["pos"])
-        self.set_ttf_font(state["font"], state["size"])
-        self.setDefaultTextColor(state["color"])
+        self.set_ttf_font(state["font_ttf_filename"], state["font_size"])
+        self.setDefaultTextColor(state["text_color"])
         self.document().setPlainText(state["text"])
 
-    def copy_state(self, state):
-        self.set_ttf_font(state["font"], state["size"])
-        self.setDefaultTextColor(state["color"])
+    def set_common_state(self, state):
+        if "font_ttf_filename" in state:
+            self.set_ttf_font(state["font_ttf_filename"], state["font_size"] if "font_size" in state else None)
+        self.setDefaultTextColor(state["text_color"] if "text_color" in state else self.defaultTextColor())
 
 
 class SwikTextReplace(SwikText):

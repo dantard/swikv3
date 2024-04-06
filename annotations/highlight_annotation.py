@@ -30,6 +30,13 @@ class HighlightAnnotation(QGraphicsRectItem, Undoable):
         self.setPen(Qt.transparent)
         self.content = str()
 
+    def get_full_state(self):
+        return {"color": self.color, "content": self.content}
+
+    def set_full_state(self, state):
+        self.set_color(state["color"])
+        self.set_content(state["content"])
+
     def get_color(self):
         return self.color
 
@@ -48,7 +55,7 @@ class HighlightAnnotation(QGraphicsRectItem, Undoable):
             quad.setBrush(color)
 
     def quad_double_click(self, event):
-        before = self.get_color()
+        before = self.get_full_state()
         color = ComposableDialog()
         color.add_row("Content", TextLineEdit(self.content))
         color.add_row("Color", ColorAndAlpha(self.get_color()))
@@ -56,8 +63,8 @@ class HighlightAnnotation(QGraphicsRectItem, Undoable):
         if color.exec() == QDialog.Accepted:
             self.set_color(color.get("Color").get_color())
             self.set_content(color.get("Content").get_text())
-            if before != self.get_color():
-                self.notify_change(Action.ACTION_COLOR_CHANGED, before, self.get_color())
+            if before != self.get_full_state():
+                self.notify_change(Action.FULL_STATE, before, self.get_full_state())
 
     def add_quad(self, rect):
         quad = self.Quad(self)
@@ -92,3 +99,6 @@ class HighlightAnnotation(QGraphicsRectItem, Undoable):
             self.scene().removeItem(self)
         if res == edit:
             self.quad_double_click(event)
+
+    def undo(self, kind, info):
+        self.set_full_state(info)

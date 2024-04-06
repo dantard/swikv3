@@ -23,13 +23,18 @@ class Undoable:
     def notify_change(self, kind, old, new, scene=None):
         if old != new:
             scene = self.scene() if scene is None else scene
-            scene.tracker().item_changed(Action(self, kind, old, new))
+            # scene.tracker().item_changed(Action(self, kind, old, new))
+            scene.notify_change(self, kind, old, new)
+
+    def notify_position_change(self, old, new, scene=None):
+        scene = self.scene() if scene is None else scene
+        scene.notify_position_change(self, old, new)
 
     def undo(self, kind, info):
         pass
 
     def redo(self, kind, info):
-        pass
+        self.undo(kind, info)
 
 
 class Serializable:

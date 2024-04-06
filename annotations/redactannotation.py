@@ -13,7 +13,7 @@ class RedactAnnotation(ResizableRectItem, Copyable):
     initial_color = Qt.black
 
     def change_color(self):
-        before = self.brush().color()
+        before = self.get_full_state()
 
         color = ComposableDialog()
         color.add_row("Fill", Color(self.brush().color()))
@@ -23,18 +23,8 @@ class RedactAnnotation(ResizableRectItem, Copyable):
             self.set_fill_color(new_color)
             RedactAnnotation.initial_color = new_color
 
-            if before != self.brush().color():
-                self.notify_change(Action.ACTION_COLOR_CHANGED, before, self.brush().color())
-
-    def undo(self, kind, info):
-        super().undo(kind, info)
-        if kind == Action.ACTION_COLOR_CHANGED:
-            self.set_fill_color(info)
-
-    def redo(self, kind, info):
-        super().redo(kind, info)
-        if kind == Action.ACTION_COLOR_CHANGED:
-            self.set_fill_color(info)
+            if before != self.get_full_state():
+                self.notify_change(Action.FULL_STATE, before, self.get_full_state())
 
     def mouseDoubleClickEvent(self, event: 'QGraphicsSceneMouseEvent') -> None:
         super().mouseDoubleClickEvent(event)
@@ -42,9 +32,21 @@ class RedactAnnotation(ResizableRectItem, Copyable):
 
     def mousePressEvent(self, event: 'QGraphicsSceneMouseEvent') -> None:
         super().mousePressEvent(event)
+        print("RedactAnnotation mousePressEvent")
 
     def duplicate(self):
         r = RedactAnnotation(brush=self.brush(), pen=self.pen())
         r.setRect(self.rect())
         r.setPos(self.pos() + QPointF(10, 10))
         return r, self.parentItem()
+
+    def contextMenuEvent(self, event: 'QGraphicsSceneContextMenuEvent') -> None:
+        super().contextMenuEvent(event)
+        menu = QMenu("Redact Annotation")
+        menu.addAction("Edit", self.change_color)
+        menu.addSeparator()
+        delete = menu.addAction("Delete")
+        res = menu.exec(event.screenPos())
+        if res == delete:
+            self.notify_deletion(self)
+            self.scene().removeItem(self)
