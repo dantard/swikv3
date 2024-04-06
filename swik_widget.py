@@ -31,6 +31,7 @@ from toolbars.zoom_toolbar import ZoomToolbar
 from tools.replace_fonts.tool_replace_fonts import ToolReplaceFonts
 from tools.tool_drag import ToolDrag
 from tools.tool_insert_image import ToolInsertImage, ToolInsertSignatureImage
+from tools.tool_mimic_pdf import ToolMimicPDF
 from tools.tool_numerate import ToolNumerate
 from tools.toolcrop import ToolCrop
 from tools.toolrearranger import ToolRearrange
@@ -101,6 +102,10 @@ class SwikWidget(QWidget):
         tool_font = self.manager.register_tool(
             ToolReplaceFonts(self.view, self.renderer, self.config, font_manager=self.font_manager, layout=self.lateral_bar_layout))
         tool_font.file_generate.connect(self.open_requested.emit)
+
+        tool_mimi = self.manager.register_tool(
+            ToolMimicPDF(self.view, self.renderer, self.config, font_manager=self.font_manager, layout=self.lateral_bar_layout))
+
         tool_nume = self.manager.register_tool(ToolNumerate(self.view, self.renderer, self.config, font_manager=self.font_manager))
 
         self.key_manager = KeyboardManager(self)
@@ -134,6 +139,7 @@ class SwikWidget(QWidget):
         self.image_sign_btn = self.mode_group.add(tool_sigi, icon=":/icons/signature.png", text="Insert Signature", separator=True)
         self.mode_group.add(tool_rear, icon=":/icons/shuffle.png", text="Shuffle Pages")
         self.mode_group.add(tool_font, icon=":/icons/replace_fonts.png", text="Replace Fonts")
+        self.mode_group.add(tool_mimi, icon=":/icons/replace_fonts.png", text="Mimic PDF")
         self.mode_group.add(tool_nume, icon=":/icons/numerate.png", text="Replace Fonts")
         # self.mode_group.append(self.toolbar)
 

@@ -31,7 +31,7 @@ class Word(SwikRect):
         self.y_pos = rect.y()
         self.setParentItem(parent)
         self.order = order
-        self.setPen(Qt.transparent)
+        # self.setPen(Qt.transparent)
         self.page_id = page_id
         self.block_no = kwargs.get("block_no", None)
         self.line_no = kwargs.get("line_no", None)

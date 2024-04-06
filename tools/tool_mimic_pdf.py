@@ -9,36 +9,53 @@ from tools.replace_fonts.repl_fontnames import repl_fontnames
 from tools.tool import Tool
 
 
-class ToolReplaceFonts(Tool):
+class ToolMimicPDF(Tool):
     file_generate = pyqtSignal(str, int, float)
 
     def __init__(self, view, icon, parent, **kwargs):
-        super(ToolReplaceFonts, self).__init__(view, icon, parent, **kwargs)
+        super(ToolMimicPDF, self).__init__(view, icon, parent, **kwargs)
         self.placeholder = None
         self.font_manager = kwargs.get('font_manager')
         self.layout = kwargs.get('layout')
         self.squares = []
 
-    def init(self):
-        colors = [Qt.red, Qt.green, Qt.blue, Qt.yellow, Qt.magenta, Qt.cyan, Qt.darkRed, Qt.darkGreen,
-                  Qt.darkBlue, Qt.darkYellow, Qt.darkMagenta, Qt.darkCyan, Qt.gray, Qt.darkGray, Qt.lightGray]
-        fonts = list()
+    def top_left_corner(self, midpoint, width, height):
+        # Calculate the x-coordinate of the top-left corner
+        top_left_x = midpoint.x() - (width / 2)
 
+        # Calculate the y-coordinate of the top-left corner
+        top_left_y = midpoint.y() - (height / 2)
+
+        # Return the top-left corner as a QPointF
+        return QPointF(top_left_x, top_left_y)
+
+    def rectangle_midpoint(self, rect):
+        # Midpoint of diagonal connecting top-left and bottom-right corners
+        mid1 = QPointF(rect.topLeft() + rect.bottomRight()) / 2
+
+        # Midpoint of diagonal connecting top-right and bottom-left corners
+        mid2 = QPointF(rect.topRight() + rect.bottomLeft()) / 2
+
+        # Midpoint of the rectangle
+        midpoint = (mid1 + mid2) / 2
+
+        return midpoint
+
+    def init(self):
         for i in range(0, self.view.get_page_count()):
             spans = self.renderer.extract_spans(i)
             page = self.view.pages[i]
             for span in spans:
-                a = QGraphicsRectItem(span.rect, page)
-                a.setToolTip(span.font)
-                self.squares.append(a)
-                if not span.font in fonts:
-                    fonts.append(span.font)
-                index = fonts.index(span.font)
-                color = QColor(colors[index % len(colors)])
-                color.setAlphaF(0.5)
-                a.setBrush(color)
-        data = repl_fontnames(self.renderer.get_filename())
-        self.create_dialog(data)
+                font = self.font_manager.get_font_info_from_nickname(span.font)
+                # self.renderer.add_redact_annot(page.index, span.rect, Qt.white, True)
+                if font is not None:
+                    midpoint = self.rectangle_midpoint(span.rect)
+                    a = SwikText(span.text, page, self.font_manager, font["path"], span.size * 0.75)
+
+                    top_left = self.top_left_corner(midpoint, a.boundingRect().width(), a.boundingRect().height())
+
+                    a.setPos(top_left)
+                    self.view.pages[i].invalidate()
 
     def create_dialog(self, data):
         v_layout = QVBoxLayout()
@@ -86,45 +103,10 @@ class ToolReplaceFonts(Tool):
         self.helper.setMaximumWidth(200)
         self.layout.insertWidget(0, self.helper)
 
-    def selected(self, text):
-        combobox = self.sender()
-        item = combobox.item
-        item.setForeground(0, Qt.red if text != "Keep" else Qt.black)
-
-    def do_replace(self):
-        struct = []
-        for i in range(self.treeWidget.topLevelItemCount()):
-            item = self.treeWidget.topLevelItem(i)
-            dic = {"oldfont": [], "newfont": "", "info": ""}
-            old_fonts = item.text(0)
-            for elem in old_fonts.split(", "):
-                dic["oldfont"].append(elem)
-            dic["info"] = item.child(0).text(0)
-            combobox = self.treeWidget.itemWidget(item.child(1), 0)
-            font_name = combobox.currentText().replace("Keep", "keep")
-            print("font_name", font_name)
-            if font_name != "keep":
-                font_info = self.font_manager.get_font_info_from_full_name(font_name)
-                font_name = font_info.get("path").replace("@base14/", "")
-            dic["newfont"] = font_name
-            struct.append(dic)
-            print(dic)
-
-        in_name = self.renderer.get_filename()
-        out_name = in_name.replace(".pdf", "_replaced.pdf")
-        self.placeholder = Progressing(self.view)
-
-        def do():
-            repl_font(in_name, struct, out_name)
-            self.file_generate.emit(out_name, self.view.get_page(), self.view.get_ratio())
-
-        self.placeholder.start(do)
-        print(struct)
-
-    def finish(self):
-        for square in self.squares:
-            self.view.scene().removeItem(square)
-        self.squares.clear()
-        self.layout: QHBoxLayout
-        self.layout.removeWidget(self.helper)
-        self.helper.deleteLater()
+#    def finish(self):
+#        for square in self.squares:
+#            self.view.scene().removeItem(square)
+#        self.squares.clear()
+#        self.layout: QHBoxLayout
+#        self.layout.removeWidget(self.helper)
+#        self.helper.deleteLater()

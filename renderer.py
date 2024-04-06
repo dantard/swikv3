@@ -278,12 +278,30 @@ class MuPDFRenderer(QLabel):
         for box in boxes:
             for line in box.get("lines", []):
                 for span in line.get("spans", []):
-                    a = Span()
+                    sp = Span()
                     x1, y1, x2, y2 = span["bbox"]
-                    a.text = span["text"]
-                    a.rect = QRectF(x1, y1, x2 - x1, y2 - y1)
-                    a.font = span["font"]
-                    spans.append(a)
+
+                    fitz_rect = fitz.Rect(x1, y1, x2, y2) * self.document[page_id].rotation_matrix
+                    x1, y1, x2, y2 = fitz_rect.x0, fitz_rect.y0, fitz_rect.x1, fitz_rect.y1
+
+                    sp.text = span["text"]
+                    sp.rect = QRectF(x1, y1, x2 - x1, y2 - y1)
+                    sp.font = span["font"]
+                    sp.size = span["size"]
+                    if "Slanted" in sp.text:
+                        print(span)
+                    '''
+                    a = span["ascender"]
+                    d = span["descender"]
+                    r = fitz.Rect(span["bbox"])
+                    o = fitz.Point(span["origin"])  # its y-value is the baseline
+                    r.y1 = o.y - span["size"] * d / (a - d)
+                    r.y0 = r.y1 - span["size"]
+                    sp.rect = QRectF(r.x0, r.y0, r.x1 - r.x0, r.y1 - r.y0)
+                    # r now is a rectangle of height 'fontsize'
+                    '''
+
+                    spans.append(sp)
         return spans
 
     def extract_words(self, page_id):
@@ -390,8 +408,11 @@ class MuPDFRenderer(QLabel):
         x1, y1 = self.document[page].cropbox.x1, self.document[page].cropbox.y1
         return QRectF(x0, y0, x1 - x0, y1 - y0)
 
-    def add_redact_annot(self, index, rect, color):
+    def add_redact_annot(self, index, rect, color, minimize=False):
         print("applying", index, rect, color)
+        if minimize:
+            # Create a 2 pixel high rect to avoid removing adjacent text
+            rect = QRectF(rect.x(), rect.center().y() - 1, rect.width(), 1)
         page = self.document[index]
         rect = utils.qrectf_to_fitz_rect(rect)
         color = utils.qcolor_to_fitz_color(QColor(color))
@@ -540,8 +561,8 @@ class MuPDFRenderer(QLabel):
         # tw.append((x,y + h), item.get_text(), font=font, fontsize=item.font().pointSizeF()*1.32)
         rect = utils.qrectf_and_pos_to_fitz_rect(item.get_rect_on_parent(), item.pos())
         rect.x1 = rect.x1 + 100
-        rect.y0 += item.font().pointSize() / 3.5
-        rect.y1 += item.font().pointSize() / 3.5
+        rect.y0 += item.font().pointSizeF() / 3.5
+        rect.y1 += item.font().pointSizeF() / 3.5
 
         tw.fill_textbox(rect, item.get_text(), font=font, fontsize=item.font().pointSizeF() * 1.34)  ## TODO: 1.325
         tw.write_text(self.document[index])

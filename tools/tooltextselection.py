@@ -74,7 +74,7 @@ class ToolTextSelection(Tool):
                 if word.get_rect_on_scene().intersects(selector.get_rect_on_scene()):
                     self.selected.append(word)
 
-            if len(self.selected) > 1:
+            if len(self.selected) > 0:
                 if self.selection_mode == ToolTextSelection.SELECTION_MODE_NATURAL:
                     # Clear the selection to restore order
                     begin, end = self.selected[0].seq, self.selected[-1].seq
@@ -150,11 +150,10 @@ class ToolTextSelection(Tool):
         else:
             anon, highlight, copy, replace, web_search = None, None, None, None, None
 
-        if  QGuiApplication.clipboard().text() != "":
+        if QGuiApplication.clipboard().text() != "":
             paste = menu.addAction("Paste")
         else:
             paste = None
-
 
         res = menu.exec(event.globalPos())
         if res is None:
@@ -164,7 +163,7 @@ class ToolTextSelection(Tool):
             for i, word in enumerate(text.split("\n")):
                 st = SwikText(word, page, self.font_manager, "fonts/Arial.ttf", 11)
                 on_scene = self.view.mapToScene(event.pos())
-                st.setPos(st.mapFromScene(on_scene) + QPointF(15*i, 15*i))
+                st.setPos(st.mapFromScene(on_scene) + QPointF(15 * i, 15 * i))
 
         elif res == web_search:
             text = str()

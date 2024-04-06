@@ -62,11 +62,11 @@ class SwikText(QGraphicsTextItem, Undoable):
         print("swiktexct")
         if event.key() == Qt.Key_Plus:
             font = self.font()
-            font.setPointSizeF(font.pointSizeF() + 1)
+            font.setPointSizeF(font.pointSizeF() + 0.1)
             self.setFont(font)
         elif event.key() == Qt.Key_Minus:
             font = self.font()
-            font.setPointSizeF(font.pointSizeF() - 1)
+            font.setPointSizeF(font.pointSizeF() - 0.1)
             self.setFont(font)
         super(SwikText, self).keyPressEvent(event)
 
@@ -152,7 +152,9 @@ class SwikText(QGraphicsTextItem, Undoable):
 
     def set_ttf_font(self, filename, size=11):
         document = self.document()
+        # TODO: This is a magic number, it should be calculated based on the font size
         document.setDocumentMargin(9 / 34 * size)
+        # document.setDocumentMargin(0)
         self.setDocument(document)
 
         self.ttf_filename = filename
@@ -170,16 +172,17 @@ class SwikText(QGraphicsTextItem, Undoable):
 
     def set_size(self, size):
         font = self.font()
-        font.setPointSize(size)
+        font.setPointSizeF(size)
         self.setFont(font)
         self.update()
 
     def get_font_size(self):
-        return self.font().pointSize()
+        return self.font().pointSizeF()
 
     # State management
     def get_full_state(self):
-        return {"text": self.toPlainText(), "font_ttf_filename": self.ttf_filename, "font_size": self.font().pointSize(), "text_color": self.defaultTextColor()}
+        return {"text": self.toPlainText(), "font_ttf_filename": self.ttf_filename, "font_size": self.get_font_size(),
+                "text_color": self.defaultTextColor()}
 
     def set_full_state(self, state):
         self.set_common_state(state)

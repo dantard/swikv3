@@ -22,7 +22,7 @@
         <file>icons/image.png</file>
         <file>icons/shuffle.png</file>
         <file>icons/text_cursor.png</file>
-        <!--<file>icons/replace_fonts.png</file>-->
+        <file>icons/replace_fonts.png</file>
         <file>icons/numerate.png</file>
 
     </qresource>
