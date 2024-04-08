@@ -51,10 +51,9 @@ class ToolMimicPDF(Tool):
                 if font is not None:
                     midpoint = self.rectangle_midpoint(span.rect)
                     a = SwikText(span.text, page, self.font_manager, font["path"], span.size * 0.75)
-
                     top_left = self.top_left_corner(midpoint, a.boundingRect().width(), a.boundingRect().height())
-
-                    a.setPos(top_left)
+                    a.setToolTip(font["nickname"])
+                    a.setPos(top_left)# + QPointF(span.size*0.01, 0))
                     self.view.pages[i].invalidate()
 
     def create_dialog(self, data):

@@ -1,8 +1,11 @@
-from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import pyqtSignal, QRectF, Qt, QTimer
+from PyQt5.QtGui import QColor
+from PyQt5.QtWidgets import QGraphicsRectItem, QGraphicsEllipseItem
 
 from GraphView import GraphView
 from LayoutManager import LayoutManager
 from annotations.highlight_annotation import HighlightAnnotation
+from annotations.hyperlink import InternalLink
 from annotations.redactannotation import RedactAnnotation
 from annotations.squareannotation import SquareAnnotation
 from bunch import NumerateBunch
@@ -104,6 +107,24 @@ class SwikGraphView(GraphView):
         super().page_processed(page)
         self.renderer.get_annotations(page)
         self.renderer.get_widgets(page)
+        links = self.renderer.get_links(page)
+        for link in links:
+            if type(link) == InternalLink:
+                link.signals.clicked.connect(self.link_clicked)
+                # self.pages[page.index].add_link(link[0], link[1], link[2])
+
+    def link_clicked(self, page, pos):
+        # self.move_to_page(page)
+        a = QGraphicsEllipseItem(QRectF(0, 0, 10, 10), self.pages[page])
+        a.setBrush(QColor(255, 0, 0, 255))
+        a.setPen(Qt.transparent)
+        a.setPos(pos)
+        self.centerOn(a)
+
+        def remove():
+            self.scene().removeItem(a)
+
+        QTimer.singleShot(2000, remove)
 
     def toggle_page_info(self):
         for page in self.pages.values():

@@ -159,6 +159,7 @@ class SwikText(QGraphicsTextItem, Undoable):
 
         self.ttf_filename = filename
         font = FontManager.get_qfont_from_ttf(filename, size)
+        #font.setStretch(100)
         self.setFont(font)
 
     def get_ttf_filename(self):

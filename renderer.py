@@ -1,12 +1,13 @@
 import os
 import shutil
+import sys
 import tempfile
 import time
 import traceback
 from os.path import exists
 
 from PyQt5 import QtCore
-from PyQt5.QtCore import Qt, QRunnable, QThreadPool, pyqtSignal, QMutex, QRectF, QRect, QByteArray, QBuffer, QIODevice
+from PyQt5.QtCore import Qt, QRunnable, QThreadPool, pyqtSignal, QMutex, QRectF, QRect, QByteArray, QBuffer, QIODevice, QUrl
 from PyQt5.QtGui import QPixmap, QImage, QBrush, QPen, QColor
 from PyQt5.QtWidgets import QLabel
 import fitz
@@ -15,6 +16,7 @@ from fitz import PDF_ENCRYPT_KEEP, PDF_WIDGET_TYPE_TEXT, PDF_WIDGET_TYPE_CHECKBO
 
 import utils
 from annotations.highlight_annotation import HighlightAnnotation
+from annotations.hyperlink import Link, ExternalLink, InternalLink
 from annotations.squareannotation import SquareAnnotation
 from swiktext import SwikText, SwikTextReplace
 from utils import fitz_rect_to_qrectf
@@ -745,3 +747,22 @@ class MuPDFRenderer(QLabel):
     def rotate_page(self, index, angle):
         self.document[index].set_rotation(angle)
         self.set_document(self.document, False)
+
+
+    def get_links(self, page):
+        self.page_links = self.document[page.index]
+        pdf_link = self.page_links.first_link
+        links = []
+        while pdf_link is not None:
+            rect = utils.fitz_rect_to_qrectf(pdf_link.rect)
+
+            if pdf_link.is_external:
+                link = ExternalLink(rect, page, pdf_link.uri)
+            else:
+                index, x, y = self.document.resolve_link(pdf_link.uri)
+                link = InternalLink(rect, page, (index, x, y))
+
+            links.append(link)
+            pdf_link = pdf_link.next
+
+        return links

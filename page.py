@@ -37,9 +37,7 @@ class Page(SimplePage):
         return self.words
 
     def itemChange(self, change, value):
-        print("item added", value)
         if change == QGraphicsItem.ItemChildAddedChange:
-            print("item added2", value)
             self.signals.item_added.emit(value)
         return super().itemChange(change, value)
 
