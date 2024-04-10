@@ -22,7 +22,7 @@ class ToolSquareAnnotation(Tool):
         pass
 
     def mouse_pressed(self, event):
-        page = self.view.get_page_at_pos(event.pos())
+        page = self.view.over_a_page(event)
 
         if page is None:
             return
@@ -42,7 +42,6 @@ class ToolSquareAnnotation(Tool):
         if self.rubberband is not None:
             self.rubberband.view_mouse_release_event(self.view, event)
             self.rubberband = None
-            self.finished.emit()
 
     def finish(self):
         self.view.setCursor(Qt.ArrowCursor)

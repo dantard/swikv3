@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import QProgressDialog, QApplication
 
 
 class Progressing:
-    def __init__(self, parent, max_value=0, title=None):
+    def __init__(self, parent, max_value=0, title=None, cancel=False):
         self.progress = QProgressDialog(title if title else "Processing", "Cancel", 0, max_value, parent)
         self.progress.setWindowModality(Qt.WindowModal)
         self.progress.setValue(0)
@@ -11,7 +11,8 @@ class Progressing:
         self.progress.show()
         QApplication.processEvents()
         self.func = None
-        self.progress.setCancelButton(None)
+        if not cancel:
+            self.progress.setCancelButton(None)
 
     def run(self):
         self.update(0)
@@ -26,6 +27,9 @@ class Progressing:
     def update(self, value):
         self.progress.setValue(int(value))
         QApplication.processEvents()
+        if self.progress.wasCanceled():
+            return False
+        return True
 
     def close(self):
         self.progress.setValue(self.progress.maximum())

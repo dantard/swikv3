@@ -16,7 +16,6 @@ class ColoreableRectItem(SwikRect):
 
     def apply_kwargs(self, **kwargs):
         super().apply_kwargs(**kwargs)
-        print("apply colore")
         self.setPen(kwargs.get("pen", QPen(Qt.black)))
         self.setBrush(kwargs.get("brush", QBrush(Qt.transparent)))
 

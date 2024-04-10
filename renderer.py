@@ -136,7 +136,6 @@ class MuPDFRenderer(QLabel):
 
             # self.document = fitz.open(file, password=password)
             self.set_document(self.document, True)
-            print("Opened", self.document.metadata)
             return self.OPEN_OK
 
         except:
@@ -146,13 +145,18 @@ class MuPDFRenderer(QLabel):
     def save_pdf(self, filename):
         self.sync_requested.emit()
 
+        # Notice: the remove_dynamic_elements is
+        # necessary to avoid them to be
+        # visualized when the image is refreshed
+        # Anyway, the page has already been saved
+
         if filename != self.get_filename():
             self.document.save(filename, encryption=PDF_ENCRYPT_KEEP, deflate=True, garbage=3)
-            # self.set_document(self.document, True)
+            self.remove_dynamic_elements()
             return 0
         elif self.document.can_save_incrementally():
             self.document.save(filename, encryption=PDF_ENCRYPT_KEEP, incremental=True, deflate=True)
-            # self.set_document(self.document, True)
+            self.remove_dynamic_elements()
             return 1
         else:
             tmp_dir = tempfile.gettempdir() + os.sep
@@ -166,8 +170,18 @@ class MuPDFRenderer(QLabel):
             if exists(temp_filename):
                 os.remove(temp_filename)
 
+            # We need to reopen the file
+            # because it has actually changed
             self.document = fitz.open(filename)
+            self.remove_dynamic_elements()
             return 2
+
+    def remove_dynamic_elements(self):
+        for page in self.document:
+            for annot in page.annots():  # type: fitz.Annot
+               page.delete_annot(annot)
+            for field in page.widgets():
+                page.delete_widget(field)
 
     def get_page_size(self, index):
         return self.document[index].rect[2], self.document[index].rect[3]
@@ -206,7 +220,6 @@ class MuPDFRenderer(QLabel):
         return self.request_image(index, ratio)
 
     def request_image(self, index, ratio, key=None, force=False):
-        print("force", force)
         if not self.images[index].loaded or self.images[index].ratio != ratio or force:
             self.load(index, ratio, key, force)
             return self.get_image(index, ratio), False  # self.get_blank(index, ratio), False
@@ -249,16 +262,16 @@ class MuPDFRenderer(QLabel):
                 image = self.renderer.images[self.index]
                 if self.force:
                     self.get_pixmap()
-                    print("get pixmap1")
+                    #print("get pixmap1")
                 elif image.ratio == self.ratio and image.loaded:
-                    print("As is ", self.index, self.key)
+                    #print("As is ", self.index, self.key)
                     self.renderer.image_ready.emit(self.index, self.ratio, self.key, image.image)
                 elif image.ratio > self.ratio and image.loaded:
-                    print("Scaling down ", self.index, self.key)
+                    #print("Scaling down ", self.index, self.key)
                     pixmap = image.image.scaledToWidth(int(image.w * ratio), QtCore.Qt.SmoothTransformation)
                     self.renderer.image_ready.emit(self.index, self.ratio, self.key, pixmap)
                 else:
-                    print("get pixmap2")
+                    #print("get pixmap2")
                     self.get_pixmap()
 
         loader = Loader(self, index, ratio, key, self.mutex[index])
@@ -410,8 +423,7 @@ class MuPDFRenderer(QLabel):
         x1, y1 = self.document[page].cropbox.x1, self.document[page].cropbox.y1
         return QRectF(x0, y0, x1 - x0, y1 - y0)
 
-    def add_redact_annot(self, index, rect, color, minimize=False):
-        print("applying", index, rect, color)
+    def add_redact_annot(self, index, rect, color, minimize=False, apply=True):
         if minimize:
             # Create a 2 pixel high rect to avoid removing adjacent text
             rect = QRectF(rect.x(), rect.center().y() - 1, rect.width(), 1)
@@ -420,6 +432,9 @@ class MuPDFRenderer(QLabel):
         color = utils.qcolor_to_fitz_color(QColor(color))
         page.add_redact_annot(rect, "", fill=color)
         page.apply_redactions()
+
+    def apply_redactions(self, index):
+        self.document[index].apply_redactions()
 
     def add_redact_annot2(self, word, font, size, color):
         print("applying", word.page_id, word.get_rect_on_parent(), color)
@@ -480,7 +495,7 @@ class MuPDFRenderer(QLabel):
                 self.document[page.index].delete_annot(annot)
             elif annot.type[0] == PDF_ANNOT_HIGHLIGHT:
                 color = utils.fitz_color_to_qcolor(annot.colors["stroke"], annot.opacity)
-                print(annot.colors, annot.opacity)
+                #print(annot.colors, annot.opacity)
                 swik_annot = HighlightAnnotation(color, page)
                 swik_annot.set_content(annot.info["content"])
                 swik_annot.setRect(QRectF(0, 0, annot.rect[2] - annot.rect[0], annot.rect[3] - annot.rect[1]))
@@ -493,8 +508,9 @@ class MuPDFRenderer(QLabel):
                         rect = rect * self.document[page.index].rotation_matrix
                         quad = utils.fitz_rect_to_qrectf(rect)
                         swik_annot.add_quad(quad)
-                self.document[page.index].delete_annot(annot)
                 annots.append(swik_annot)
+                self.document[page.index].delete_annot(annot)
+
 
             '''
             elif a.type[0] == fitz.PDF_ANNOT_HIGHLIGHT:

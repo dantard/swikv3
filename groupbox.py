@@ -13,9 +13,10 @@ class GroupBox:
     def __init__(self, common_callback=None):
         self.actions = []
         self.group = QButtonGroup()
-        self.default = None
+        self.default_action = None
         self.toolbar2 = QToolBar()
         self.param = None
+        self.current = None
         self.common_callback = common_callback
 
     def reclick(self):
@@ -32,6 +33,16 @@ class GroupBox:
         self.group.buttonClicked.connect(callback)
 
     def local_callback(self, action):
+        # This is to return to default button if
+        # the button already checked if pressed
+        if self.default_action and action.button == self.current:
+            action = self.default_action
+            action.button.blockSignals(True)
+            action.button.setChecked(True)
+            action.button.blockSignals(False)
+        self.current = action.button
+
+        # Here we call the proper function
         if callable(action.param):
             action.param()
         elif self.common_callback is not None:
@@ -54,7 +65,7 @@ class GroupBox:
         btn.setToolTip(text)
         if default:
             btn.setChecked(True)
-            self.default = btn
+            self.default_action = action
         self.actions.append(action)
         self.group.addButton(btn)
         return btn
@@ -63,7 +74,7 @@ class GroupBox:
         self.actions[value].click()
 
     def reset(self):
-        self.default.click()
+        self.default_action.button.click()
 
     def get_selected(self):
         for i, actions in enumerate(self.actions):

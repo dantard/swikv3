@@ -176,11 +176,6 @@ class FontPicker(QWidget):
         self.items = []
         self.list_widget.itemSelectionChanged.connect(self.change_font)
         self.list_widget.setStyleSheet("QTreeView::background-color{background-color:rgb(255,255,255);}")
-        QTimer.singleShot(50, self.show_system_fonts)
-
-    def show_system_fonts(self):
-        self.pg = Progressing(self, 0, "Loading System Fonts")
-        self.pg.start(lambda: self.add_fonts_section("System", FontManager.get_system_fonts()))
 
     def resizeEvent(self, a0: QtGui.QResizeEvent) -> None:
         super().resizeEvent(a0)

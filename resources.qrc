@@ -24,6 +24,7 @@
         <file>icons/text_cursor.png</file>
         <file>icons/replace_fonts.png</file>
         <file>icons/numerate.png</file>
+        <file>icons/mimic.png</file>
 
     </qresource>
 </RCC>

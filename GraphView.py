@@ -27,6 +27,7 @@ class GraphView(QGraphicsView):
 
     def __init__(self, manager, renderer, scene, page=SimplePage, mode=LayoutManager.MODE_VERTICAL_MULTIPAGE):
         super().__init__()
+        self.on_document_ready = []
         self.previous_state = 0, 0, None
         self.page_object = page
         self.scrolled = pyqtSignal(QWheelEvent)
@@ -61,6 +62,10 @@ class GraphView(QGraphicsView):
     #        self.qtimer.timeout.connect(lambda: print(self.tpe._work_queue.qsize()))
     #        self.qtimer.start(10)
     # ## CHANGE CONFIG
+
+    def append_on_document_ready(self, func, value):
+        self.on_document_ready.append((func, value))
+
     def set_mode(self, mode, force=False):
         if mode != self.mode or force:
             self.mode = mode
@@ -106,8 +111,10 @@ class GraphView(QGraphicsView):
 
     def fit_width(self):
         for page in self.pages.values():
-            page.fit_width()
+             page.fit_width()
         self.fully_update_layout()
+
+
 
     def is_fitting_width(self):
         return self.fitting_width
@@ -175,15 +182,23 @@ class GraphView(QGraphicsView):
         if self.pages_ready == self.renderer.get_num_of_pages():
             h, v, name = self.previous_state
             # print("emitting document ready", h, v)
+
             if name == self.renderer.get_filename():
                 self.horizontalScrollBar().setValue(h)
                 self.verticalScrollBar().setValue(v)
+
+            for func, value in self.on_document_ready:
+                func(value)
+
+            self.on_document_ready.clear()
+
+            # Document is ready
             self.document_ready.emit()
 
         self.pages_ready_mtx.unlock()
 
     def process(self):
-        print("PROCESSING*******************", self.pages_ready, type(self))
+        # print("PROCESSING*******************", self.pages_ready, type(self))
 
         # Cancel all the threads that may
         # still be running and creating pages

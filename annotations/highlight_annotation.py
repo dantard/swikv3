@@ -77,7 +77,6 @@ class HighlightAnnotation(QGraphicsRectItem, Undoable):
         pos = self.mapFromParent(QPointF(x, y))
         quad.setPos(pos)
         quad.setZValue(1)
-        print("Quad added")
         self.quads.append(quad)
 
     def get_quads(self):
@@ -86,7 +85,6 @@ class HighlightAnnotation(QGraphicsRectItem, Undoable):
             quad_on_annotation = QRectF(quad.pos().x(), quad.pos().y(), quad.rect().width(), quad.rect().height())
             quad_on_page = self.mapRectToParent(quad_on_annotation)
             quads_on_page.append(quad_on_page)
-            print(quad_on_page)
         return quads_on_page
 
     def quad_context_menu(self, event):

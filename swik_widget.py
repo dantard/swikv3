@@ -60,6 +60,7 @@ class SwikWidget(QWidget):
         self.renderer = MuPDFRenderer()
         self.renderer.document_changed.connect(self.document_changed)
 
+
         self.scene = Scene()
         self.manager = Manager(self.renderer, self.config)
         self.view = SwikGraphView(self.manager, self.renderer, self.scene, page=Page,
@@ -68,6 +69,7 @@ class SwikWidget(QWidget):
         self.view.setRenderHint(QPainter.TextAntialiasing)
         self.view.set_natural_hscroll(self.config.general.get('natural_hscroll'))
         self.view.drop_event.connect(self.drop_event_received)
+        self.view.document_ready.connect(self.document_ready)
 
         self.miniature_view = MiniatureView(self.manager, self.renderer, QGraphicsScene())
         self.miniature_view.setRenderHint(QPainter.Antialiasing)
@@ -139,7 +141,7 @@ class SwikWidget(QWidget):
         self.image_sign_btn = self.mode_group.add(tool_sigi, icon=":/icons/signature.png", text="Insert Signature", separator=True)
         self.mode_group.add(tool_rear, icon=":/icons/shuffle.png", text="Shuffle Pages")
         self.mode_group.add(tool_font, icon=":/icons/replace_fonts.png", text="Replace Fonts")
-        self.mode_group.add(tool_mimi, icon=":/icons/replace_fonts.png", text="Mimic PDF")
+        self.mode_group.add(tool_mimi, icon=":/icons/mimic.png", text="Mimic PDF")
         self.mode_group.add(tool_nume, icon=":/icons/numerate.png", text="Replace Fonts")
         # self.mode_group.append(self.toolbar)
 
@@ -174,6 +176,18 @@ class SwikWidget(QWidget):
         self.splitter.addWidget(helper)
         self.set_interactable(False)
         self.preferences_changed()
+
+    def set_ratio(self, ratio):
+        self.view.set_ratio(ratio, True)
+
+    def set_page(self, page):
+        self.view.set_page(page)
+
+
+    def document_ready(self):
+        pass
+
+
 
     def drop_event_received(self, vector):
         for file in vector:
@@ -278,7 +292,7 @@ class SwikWidget(QWidget):
         pass
 
     def document_changed(self):
-        self.font_manager.update_document_fonts()
+        self.font_manager.clear_document_fonts()
 
         # Update the tab name
         my_index = self.tabw.indexOf(self)
@@ -287,6 +301,7 @@ class SwikWidget(QWidget):
         text = font_metrics.elidedText(text, Qt.ElideRight, 200)
         self.tabw.setTabText(my_index, text)
         self.tabw.setTabToolTip(my_index, self.renderer.get_filename())
+        self.mode_group.reset()
 
     def get_filename(self):
         return self.renderer.get_filename()
@@ -331,6 +346,10 @@ class SwikWidget(QWidget):
                 self.config.private.set('last', self.renderer.get_filename())
                 self.config.update_recent(self.renderer.get_filename())
                 self.config.flush()
+                if self.config.general.get('fit_width_on_open'):
+                    ratio = self.view.pages[0].compute_fit_width()
+                    self.view.set_ratio(ratio, True)
+
             else:
                 QMessageBox.warning(self, "Error", "Error opening file")
 

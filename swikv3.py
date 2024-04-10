@@ -5,7 +5,7 @@ import subprocess
 import sys
 import pyclip
 from PyQt5 import QtGui
-from PyQt5.QtCore import QEvent
+from PyQt5.QtCore import QEvent, QTimer
 from PyQt5.QtGui import QGuiApplication
 from PyQt5.QtNetwork import QUdpSocket, QHostAddress
 from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog
@@ -105,14 +105,27 @@ class MainWindow(QMainWindow):
         self.config.apply_window_config(self)
         self.update_interaction_status()
 
-        # Open last files if required
-        if self.config.general.get("open_last"):
-            tabs = self.config.get_tabs()
-            if len(tabs) > 0:
-                for tab in tabs:
-                    self.create_tab(tab)
-                self.tab_widget.setCurrentIndex(0)
-                self.tab_changed(0)
+        def open_delayed():
+
+            # Open last files if required. This is done
+            # with a delay to allow the window to create
+            # tabs first and ALSO to show the window if
+            # some files has a password dialog to show
+
+            if self.config.general.get("open_last"):
+                tabs, zoom, pages = self.config.get_tabs()
+                if len(tabs) > 0:
+                    for tab, zoom, page in zip(tabs, zoom, pages):
+                        swik_widget: SwikWidget = self.create_tab(tab)
+                        swik_widget.view.append_on_document_ready(swik_widget.view.set_ratio, zoom)
+                        swik_widget.view.append_on_document_ready(swik_widget.view.set_page, page)
+                        swik_widget.miniature_view.append_on_document_ready(swik_widget.miniature_view.set_page, page)
+
+                    self.tab_widget.setCurrentIndex(0)
+                    self.update_title()
+            self.show()
+
+        QTimer.singleShot(100, open_delayed)
 
     def tab_menu(self, action, code, data, widget):
         print("tab_menu", action, code, data, widget)
@@ -168,6 +181,7 @@ class MainWindow(QMainWindow):
         if filename is not None:
             widget.open_file(filename)
             self.update_interaction_status()
+
         return widget
 
     def open_requested(self, filename, page, zoom):
@@ -183,13 +197,15 @@ class MainWindow(QMainWindow):
         # self.setWindowTitle("Swik" + (" - " + filename) if filename is not None else "")
 
     def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
-        tabs = []
+        tabs, zoom, page = [], [], []
         for index in range(self.tab_widget.count()):
             swik_widget = self.tab_widget.widget(index)
             if (filename := swik_widget.get_filename()) is not None:
                 tabs.append(filename)
-        print("tabs", tabs)
-        self.config.set_tabs(tabs)
+                zoom.append(swik_widget.view.get_ratio())
+                page.append(swik_widget.view.get_page())
+
+        self.config.set_tabs(tabs, zoom, page)
         self.config.push_window_config(self)
         self.config.flush()
         super().closeEvent(a0)
@@ -263,7 +279,7 @@ def main():
             sys.exit(0)
 
     window = MainWindow()
-    window.show()
+
 
     # app.installEventFilter(window)
 

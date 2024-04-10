@@ -55,6 +55,8 @@ class ToolInsertImage(Tool):
         filename, _ = QFileDialog.getOpenFileName(None, "Select image", "", "Image files (*.png *.jpg *.jpeg *.bmp *.gif *.tiff *.tif)")
         if filename:
             self.image = QImage(filename)
+        else:
+            self.finished.emit()
 
     def mouse_pressed(self, event):
         page = self.view.get_page_at_pos(event.pos())

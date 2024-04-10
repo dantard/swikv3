@@ -20,11 +20,28 @@ class ToolReplaceFonts(Tool):
         self.squares = []
 
     def init(self):
+        v_layout = QVBoxLayout()
+        # layout.addLayout(v_layout)
+
+        self.treeWidget = QTreeWidget()
+        self.treeWidget.setHeaderLabels(["Items"])
+        self.treeWidget.setColumnCount(1)
+        pb = QPushButton("Replace Fonts")
+        pb.clicked.connect(self.do_replace)
+        v_layout.addWidget(self.treeWidget)
+        v_layout.addWidget(pb)
+        self.helper = QWidget()
+        self.helper.setLayout(v_layout)
+        self.helper.setMaximumWidth(200)
+        self.layout.insertWidget(0, self.helper)
+
         colors = [Qt.red, Qt.green, Qt.blue, Qt.yellow, Qt.magenta, Qt.cyan, Qt.darkRed, Qt.darkGreen,
                   Qt.darkBlue, Qt.darkYellow, Qt.darkMagenta, Qt.darkCyan, Qt.gray, Qt.darkGray, Qt.lightGray]
         fonts = list()
-
+        self.progressing = Progressing(self.view, self.view.get_page_count(), "Generating PDF", cancel=True)
         for i in range(0, self.view.get_page_count()):
+            if not self.progressing.update(i+1):
+                break
             spans = self.renderer.extract_spans(i)
             page = self.view.pages[i]
             for span in spans:
@@ -38,15 +55,10 @@ class ToolReplaceFonts(Tool):
                 color.setAlphaF(0.5)
                 a.setBrush(color)
         data = repl_fontnames(self.renderer.get_filename())
-        self.create_dialog(data)
+        self.fill_dialog(data)
 
-    def create_dialog(self, data):
-        v_layout = QVBoxLayout()
-        # layout.addLayout(v_layout)
+    def fill_dialog(self, data):
 
-        self.treeWidget = QTreeWidget()
-        self.treeWidget.setHeaderLabels(["Items"])
-        self.treeWidget.setColumnCount(1)
         #        self.treeWidget.itemExpanded.connect(self.resize_columns)
         for value in data:
             item = QTreeWidgetItem()
@@ -77,14 +89,7 @@ class ToolReplaceFonts(Tool):
             self.treeWidget.setItemWidget(item3, 0, combobox)
             self.treeWidget.setMaximumWidth(200)
 
-        pb = QPushButton("Replace Fonts")
-        pb.clicked.connect(self.do_replace)
-        v_layout.addWidget(self.treeWidget)
-        v_layout.addWidget(pb)
-        self.helper = QWidget()
-        self.helper.setLayout(v_layout)
-        self.helper.setMaximumWidth(200)
-        self.layout.insertWidget(0, self.helper)
+
 
     def selected(self, text):
         combobox = self.sender()

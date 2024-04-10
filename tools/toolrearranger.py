@@ -41,6 +41,7 @@ class ToolRearrange(Tool, Undoable):
         self.insert_at_page = None
         self.state = None
         self.orig_ratio = None
+        self.rb = None
         self.views = [view] + other_views
 
     def init(self):
@@ -146,7 +147,7 @@ class ToolRearrange(Tool, Undoable):
 
                 self.renderer.rearrange_pages(ids, False)
 
-                self.notify_change(Action.PAGE_ORDER_CHANGED, list(range(len(self.view.pages))), ids, self.view.scene())
+                #self.notify_change(Action.PAGE_ORDER_CHANGED, list(range(len(self.view.pages))), ids, self.view.scene())
                 self.operation_done()
         elif self.state == self.STATE_RECT_SELECTION:
             self.view.scene().removeItem(self.rb)

@@ -1,3 +1,5 @@
+import sys
+
 from PyQt5.QtCore import Qt, pyqtSignal, QPointF
 from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QGraphicsRectItem, QTreeWidget, QTreeWidgetItem, QComboBox, QHBoxLayout, QVBoxLayout, QPushButton, QWidget
@@ -42,70 +44,34 @@ class ToolMimicPDF(Tool):
         return midpoint
 
     def init(self):
-        for i in range(0, self.view.get_page_count()):
-            spans = self.renderer.extract_spans(i)
-            page = self.view.pages[i]
-            for span in spans:
-                font = self.font_manager.get_font_info_from_nickname(span.font)
-                # self.renderer.add_redact_annot(page.index, span.rect, Qt.white, True)
-                if font is not None:
+        self.progressing = Progressing(self.view, self.view.get_page_count(), "Generating PDF", cancel=True)
+
+        def process():
+            for i in range(0, self.view.get_page_count()):
+                if not self.progressing.update(i):
+                    break
+                spans = self.renderer.extract_spans(i)
+                page = self.view.pages[i]
+                for span in spans:
+                    font = self.font_manager.get_font_info_from_nickname(span.font)
+                    self.renderer.add_redact_annot(page.index, span.rect, Qt.white, minimize=True, apply=False)
+                    if font is None:
+                        font = self.font_manager.get_font_info_from_nickname("helv")
+                        color = QColor(255, 0, 0)
+                    else:
+                        color = QColor(0, 0, 0)
+
+                    swik_text = SwikText(span.text, page, self.font_manager,font["path"], span.size * 0.75)
                     midpoint = self.rectangle_midpoint(span.rect)
-                    a = SwikText(span.text, page, self.font_manager, font["path"], span.size * 0.75)
-                    top_left = self.top_left_corner(midpoint, a.boundingRect().width(), a.boundingRect().height())
-                    a.setToolTip(font["nickname"])
-                    a.setPos(top_left)# + QPointF(span.size*0.01, 0))
-                    self.view.pages[i].invalidate()
+                    top_left = self.top_left_corner(midpoint, swik_text.boundingRect().width(), swik_text.boundingRect().height())
+                    swik_text.setToolTip(font["nickname"])
+                    swik_text.setPos(top_left)# + QPointF(span.size*0.01, 0))
+                    swik_text.setDefaultTextColor(color)
+                self.view.pages[i].invalidate()
+                self.renderer.apply_redactions(i)
 
-    def create_dialog(self, data):
-        v_layout = QVBoxLayout()
-        # layout.addLayout(v_layout)
+            self.finished.emit()
 
-        self.treeWidget = QTreeWidget()
-        self.treeWidget.setHeaderLabels(["Items"])
-        self.treeWidget.setColumnCount(1)
-        #        self.treeWidget.itemExpanded.connect(self.resize_columns)
-        for value in data:
-            item = QTreeWidgetItem()
+        self.progressing.start(process)
 
-            old_fonts = str()
-            for old_font in value.get("oldfont"):
-                old_fonts += old_font + ", "
-            old_fonts = old_fonts[:-2]
-            item.setText(0, old_fonts)
-            item.setToolTip(0, old_fonts)
 
-            item2 = QTreeWidgetItem()
-            item2.setText(0, value.get("info"))
-            item2.setToolTip(0, value.get("info"))
-            item.addChild(item2)
-
-            combobox = QComboBox()
-            combobox.addItem("Keep")
-            combobox.currentTextChanged.connect(self.selected)
-            combobox.item = item
-            for font in self.font_manager.get_all_available_fonts():
-                combobox.addItem(font.get("full_name"))
-
-            item3 = QTreeWidgetItem()
-            item.addChild(item3)
-
-            self.treeWidget.invisibleRootItem().addChild(item)
-            self.treeWidget.setItemWidget(item3, 0, combobox)
-            self.treeWidget.setMaximumWidth(200)
-
-        pb = QPushButton("Replace Fonts")
-        pb.clicked.connect(self.do_replace)
-        v_layout.addWidget(self.treeWidget)
-        v_layout.addWidget(pb)
-        self.helper = QWidget()
-        self.helper.setLayout(v_layout)
-        self.helper.setMaximumWidth(200)
-        self.layout.insertWidget(0, self.helper)
-
-#    def finish(self):
-#        for square in self.squares:
-#            self.view.scene().removeItem(square)
-#        self.squares.clear()
-#        self.layout: QHBoxLayout
-#        self.layout.removeWidget(self.helper)
-#        self.helper.deleteLater()

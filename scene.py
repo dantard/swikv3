@@ -42,7 +42,7 @@ class Scene(QGraphicsScene):
         self.tracker().item_changed(action)
 
     def mousePressEvent(self, event: 'QGraphicsSceneMouseEvent') -> None:
-        print("mouse press on scene", event.scenePos())
+        # print("mouse press on scene", event.scenePos())
         super(Scene, self).mousePressEvent(event)
 
     def selection_changed(self):
@@ -85,7 +85,9 @@ class Scene(QGraphicsScene):
                 x, y = 0, 0
 
             for item in items:
-                item.moveBy(x * val, y * val)
+                pre = item.pos()
+                item.setPos(item.pos().x() + x * val,item.pos().y() +  y * val)
+                self.notify_position_change(item, pre, item.pos())
         elif event.key() == QtCore.Qt.Key_Delete:
             self.delete_objects()
         elif event.key() == QtCore.Qt.Key_Backspace:

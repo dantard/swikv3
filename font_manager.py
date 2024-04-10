@@ -54,91 +54,62 @@ class FontManager(QObject):
             base14['path'] = '@base14/' + base14['nickname']
             base14['italic'] = base14['nickname'].endswith('Oblique') or base14['nickname'].endswith('Italic')
 
-    def update_document_fonts(self):
+
+    def clear_document_fonts(self):
         self.document_fonts.clear()
         if self.font_dir is not None:
             shutil.rmtree(self.font_dir, ignore_errors=True)
+        self.font_dir = None
 
-        self.font_dir = tempfile.mkdtemp()
-        print("-----------font dir: ", self.font_dir)
-        self.renderer.save_fonts(self.font_dir)
-        fonts = self.get_fonts([self.font_dir])
-
-        print("-----------Fonts: ", fonts)
-        for f in fonts:
-            self.document_fonts.append(f)
+    def update_document_fonts(self):
+        if len(self.document_fonts) == 0:
+            self.font_dir = tempfile.mkdtemp()
+            self.renderer.save_fonts(self.font_dir)
+            fonts = self.get_fonts([self.font_dir])
+            for f in fonts:
+                self.document_fonts.append(f)
 
     @staticmethod
     def get_system_fonts():
+        FontManager.update_system_fonts()
         return FontManager.system_fonts
 
     def get_document_fonts(self):
-        fonts = self.document_fonts
-        return fonts
+        self.update_document_fonts()
+        return self.document_fonts
+
 
     def get_fully_embedded_fonts(self):
+        self.update_document_fonts()
         return [f for f in self.document_fonts if not f['subset']]
 
     def get_subset_fonts(self):
+        self.update_document_fonts()
         return [f for f in self.document_fonts if f['subset']]
 
     def get_all_available_fonts(self):
         return FontManager.base14_fonts + FontManager.swik_fonts + FontManager.system_fonts
 
     def get_font_info_from_nickname(self, name):
-        for f in self.document_fonts:
-            if f['nickname'] == name:
-                return f
+        FontManager.update_system_fonts()
+        FontManager.update_swik_fonts()
+        self.update_document_fonts()
 
-        for f in FontManager.base14_fonts:
-            if f['nickname'] == name:
-                return f
-
-        for f in FontManager.swik_fonts:
-            if f['nickname'] == name:
-                return f
-
-        for f in FontManager.system_fonts:
-            # print("System font: ", f['nickname'])
+        for f in self.document_fonts + FontManager.base14_fonts + FontManager.swik_fonts + FontManager.system_fonts:
             if f['nickname'] == name:
                 return f
 
         return None
 
     def get_filename_from_nickname(self, name):
-        for f in self.document_fonts:
-            if f['nickname'] == name:
-                return f['path']
-
-        for f in FontManager.base14_fonts:
-            if f['nickname'] == name:
-                return f['path']
-
-        for f in FontManager.swik_fonts:
-            if f['nickname'] == name:
-                return f['path']
-
-        for f in FontManager.system_fonts:
+        for f in self.document_fonts + FontManager.base14_fonts + FontManager.swik_fonts + FontManager.system_fonts:
             if f['nickname'] == name:
                 return f['path']
 
         return None
 
     def get_font_info_from_full_name(self, name):
-        for f in self.document_fonts:
-            if f['full_name'] == name:
-                return f
-
-        for f in FontManager.base14_fonts:
-            if f['full_name'] == name:
-                return f
-
-        for f in FontManager.swik_fonts:
-            if f['full_name'] == name:
-                return f
-
-        for f in FontManager.system_fonts:
-            # print("System font: ", f['nickname'])
+        for f in self.document_fonts + FontManager.base14_fonts + FontManager.swik_fonts + FontManager.system_fonts:
             if f['full_name'] == name:
                 return f
 
@@ -146,10 +117,12 @@ class FontManager(QObject):
 
     @staticmethod
     def update_swik_fonts():
-        FontManager.swik_fonts = FontManager.get_fonts("fonts")
+        if len(FontManager.swik_fonts) == 0:
+            FontManager.swik_fonts = FontManager.get_fonts("fonts")
 
     @staticmethod
     def get_swik_fonts():
+        FontManager.update_swik_fonts()
         return FontManager.swik_fonts
 
     @staticmethod
@@ -157,9 +130,12 @@ class FontManager(QObject):
         return FontManager.base14_fonts
 
     @staticmethod
-    def update_system_fonts():
-        print("Starting thread")
-        threading.Thread(target=FontManager.update_system_fonts_thread).start()
+    def update_system_fonts(force=False, threaded=False):
+        if len(FontManager.system_fonts) == 0 or force:
+            if threaded:
+                threading.Thread(target=FontManager.update_system_fonts_thread).start()
+            else:
+                FontManager.system_fonts = FontManager.get_system_font_list()
 
     @staticmethod
     def update_system_fonts_thread():
@@ -185,6 +161,7 @@ class FontManager(QObject):
             family_name = font['name'].getDebugName(1)
             full_name = font['name'].getDebugName(4)
             nickname = font['name'].getDebugName(6)
+            nickname = nickname if not '+' in nickname else nickname.split('+')[1]
             modifiers = str(font['name'].getDebugName(2))
             modifiers = modifiers.lower()
             if font.has_key('OS/2'):
@@ -224,7 +201,6 @@ class FontManager(QObject):
 
     @staticmethod
     def get_fonts(font_paths):
-        print("get fonts, ", font_paths)
         fonts = {}
         if type(font_paths) is not list:
             font_paths = [font_paths]
@@ -244,6 +220,7 @@ class FontManager(QObject):
                             # traceback.print_exc()
                             # print("Error reading font: ", path)
         fonts = list(fonts.values())
+        fonts = [f for f in fonts if f['full_name'] is not None]
         fonts.sort(key=lambda x: x['full_name'])
         return fonts
 

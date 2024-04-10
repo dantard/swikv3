@@ -32,6 +32,8 @@ class SwikConfig(EasyConfig):
         self.general.addCheckbox("open_last", pretty="Reopen Last opened", default=True)
         self.general.addCombobox("lateral_bar_position", pretty="Lateral Bar Position", items=["Left", "Right", "Bottom", "Top"])
         self.general.addCheckbox("natural_hscroll", pretty="Natural H-Scroll")
+        self.general.addCheckbox("fit_width_on_open", pretty="Fit Width on Open")
+
         self.open_other_pdf_in = self.general.addCombobox("open_other_pdf_in", pretty="When opening other PDFs", items=["Same Window", "Other Window", "Ask"])
         self.flatten_before_sign = self.general.addCheckbox("flatten_before_sign", pretty="Flatten before signing", default=True)
 
@@ -60,6 +62,8 @@ class SwikConfig(EasyConfig):
         self.private.addDict("print_options")
 
         self.tabs = self.private.addList("tabs")
+        self.zoom = self.private.addList("zoom")
+        self.pages = self.private.addList("pages")
 
     def flush(self):
         self.save(self.base_dir + "swikV3.yaml")
@@ -72,13 +76,15 @@ class SwikConfig(EasyConfig):
 
     def get_tabs(self, index=None):
         if index is not None:
-            res = self.tabs.get_value()[index]
+            tab, zoom, page = self.tabs.get_value()[index]
         else:
-            res = self.tabs.get_value()
-        return res if res is not None else []
+            tab, zoom, page = self.tabs.get_value(), self.zoom.get_value(), self.pages.get_value()
+        return tab, zoom, page
 
-    def set_tabs(self, tabs):
+    def set_tabs(self, tabs, zoom, page):
         self.tabs.set_value(tabs)
+        self.zoom.set_value(zoom)
+        self.pages.set_value(page)
 
     def push_window_config(self, window):
         # self.set("Ratio", view.get_ratio())

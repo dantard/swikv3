@@ -126,6 +126,11 @@ class SimplePage(QGraphicsRectItem):
         width = self.view.width() - 50
         fit_ratio = width / self.get_orig_width()
         self.update_image(fit_ratio)
+        return fit_ratio
+
+    def compute_fit_width(self):
+        width = self.view.width() - 50
+        return width / self.get_orig_width()
 
     def get_scaling_ratio(self):
         return self.transform().m11()
