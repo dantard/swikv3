@@ -4,7 +4,7 @@ import sys
 
 import fitz
 import psutil
-from PyQt5.QtCore import QObject, pyqtSignal, QRectF, QRect, Qt, QStandardPaths
+from PyQt5.QtCore import QObject, pyqtSignal, QRectF, QRect, Qt, QStandardPaths, QTimer
 from PyQt5.QtGui import QImage, QColor, QFont, QFontDatabase
 from PyQt5.QtWidgets import QGraphicsRectItem, QGraphicsItem
 from fontTools import ttLib
@@ -112,3 +112,6 @@ def are_other_instances_running():
 
 def update_value(method, dictionary, key):
     method(dictionary[key] if key in dictionary else None)
+
+def delayed(delay, func, *args):
+    QTimer.singleShot(delay, lambda: func(*args))

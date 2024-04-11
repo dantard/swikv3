@@ -2,6 +2,7 @@ from PyQt5 import QtGui, QtCore
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QGraphicsView
 
+import utils
 from GraphView import GraphView
 from LayoutManager import LayoutManager
 from miniature_page import MiniaturePage
@@ -21,6 +22,7 @@ class MiniatureView(GraphView):
         if self.pages.get(index) is not None:
             self.pages[index].set_highlighted(True)
             self.centerOn(self.pages[index])
+        #utils.delayed(100, self.centerOn, self.pages[index])
 
     def clear_selection(self):
         for p in self.pages.values():

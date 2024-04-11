@@ -13,6 +13,7 @@ class MiniaturePage(SimplePage):
     def __init__(self, index, view, manager, renderer, ratio):
         super().__init__(index, view, manager, renderer, ratio)
         self.background = None
+        self.box.setBrush(QBrush(QColor(255, 255, 0, 30)))
 
     def get_sep(self):
         self.number.setPlainText(str(self.index + 1))
@@ -30,7 +31,9 @@ class MiniaturePage(SimplePage):
         super().connect_signals()
 
         self.background = QGraphicsRectItem(self)
-        self.background.setBrush(QBrush(QColor(180, 180, 180, 255)))
+        self.background.setBrush(QBrush(QColor(180, 180, 180, 30)))
+        self.box.setBrush(QBrush(QColor(255, 255, 0, 30)))
+
         # self.background.setPen(QColor(180,180,180,255))
         self.background.setRect(QRectF(0, 0, self.boundingRect().width(), 55))
         self.background.setPos(0, self.boundingRect().height() + 10)
@@ -47,9 +50,14 @@ class MiniaturePage(SimplePage):
 
     def set_highlighted(self, value):
         if value:
-            self.box.setBrush(QBrush(QColor(255, 0, 0, 30)))
+            self.box.setBrush(QBrush(QColor(255, 255, 0, 30)))
             self.background.setBrush(QBrush(QColor(255, 180, 180, 255)))
         else:
             self.background.setBrush(QBrush(QColor(180, 180, 180, 255)))
 
         self.box.setVisible(value)
+
+    def paint_accessories(self):
+        # Selection Box
+        self.box.setRect(QRectF(-5, -5, self.get_scaled_width() + 10, self.get_scaled_height() + 10))
+        self.box.setBrush(QBrush(QColor(255, 255, 0, 30)))

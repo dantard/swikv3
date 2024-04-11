@@ -2,6 +2,7 @@ from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtWidgets import QFormLayout, QDialogButtonBox, QDialog, QLabel, QVBoxLayout, QGroupBox, QLineEdit, QCheckBox, QTreeWidget, QTreeWidgetItem, \
     QComboBox
 
+import utils
 from colorwidget import FontPicker, Color
 from dict_editor import DictTreeWidget
 from font_manager import FontManager
@@ -79,13 +80,14 @@ class PasswordDialog(QDialog):
 
 
 class FontAndColorDialog(ComposableDialog):
-    def __init__(self, font_manager, default, font_size, text_color):
+    def __init__(self, font_manager, default_font, font_size, text_color):
         super().__init__()
         self.font_manager:FontManager = font_manager
         self.fp = self.add_row("Font", FontPicker())
         self.add_row("Text Color", Color(text_color))
-        self.set_ok_enabled(default is not None)
-        QTimer.singleShot(100, lambda: self.update_fonts(default, font_size))
+        self.set_ok_enabled(default_font is not None)
+        self.progressing = None
+        utils.delayed(100, self.update_fonts, default_font, font_size)
 
     def update_fonts(self, default, font_size):
         def process():

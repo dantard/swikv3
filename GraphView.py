@@ -7,6 +7,7 @@ from PyQt5.QtCore import pyqtSignal, QCoreApplication, Qt, QRectF, QEvent, QPoin
 from PyQt5.QtGui import QWheelEvent, QPainter, QTransform, QCursor
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsRectItem, QApplication, QGraphicsItem, QLabel
 
+import utils
 # import EnhancedPage
 from LayoutManager import LayoutManager
 from simplepage import SimplePage
@@ -63,8 +64,9 @@ class GraphView(QGraphicsView):
     #        self.qtimer.start(10)
     # ## CHANGE CONFIG
 
-    def append_on_document_ready(self, func, value):
-        self.on_document_ready.append((func, value))
+    def append_on_document_ready(self, delay, func, *args):
+        print("append", (delay, func, *args))
+        self.on_document_ready.append((delay, func, args))
 
     def set_mode(self, mode, force=False):
         if mode != self.mode or force:
@@ -175,20 +177,22 @@ class GraphView(QGraphicsView):
         self.pages_ready_mtx.lock()
         # print("Done creating page", page.index, self.pages_ready)
         self.pages_ready += 1
+        print("Page ready", self.pages_ready, self.renderer.get_num_of_pages())
 
         #        print("emitting", self.pages_ready, type(self))
         self.processing.emit('Pages', self.pages_ready, self.renderer.get_num_of_pages())
 
         if self.pages_ready == self.renderer.get_num_of_pages():
             h, v, name = self.previous_state
-            # print("emitting document ready", h, v)
+            print("emitting document ready", h, v)
 
             if name == self.renderer.get_filename():
                 self.horizontalScrollBar().setValue(h)
                 self.verticalScrollBar().setValue(v)
 
-            for func, value in self.on_document_ready:
-                func(value)
+            for delay, func, value in self.on_document_ready:
+                print("apply", func, value)
+                utils.delayed(250, func, *value)
 
             self.on_document_ready.clear()
 

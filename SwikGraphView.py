@@ -2,6 +2,7 @@ from PyQt5.QtCore import pyqtSignal, QRectF, Qt, QTimer
 from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QGraphicsRectItem, QGraphicsEllipseItem
 
+import utils
 from GraphView import GraphView
 from LayoutManager import LayoutManager
 from annotations.highlight_annotation import HighlightAnnotation
@@ -115,16 +116,13 @@ class SwikGraphView(GraphView):
 
     def link_clicked(self, page, pos):
         # self.move_to_page(page)
-        a = QGraphicsEllipseItem(QRectF(0, 0, 10, 10), self.pages[page])
-        a.setBrush(QColor(255, 0, 0, 255))
-        a.setPen(Qt.transparent)
-        a.setPos(pos)
-        self.centerOn(a)
+        ellipse = QGraphicsEllipseItem(QRectF(0, 0, 10, 10), self.pages[page])
+        ellipse.setBrush(QColor(255, 0, 0, 255))
+        ellipse.setPen(Qt.transparent)
+        ellipse.setPos(pos)
+        self.centerOn(ellipse)
 
-        def remove():
-            self.scene().removeItem(a)
-
-        QTimer.singleShot(2000, remove)
+        utils.delayed(2000, self.scene().removeItem, ellipse)
 
     def toggle_page_info(self):
         for page in self.pages.values():
