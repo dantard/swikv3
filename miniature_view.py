@@ -22,7 +22,6 @@ class MiniatureView(GraphView):
         if self.pages.get(index) is not None:
             self.pages[index].set_highlighted(True)
             self.centerOn(self.pages[index])
-        #utils.delayed(100, self.centerOn, self.pages[index])
 
     def clear_selection(self):
         for p in self.pages.values():

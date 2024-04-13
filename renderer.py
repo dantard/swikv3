@@ -7,7 +7,7 @@ import traceback
 from os.path import exists
 
 from PyQt5 import QtCore
-from PyQt5.QtCore import Qt, QRunnable, QThreadPool, pyqtSignal, QMutex, QRectF, QRect, QByteArray, QBuffer, QIODevice, QUrl
+from PyQt5.QtCore import Qt, QRunnable, QThreadPool, pyqtSignal, QMutex, QRectF, QRect, QByteArray, QBuffer, QIODevice, QUrl, QTimer
 from PyQt5.QtGui import QPixmap, QImage, QBrush, QPen, QColor
 from PyQt5.QtWidgets import QLabel
 import fitz
@@ -123,6 +123,10 @@ class MuPDFRenderer(QLabel):
         self.h = QThreadPool()
         self.h.setMaxThreadCount(100)
         self.blanks = {}
+        self.request_queue_timer = QTimer()
+        self.request_queue_timer.setSingleShot(True)
+        self.request_queue_timer.timeout.connect(self.process_request_queue)
+        self.request_queue = {}
 
     def open_pdf(self, file, password=None):
         self.filename = file
@@ -219,24 +223,30 @@ class MuPDFRenderer(QLabel):
         ratio = width / w
         return self.request_image(index, ratio)
 
+    def process_request_queue(self):
+        print("Processing request queue")
+        for index, value in self.request_queue.items():
+            print("Processing", index, value)
+            ratio, key = value
+            self.load(index, ratio, key, True)
+        self.request_queue.clear()
+
     def request_image(self, index, ratio, key=None, force=False):
-        if not self.images[index].loaded or self.images[index].ratio != ratio or force:
+        print("Requesting image", index, ratio, key, force)
+        if not self.images[index].loaded or force:
             self.load(index, ratio, key, force)
-            return self.get_image(index, ratio), False  # self.get_blank(index, ratio), False
+            return self.get_image(index, ratio), False
+        elif self.images[index].ratio != ratio:
+            self.request_queue_timer.stop()
+            self.request_queue_timer.start(100)
+            self.request_queue[index] = (ratio, key)
+
+            return self.get_image(index, ratio), False
         else:
-            return self.images[index].get_image(ratio), True
+            return self.get_image(index, ratio), True
 
     def get_image(self, index, ratio):
         return self.images[index].get_image(ratio)
-
-    def get_blank(self, index, ratio):
-        w, h = self.images[index].get_orig_size()
-
-        if self.blanks.get(ratio) is None:
-            self.blanks[ratio] = QPixmap(int(w * ratio), int(h * ratio))
-            self.blanks[ratio].fill(Qt.white)
-
-        return self.blanks[ratio]
 
     def load(self, index, ratio, key, force):
         class Loader(QRunnable):

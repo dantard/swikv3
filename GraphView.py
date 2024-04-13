@@ -56,13 +56,7 @@ class GraphView(QGraphicsView):
         self.renderer.document_changed.connect(self.document_changed)
         self.renderer.page_updated.connect(self.page_updated)
         self.m_layout = LayoutManager(self.renderer)
-        self.tpe = ThreadPoolExecutor(1)
-        self.page_created.connect(self.page_processed)
 
-    #        self.qtimer = QTimer()
-    #        self.qtimer.timeout.connect(lambda: print(self.tpe._work_queue.qsize()))
-    #        self.qtimer.start(10)
-    # ## CHANGE CONFIG
 
     def append_on_document_ready(self, delay, func, *args):
         print("append", (delay, func, *args))
@@ -157,15 +151,6 @@ class GraphView(QGraphicsView):
     def set_natural_hscroll(self, value):
         self.natural_hscroll = value
 
-    def page_processed(self, page):
-        assert (isinstance(page, SimplePage))
-        self.finish_setup(page)
-        self.finish_processing(page)
-
-    def finish_setup(self, page):
-        page.connect_signals()
-        page.finish_setup()
-        self.scene().addItem(page)
 
     def finish_processing(self, page):
         self.update_layout(page)
@@ -202,20 +187,13 @@ class GraphView(QGraphicsView):
         self.pages_ready_mtx.unlock()
 
     def process(self):
-        # print("PROCESSING*******************", self.pages_ready, type(self))
-
-        # Cancel all the threads that may
-        # still be running and creating pages
-        for f in self.futures:  # type: Future
-            if not f.done():
-                f.cancel()
 
         # Clear all ## DO NOT change
         # the order: pages must be
         # cleaned first
         self.pages_ready = 0
         self.pages.clear()
-        self.futures.clear()
+
         for item in self.scene().items():
             if hasattr(item, "die"):
                 item.die()
@@ -223,38 +201,23 @@ class GraphView(QGraphicsView):
         self.scene().clear()
         self.scene().setSceneRect(0, 0, 0, 0)
         self.m_layout.clear()
-        # self.ratio = 1
-        # self.get_page_size_future = self.tpe.submit(self.m_layout.update_pages_size)
-        self.create_pages(None)
-        # self.get_page_size_future.add_done_callback(self.create_pages)
 
-    def do_create_page(self, index):
-        # In the Constructor page gets also its size itself
-        p = self.page_object(index, self, self.manager, self.renderer, self.get_ratio())
-        # print("TYPE", self.page_object, p)
-        assert (isinstance(p, SimplePage))
+        for i in range(self.renderer.get_num_of_pages()):
+            self.pages[i] = self.page_object(i, self, self.manager, self.renderer, self.get_ratio())
+            self.scene().addItem(self.pages[i])
 
-        self.pages[index] = p
+        h, v, name = self.previous_state
 
-        # Wait for the page size to be obtained
-        # This is needed for the update_layout to work
-        # self.get_page_size_future.result()
+        if name == self.renderer.get_filename():
+            self.horizontalScrollBar().setValue(h)
+            self.verticalScrollBar().setValue(v)
 
-        # OK ready to finish the page setup
-        self.page_created.emit(p)
+        for delay, func, value in self.on_document_ready:
+            utils.delayed(0, func, *value)
 
-    def create_pages(self, future):
-        # print("PROCESSING2*******************", self.pages_ready, type(self), len(self.futures))
+        self.on_document_ready.clear()
+        self.document_ready.emit()
 
-        unthreaded = min(50, self.renderer.get_num_of_pages())
-
-        for i in range(unthreaded):
-            self.do_create_page(i)
-
-        QApplication.processEvents()
-
-        for i in range(unthreaded, self.renderer.get_num_of_pages()):
-            self.futures.append(self.tpe.submit(self.do_create_page, i))
 
     def add_annotation(self, annot):
         self.pages[annot.page].create_annotation(annot)
@@ -389,7 +352,7 @@ class GraphView(QGraphicsView):
         return False
 
     def over_a_page(self, event):
-        if self.there_is_any_other_than(event.pos(), (SimplePage, SimplePage.MyImage, Word)):
+        if self.there_is_any_other_than(event.pos(), (SimplePage, Word)):
             return None
         else:
             return self.get_page_at_pos(event.pos())

@@ -12,8 +12,22 @@ from simplepage import SimplePage
 class MiniaturePage(SimplePage):
     def __init__(self, index, view, manager, renderer, ratio):
         super().__init__(index, view, manager, renderer, ratio)
-        self.background = None
+        self.background = QGraphicsRectItem(self)
+        self.background.setBrush(QBrush(QColor(180, 180, 180, 30)))
         self.box.setBrush(QBrush(QColor(255, 255, 0, 30)))
+
+        self.background.setRect(QRectF(0, 0, self.boundingRect().width(), 55))
+        self.background.setPos(0, self.boundingRect().height() + 10)
+        self.background.setFlag(QGraphicsItem.ItemIgnoresTransformations)
+
+        self.number = QGraphicsTextItem(self.background)
+        self.number.setPlainText(str(self.index + 1))
+        font = self.number.font()
+        font.setPixelSize(22)
+        self.number.setFont(font)
+        center = (self.rect().width() - self.number.boundingRect().width() * 2) / 2
+        self.number.setPos(center, self.boundingRect().height() + 10)
+        self.number.setFlag(QGraphicsItem.ItemIgnoresTransformations)
 
     def get_sep(self):
         self.number.setPlainText(str(self.index + 1))
@@ -30,23 +44,7 @@ class MiniaturePage(SimplePage):
     def connect_signals(self):
         super().connect_signals()
 
-        self.background = QGraphicsRectItem(self)
-        self.background.setBrush(QBrush(QColor(180, 180, 180, 30)))
-        self.box.setBrush(QBrush(QColor(255, 255, 0, 30)))
 
-        # self.background.setPen(QColor(180,180,180,255))
-        self.background.setRect(QRectF(0, 0, self.boundingRect().width(), 55))
-        self.background.setPos(0, self.boundingRect().height() + 10)
-        self.background.setFlag(QGraphicsItem.ItemIgnoresTransformations)
-
-        self.number = QGraphicsTextItem(self.background)
-        font = self.number.font()
-        self.number.setPlainText(str(self.index + 1))  # + "." + str(self.renderer.document[self.index].rotation))
-        font.setPixelSize(22)
-        self.number.setFont(font)
-        center = (self.rect().width() - self.number.boundingRect().width() * 2) / 2
-        self.number.setPos(center, self.boundingRect().height() + 10)
-        self.number.setFlag(QGraphicsItem.ItemIgnoresTransformations)
 
     def set_highlighted(self, value):
         if value:

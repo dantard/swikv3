@@ -14,9 +14,11 @@ class SimplePage(QGraphicsRectItem):
     STATE_INVALID = 3
     STATE_FORCED = 4
 
-    class MyImage(QGraphicsPixmapItem):
-        def paint(self, painter: QtGui.QPainter, option: 'QStyleOptionGraphicsItem', widget: QWidget) -> None:
-            super().paint(painter, option, widget)
+    class Shadow(QGraphicsRectItem):
+        pass
+
+    class Box(QGraphicsRectItem):
+        pass
 
     def __init__(self, index, view: QGraphicsView, manager, renderer, ratio):
         super().__init__()
@@ -26,36 +28,24 @@ class SimplePage(QGraphicsRectItem):
         self.index = index
         self.manager = manager
         self.renderer = renderer
+        self.renderer.image_ready.connect(self.image_ready)
         self.ratio = ratio
         self.view = view
         self.state = SimplePage.STATE_INVALID
-
-        class Shadow(QGraphicsRectItem):
-            pass
-
-        class Box(QGraphicsRectItem):
-            pass
-
         self.image = None
-        self.shadow_right = Shadow(self)
-        self.shadow_bottom = Shadow(self)
-        self.box = Box(self)
+        self.shadow_right = self.Shadow(self)
+        self.shadow_bottom = self.Shadow(self)
+        self.box = self.Box(self)
         self.w, self.h = self.renderer.get_page_size(index)
         self.rectangle = None
         self.rubberband = None
         self.rearrange_pickup_pose = None
-        self.init()
 
-    def init(self):
-        # self.setAcceptHoverEvents(True)
-        self.setAcceptTouchEvents(True)
         self.setRect(QRectF(0, 0, self.w, self.h))
-        # self.setAcceptHoverEvents(True)
         self.setAcceptTouchEvents(True)
 
         self.shadow_right.setFlag(QGraphicsItem.ItemIgnoresTransformations)
         self.shadow_bottom.setFlag(QGraphicsItem.ItemIgnoresTransformations)
-
 
         self.box.setFlag(QGraphicsItem.ItemIgnoresTransformations)
         self.setBrush(Qt.white)
@@ -68,8 +58,6 @@ class SimplePage(QGraphicsRectItem):
         self.shadow_bottom.setBrush(brush)
         self.shadow_bottom.setPen(Qt.transparent)
         self.box.setVisible(False)
-        self.setSelected(False)
-        # self.paint_accessories()
 
     def get_index(self):
         return self.index
@@ -101,9 +89,6 @@ class SimplePage(QGraphicsRectItem):
         else:
             return reversed([p for p in self.childItems() if isinstance(p, kind)])
 
-    def connect_signals(self):
-        self.renderer.image_ready.connect(self.image_ready)
-        # self.renderer.page_updated.connect(self.page_updated)
 
     def finish_setup(self):
         if self.view.is_fitting_width():
@@ -135,17 +120,16 @@ class SimplePage(QGraphicsRectItem):
     def paint(self, painter, option, widget: typing.Optional[QWidget] = ...) -> None:
         super().paint(painter, option, widget)
         if self.state == SimplePage.STATE_INVALID or self.state == SimplePage.STATE_FORCED:
-            self.image, final = self.renderer.request_image(self.index, self.ratio, 0, self.state == SimplePage.STATE_FORCED)
+            image, final = self.renderer.request_image(self.index, self.ratio, 0, self.state == SimplePage.STATE_FORCED)
             self.state = SimplePage.STATE_FINAL if final else SimplePage.STATE_WAITING_FINAL
         elif self.state == SimplePage.STATE_WAITING_FINAL:
             self.state = SimplePage.STATE_FINAL
 
-        painter.drawImage(QRectF(0, 0, self.rect().width(), self.rect().height()), self.image.toImage())
+        if self.image is not None:
+            painter.drawImage(QRectF(0, 0, self.rect().width(), self.rect().height()), self.image.toImage())
 
     def image_ready(self, index, ratio, key, pixmap):
-        # print("image ready", self.index)
         if index == self.index and key == 0 and ratio == self.ratio:
-            #   print("applying")
             self.image = pixmap
             self.update()
 
@@ -220,8 +204,6 @@ class SimplePage(QGraphicsRectItem):
     def page_updated(self, index):
         if index == self.index:
             self.invalidate()
-        # BEFORE: self.invalidate()
-        # self.paint_accessories()
 
     def is_selected(self):
         return self.box.isVisible()
