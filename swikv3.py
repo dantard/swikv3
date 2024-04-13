@@ -110,7 +110,6 @@ class MainWindow(QMainWindow):
         else:
             self.show()
 
-
     def open_tabs(self):
 
         # Open last files if required. This is done
@@ -119,7 +118,7 @@ class MainWindow(QMainWindow):
         # some files has a password dialog to show
 
         tabs, zoom, pages = self.config.get_tabs()
-        if len(tabs) > 0:
+        if tabs is not None and len(tabs) > 0:
             for tab, zoom, page in zip(tabs, zoom, pages):
                 widget = self.create_widget()
                 # Not especially happy with this but it seems to work
@@ -131,7 +130,6 @@ class MainWindow(QMainWindow):
             self.tab_widget.setCurrentIndex(0)
             self.update_title()
         self.show()
-
 
     def plus_clicked(self):
         widget = self.create_widget()
@@ -233,7 +231,8 @@ class MainWindow(QMainWindow):
                     widget.open_file(filename)
                     break
             else:
-                self.create_tab(filename)
+                widget = self.create_widget()
+                self.create_tab(widget, filename)
 
     def save_file(self):
         self.current().save_file()
@@ -290,7 +289,6 @@ def main():
             sys.exit(0)
 
     window = MainWindow()
-
 
     # app.installEventFilter(window)
 

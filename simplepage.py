@@ -2,7 +2,7 @@ import typing
 
 from PyQt5 import QtGui
 from PyQt5.QtCore import Qt, QRectF, pyqtSignal, QPointF, QObject, QPoint, QThread
-from PyQt5.QtGui import QBrush, QColor, QFontMetrics, QTransform, QPen
+from PyQt5.QtGui import QBrush, QColor, QFontMetrics, QTransform, QPen, QImage
 from PyQt5.QtWidgets import QWidget, QGraphicsPixmapItem, \
     QGraphicsView, QGraphicsRectItem, QGraphicsItem, QGraphicsTextItem, QMenu
 
@@ -36,7 +36,7 @@ class SimplePage(QGraphicsRectItem):
         class Box(QGraphicsRectItem):
             pass
 
-        self.image = self.MyImage(self)
+        self.image = None
         self.shadow_right = Shadow(self)
         self.shadow_bottom = Shadow(self)
         self.box = Box(self)
@@ -56,8 +56,6 @@ class SimplePage(QGraphicsRectItem):
         self.shadow_right.setFlag(QGraphicsItem.ItemIgnoresTransformations)
         self.shadow_bottom.setFlag(QGraphicsItem.ItemIgnoresTransformations)
 
-        self.image.setFlag(QGraphicsItem.ItemIgnoresTransformations)
-        self.image.setVisible(False)
 
         self.box.setFlag(QGraphicsItem.ItemIgnoresTransformations)
         self.setBrush(Qt.white)
@@ -118,7 +116,6 @@ class SimplePage(QGraphicsRectItem):
         # response to the scale method will take care of it
         self.ratio = ratio
         self.setTransform(QTransform(ratio, 0, 0, 0, ratio, 0, 0, 0, 1))
-        self.image.setVisible(False)
         self.state = SimplePage.STATE_INVALID
         self.paint_accessories()
 
@@ -138,21 +135,19 @@ class SimplePage(QGraphicsRectItem):
     def paint(self, painter, option, widget: typing.Optional[QWidget] = ...) -> None:
         super().paint(painter, option, widget)
         if self.state == SimplePage.STATE_INVALID or self.state == SimplePage.STATE_FORCED:
-            image, final = self.renderer.request_image(self.index, self.ratio, 0, self.state == SimplePage.STATE_FORCED)
+            self.image, final = self.renderer.request_image(self.index, self.ratio, 0, self.state == SimplePage.STATE_FORCED)
             self.state = SimplePage.STATE_FINAL if final else SimplePage.STATE_WAITING_FINAL
-            self.image.setVisible(True)
-            self.image.setPixmap(image)
-            self.image.update()
         elif self.state == SimplePage.STATE_WAITING_FINAL:
             self.state = SimplePage.STATE_FINAL
+
+        painter.drawImage(QRectF(0, 0, self.rect().width(), self.rect().height()), self.image.toImage())
 
     def image_ready(self, index, ratio, key, pixmap):
         # print("image ready", self.index)
         if index == self.index and key == 0 and ratio == self.ratio:
             #   print("applying")
-            self.image.setScale(1)
-            self.image.setPixmap(pixmap)
-            self.image.setVisible(True)
+            self.image = pixmap
+            self.update()
 
     def invalidate(self):
         print('Invalidating page', self.index)
