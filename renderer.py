@@ -98,7 +98,7 @@ class MuPDFRenderer(QLabel):
     # Signals
     document_changed = pyqtSignal()
     document_about_to_change = pyqtSignal()
-    image_ready = pyqtSignal(int, float, int, QPixmap)
+    image_ready = pyqtSignal(int, float, QImage)
     sync_requested = pyqtSignal()
     page_updated = pyqtSignal(int)
     words_changed = pyqtSignal(int)
@@ -183,7 +183,7 @@ class MuPDFRenderer(QLabel):
     def remove_dynamic_elements(self):
         for page in self.document:
             for annot in page.annots():  # type: fitz.Annot
-               page.delete_annot(annot)
+                page.delete_annot(annot)
             for field in page.widgets():
                 page.delete_widget(field)
 
@@ -225,37 +225,35 @@ class MuPDFRenderer(QLabel):
 
     def process_request_queue(self):
         print("Processing request queue")
-        for index, value in self.request_queue.items():
-            print("Processing", index, value)
-            ratio, key = value
-            self.load(index, ratio, key, True)
-        self.request_queue.clear()
+        for index, ratio in self.request_queue.items():
+            print("Processing", index, ratio)
+            self.load(index, ratio, True)
+        #self.request_queue.clear()
 
-    def request_image(self, index, ratio, key=None, force=False):
-        print("Requesting image", index, ratio, key, force)
+    def request_image(self, index, ratio, force=False):
+        print("Requesting image", index, ratio, force)
         if not self.images[index].loaded or force:
-            self.load(index, ratio, key, force)
-            return self.get_image(index, ratio), False
+            self.load(index, ratio, force)
         elif self.images[index].ratio != ratio:
             self.request_queue_timer.stop()
             self.request_queue_timer.start(100)
-            self.request_queue[index] = (ratio, key)
-
-            return self.get_image(index, ratio), False
-        else:
-            return self.get_image(index, ratio), True
+            self.request_queue[index] = ratio
 
     def get_image(self, index, ratio):
         return self.images[index].get_image(ratio)
 
-    def load(self, index, ratio, key, force):
+    def render_page(self, index, ratio):
+        mat = fitz.Matrix(ratio, ratio)
+        pix = self.get_document()[index].get_pixmap(matrix=mat, alpha=False, annots=True)
+        return QPixmap.fromImage(QImage(pix.samples, pix.width, pix.height, pix.stride, QImage.Format_RGB888))
+
+    def load(self, index, ratio, force):
         class Loader(QRunnable):
-            def __init__(self, renderer: MuPDFRenderer, index, ratio, key, mutex):
+            def __init__(self, renderer: MuPDFRenderer, index, ratio, mutex):
                 super().__init__()
                 self.renderer = renderer
                 self.index = index
                 self.ratio = ratio
-                self.key = key
                 self.force = force
 
             def get_pixmap(self):
@@ -264,27 +262,27 @@ class MuPDFRenderer(QLabel):
                 pix = self.renderer.get_document()[self.index].get_pixmap(matrix=mat, alpha=False, annots=True)
                 image = QImage(pix.samples, pix.width, pix.height, pix.stride, QImage.Format_RGB888)
 
-                pixmap = QPixmap.fromImage(image)
-                self.renderer.set_image(index, pixmap, ratio)
-                self.renderer.image_ready.emit(self.index, self.ratio, self.key, pixmap)
+                # pixmap = QPixmap.fromImage(image)
+                self.renderer.set_image(index, image, ratio)
+                self.renderer.image_ready.emit(self.index, self.ratio, image)
 
             def run(self):
                 image = self.renderer.images[self.index]
                 if self.force:
                     self.get_pixmap()
-                    #print("get pixmap1")
+                    # print("get pixmap1")
                 elif image.ratio == self.ratio and image.loaded:
-                    #print("As is ", self.index, self.key)
-                    self.renderer.image_ready.emit(self.index, self.ratio, self.key, image.image)
+                    # print("As is ", self.index, self.key)
+                    self.renderer.image_ready.emit(self.index, self.ratio, image.image)
                 elif image.ratio > self.ratio and image.loaded:
-                    #print("Scaling down ", self.index, self.key)
+                    # print("Scaling down ", self.index, self.key)
                     pixmap = image.image.scaledToWidth(int(image.w * ratio), QtCore.Qt.SmoothTransformation)
-                    self.renderer.image_ready.emit(self.index, self.ratio, self.key, pixmap)
+                    self.renderer.image_ready.emit(self.index, self.ratio, pixmap)
                 else:
-                    #print("get pixmap2")
+                    # print("get pixmap2")
                     self.get_pixmap()
 
-        loader = Loader(self, index, ratio, key, self.mutex[index])
+        loader = Loader(self, index, ratio, self.mutex[index])
         self.h.start(loader)
 
     def get_document(self):
@@ -505,7 +503,7 @@ class MuPDFRenderer(QLabel):
                 self.document[page.index].delete_annot(annot)
             elif annot.type[0] == PDF_ANNOT_HIGHLIGHT:
                 color = utils.fitz_color_to_qcolor(annot.colors["stroke"], annot.opacity)
-                #print(annot.colors, annot.opacity)
+                # print(annot.colors, annot.opacity)
                 swik_annot = HighlightAnnotation(color, page)
                 swik_annot.set_content(annot.info["content"])
                 swik_annot.setRect(QRectF(0, 0, annot.rect[2] - annot.rect[0], annot.rect[3] - annot.rect[1]))
@@ -520,7 +518,6 @@ class MuPDFRenderer(QLabel):
                         swik_annot.add_quad(quad)
                 annots.append(swik_annot)
                 self.document[page.index].delete_annot(annot)
-
 
             '''
             elif a.type[0] == fitz.PDF_ANNOT_HIGHLIGHT:
@@ -773,7 +770,6 @@ class MuPDFRenderer(QLabel):
     def rotate_page(self, index, angle):
         self.document[index].set_rotation(angle)
         self.set_document(self.document, False)
-
 
     def get_links(self, page):
         self.page_links = self.document[page.index]

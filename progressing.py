@@ -1,36 +1,60 @@
-from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtWidgets import QProgressDialog, QApplication
+import time
+
+from PyQt5.QtCore import Qt, QTimer, pyqtSignal, QThread
+from PyQt5.QtWidgets import QProgressDialog, QApplication, QWidget, QProgressBar, QVBoxLayout, QPushButton, QMainWindow, QDialog, QLabel
 
 
-class Progressing:
+class Progressing(QDialog):
+    done = pyqtSignal(object)
+
     def __init__(self, parent, max_value=0, title=None, cancel=False):
-        self.progress = QProgressDialog(title if title else "Processing", "Cancel", 0, max_value, parent)
-        self.progress.setWindowModality(Qt.WindowModal)
-        self.progress.setValue(0)
-        self.progress.setMaximum(max_value)
-        self.progress.show()
-        QApplication.processEvents()
+        super().__init__(parent)
+        self.widget_layout = QVBoxLayout()
+        self.setLayout(self.widget_layout)
+        self.bar = QProgressBar()
+        self.been_canceled = False
+        self.callback = None
         self.func = None
-        if not cancel:
-            self.progress.setCancelButton(None)
+        self.args = None
+        self.ret_value = None
+
+        if max_value > 0:
+            self.bar.setRange(0, max_value)
+        else:
+            self.bar.setRange(0, 100)
+            self.bar.setValue(100)
+
+        self.bar.setTextVisible(False)
+        self.setWindowTitle("Processing")
+        if title:
+            self.layout().addWidget(QLabel(title))
+
+        self.widget_layout.addWidget(self.bar)
+
+        if cancel:
+            self.cancel_button = QPushButton("Cancel")
+            self.cancel_button.clicked.connect(self.cancel_clicked)
+            self.widget_layout.addWidget(self.cancel_button)
+        self.show()
 
     def run(self):
-        self.update(0)
-        QApplication.processEvents()
-        self.func()
-        self.close()
+        self.ret_value = self.func(*self.args)
+        self.hide()
+        self.done.emit(self.ret_value)
+        if self.callback:
+            self.callback(self.ret_value)
 
-    def start(self, func):
+    def get_return_value(self):
+        return self.ret_value
+
+    def start(self, func, *args, **kwargs):
         self.func = func
+        self.args = args
+        self.callback = kwargs.get('callback', None)
         QTimer.singleShot(150, self.run)
 
-    def update(self, value):
-        self.progress.setValue(int(value))
-        QApplication.processEvents()
-        if self.progress.wasCanceled():
-            return False
-        return True
+    def cancel_clicked(self):
+        self.been_canceled = True
 
-    def close(self):
-        self.progress.setValue(self.progress.maximum())
-        self.progress.close()
+    def canceled(self):
+        return self.been_canceled

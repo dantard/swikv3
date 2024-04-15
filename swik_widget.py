@@ -60,7 +60,6 @@ class SwikWidget(QWidget):
         self.renderer = MuPDFRenderer()
         self.renderer.document_changed.connect(self.document_changed)
 
-
         self.scene = Scene()
         self.manager = Manager(self.renderer, self.config)
         self.view = SwikGraphView(self.manager, self.renderer, self.scene, page=Page,
@@ -183,11 +182,8 @@ class SwikWidget(QWidget):
     def set_page(self, page):
         self.view.set_page(page)
 
-
     def document_ready(self):
         pass
-
-
 
     def drop_event_received(self, vector):
         for file in vector:
@@ -355,7 +351,14 @@ class SwikWidget(QWidget):
 
     def save_file(self, name=None):
         name = self.renderer.get_filename() if name is None else name
-        return self.renderer.save_pdf(name)
+        if self.renderer.get_num_of_pages() > 50:
+            self.progressing = Progressing(self, title="Saving PDF...")
+            self.progressing.start(self.renderer.save_pdf, name, callback=self.saved)
+        else:
+            self.saved(self.renderer.save_pdf(name))
+
+    def saved(self, ret_code):
+        print("Error saving file", ret_code)
 
     def save_file_as(self):
         name = self.renderer.get_filename()

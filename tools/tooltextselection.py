@@ -97,7 +97,7 @@ class ToolTextSelection(Tool):
         if event.button() == Qt.RightButton:
             return
 
-        if self.view.there_is_any_other_than(event.pos(), (SimplePage, SimplePage.MyImage, Word)):
+        if self.view.there_is_any_other_than(event.pos(), (SimplePage, Word)):
             return
 
         if self.rubberband is None:
@@ -135,7 +135,7 @@ class ToolTextSelection(Tool):
         # if not self.view.top_is(event.pos(), [SimplePage, SimplePage.MyImage, Word]):
         #    return
 
-        if self.view.there_is_any_other_than(event.pos(), (SimplePage, SimplePage.MyImage, Word)):
+        if self.view.there_is_any_other_than(event.pos(), (SimplePage, Word)):
             return
 
         menu = QMenu()

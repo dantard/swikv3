@@ -1,10 +1,30 @@
+import queue
 import typing
 
 from PyQt5 import QtGui
-from PyQt5.QtCore import Qt, QRectF, pyqtSignal, QPointF, QObject, QPoint, QThread
-from PyQt5.QtGui import QBrush, QColor, QFontMetrics, QTransform, QPen, QImage
+from PyQt5.QtCore import Qt, QRectF, pyqtSignal, QPointF, QObject, QPoint, QThread, QMutex, QThreadPool, QRect, QTimer
+from PyQt5.QtGui import QBrush, QColor, QFontMetrics, QTransform, QPen, QImage, QPixmap
 from PyQt5.QtWidgets import QWidget, QGraphicsPixmapItem, \
     QGraphicsView, QGraphicsRectItem, QGraphicsItem, QGraphicsTextItem, QMenu
+
+
+class ImageLoaderThread(QThread):
+    imageLoaded = pyqtSignal(QPixmap, float)
+
+    def __init__(self, renderer):
+        super().__init__()
+        self.renderer = renderer
+        self.queue = queue.Queue()
+
+    def submit(self, index, ratio):
+        self.queue.put((index, ratio))
+
+    def run(self):
+        while True:
+            index, ratio = self.queue.get()
+            print("Rendering page", index, "with ratio", ratio)
+            image = self.renderer.render_page(index, ratio)
+            self.imageLoaded.emit(image, ratio)
 
 
 class SimplePage(QGraphicsRectItem):
@@ -13,6 +33,7 @@ class SimplePage(QGraphicsRectItem):
     STATE_FINAL = 2
     STATE_INVALID = 3
     STATE_FORCED = 4
+    STATE_IMAGE_REQUESTED = 5
 
     class Shadow(QGraphicsRectItem):
         pass
@@ -28,7 +49,7 @@ class SimplePage(QGraphicsRectItem):
         self.index = index
         self.manager = manager
         self.renderer = renderer
-        self.renderer.image_ready.connect(self.image_ready)
+        # self.renderer.image_ready.connect(self.image_ready)
         self.ratio = ratio
         self.view = view
         self.state = SimplePage.STATE_INVALID
@@ -50,6 +71,7 @@ class SimplePage(QGraphicsRectItem):
         self.box.setFlag(QGraphicsItem.ItemIgnoresTransformations)
         self.setBrush(Qt.white)
         self.setPen(Qt.transparent)
+        self.lock = QMutex()
 
         # Shadow
         brush = QBrush(QColor(80, 80, 80, 255))
@@ -58,6 +80,16 @@ class SimplePage(QGraphicsRectItem):
         self.shadow_bottom.setBrush(brush)
         self.shadow_bottom.setPen(Qt.transparent)
         self.box.setVisible(False)
+
+        self.request_image_timer = QTimer()
+        self.request_image_timer.setSingleShot(True)
+        self.request_image_timer.timeout.connect(self.process_requested_image)
+        self.requested_image_ratio = 1
+
+        self.image_ratio = 0
+        self.image_loader = ImageLoaderThread(self.renderer)
+        self.image_loader.imageLoaded.connect(self.image_ready)
+        self.image_loader.start()
 
     def get_index(self):
         return self.index
@@ -89,7 +121,6 @@ class SimplePage(QGraphicsRectItem):
         else:
             return reversed([p for p in self.childItems() if isinstance(p, kind)])
 
-
     def finish_setup(self):
         if self.view.is_fitting_width():
             self.fit_width()
@@ -97,12 +128,13 @@ class SimplePage(QGraphicsRectItem):
             self.update_image(self.ratio)
 
     def update_image(self, ratio):
+        # print("Updating image for page", self.index, "with ratio", ratio, "and state", self.state)
         # No need to do anything else, the paint called in
         # response to the scale method will take care of it
         self.ratio = ratio
         self.setTransform(QTransform(ratio, 0, 0, 0, ratio, 0, 0, 0, 1))
         self.state = SimplePage.STATE_INVALID
-        self.paint_accessories()
+        # self.paint_accessories()
 
     def fit_width(self):
         width = self.view.width() - 50
@@ -117,25 +149,47 @@ class SimplePage(QGraphicsRectItem):
     def get_scaling_ratio(self):
         return self.transform().m11()
 
+    def request_image(self, ratio, now=False):
+        self.requested_image_ratio = ratio
+        self.request_image_timer.stop()
+        self.request_image_timer.start(500 if not now else 5)
+
+    def process_requested_image(self):
+        if self.isShown():
+            self.image_loader.submit(self.index, self.requested_image_ratio)
+
     def paint(self, painter, option, widget: typing.Optional[QWidget] = ...) -> None:
         super().paint(painter, option, widget)
-        if self.state == SimplePage.STATE_INVALID or self.state == SimplePage.STATE_FORCED:
-            image, final = self.renderer.request_image(self.index, self.ratio, 0, self.state == SimplePage.STATE_FORCED)
-            self.state = SimplePage.STATE_FINAL if final else SimplePage.STATE_WAITING_FINAL
-        elif self.state == SimplePage.STATE_WAITING_FINAL:
-            self.state = SimplePage.STATE_FINAL
+        if True: #self.state == SimplePage.STATE_INVALID or self.state == SimplePage.STATE_FORCED:
+            # self.renderer.request_image(self.index, self.ratio, self.state == SimplePage.STATE_FORCED)
+            if self.image is None or self.ratio != self.image_ratio:
+                print('Requesting image for page', self.index)
+                self.request_image(self.ratio, self.image is None)
+                self.state = SimplePage.STATE_IMAGE_REQUESTED
 
         if self.image is not None:
+            self.lock.lock()
             painter.drawImage(QRectF(0, 0, self.rect().width(), self.rect().height()), self.image.toImage())
+            #painter.drawPixmap(QPointF(0, 0), self.image, QRectF(0, 0, self.rect().width()/self.ratio, self.rect().height()/self.ratio))
+            self.lock.unlock()
 
-    def image_ready(self, index, ratio, key, pixmap):
-        if index == self.index and key == 0 and ratio == self.ratio:
-            self.image = pixmap
+    def image_ready(self, image, ratio):
+        print("Image ready for page", self.index, "with state", self.state, "and image", image.width(), "x", image.height())
+        self.image = image
+        self.image_ratio = ratio
+        self.state = SimplePage.STATE_FINAL
+        self.update()
+
+    def image_ready2(self, index, ratio, image):
+        if index == self.index:  # and ratio == self.ratio:
+            self.image = image
+            self.state = SimplePage.STATE_FINAL
             self.update()
 
     def invalidate(self):
         print('Invalidating page', self.index)
         self.state = self.STATE_FORCED
+        self.image = None
         self.w, self.h = self.renderer.get_page_size(self.index)
         self.setRect(QRectF(0, 0, self.w, self.h))
         self.paint_accessories()
