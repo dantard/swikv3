@@ -54,32 +54,34 @@ class SimplePage(QGraphicsRectItem):
         self.view = view
         self.state = SimplePage.STATE_INVALID
         self.image = None
-        self.shadow_right = self.Shadow(self)
-        self.shadow_bottom = self.Shadow(self)
-        self.box = self.Box(self)
         self.w, self.h = self.renderer.get_page_size(index)
-        self.rectangle = None
-        self.rubberband = None
         self.rearrange_pickup_pose = None
 
         self.setRect(QRectF(0, 0, self.w, self.h))
         self.setAcceptTouchEvents(True)
 
-        self.shadow_right.setFlag(QGraphicsItem.ItemIgnoresTransformations)
-        self.shadow_bottom.setFlag(QGraphicsItem.ItemIgnoresTransformations)
-
-        self.box.setFlag(QGraphicsItem.ItemIgnoresTransformations)
         self.setBrush(Qt.white)
         self.setPen(Qt.transparent)
         self.lock = QMutex()
 
+        self.box = self.Box(self)
+        self.box.setRect(QRectF(0, 0, self.w, self.h))
+        self.box.setBrush(QBrush(QColor(80, 80, 80, 80)))
+        self.box.setVisible(False)
+        #self.box.setFlag(QGraphicsItem.ItemIgnoresTransformations)
+
         # Shadow
         brush = QBrush(QColor(80, 80, 80, 255))
+        self.shadow_right = self.Shadow(self)
+        self.shadow_right.setFlag(QGraphicsItem.ItemIgnoresTransformations)
+
         self.shadow_right.setBrush(brush)
         self.shadow_right.setPen(Qt.transparent)
+
+        self.shadow_bottom = self.Shadow(self)
+        self.shadow_bottom.setFlag(QGraphicsItem.ItemIgnoresTransformations)
         self.shadow_bottom.setBrush(brush)
         self.shadow_bottom.setPen(Qt.transparent)
-        self.box.setVisible(False)
 
         self.request_image_timer = QTimer()
         self.request_image_timer.setSingleShot(True)
@@ -263,4 +265,5 @@ class SimplePage(QGraphicsRectItem):
         return self.box.isVisible()
 
     def set_selected(self, true):
+        print("Setting selected", true)
         self.box.setVisible(true)

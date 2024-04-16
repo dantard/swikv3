@@ -79,7 +79,7 @@ class GraphView(QGraphicsView):
     # ## EVENTS
     def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
         if event.oldSize().width() != event.size().width():
-
+            print("resize")
             scrollbar = self.horizontalScrollBar() if self.mode == LayoutManager.MODE_HORIZONTAL else self.verticalScrollBar()
             value = scrollbar.value()
 
@@ -152,39 +152,6 @@ class GraphView(QGraphicsView):
         self.natural_hscroll = value
 
 
-    def finish_processing(self, page):
-        self.update_layout(page)
-
-        # self.page_changed.emit(0, self.renderer.get_num_of_pages())
-
-        # Check if this was the last thread and emit signals
-        # Do it with mutex to avoid wrong increment of thread_count
-        self.pages_ready_mtx.lock()
-        # print("Done creating page", page.index, self.pages_ready)
-        self.pages_ready += 1
-        print("Page ready", self.pages_ready, self.renderer.get_num_of_pages())
-
-        #        print("emitting", self.pages_ready, type(self))
-        self.processing.emit('Pages', self.pages_ready, self.renderer.get_num_of_pages())
-
-        if self.pages_ready == self.renderer.get_num_of_pages():
-            h, v, name = self.previous_state
-            print("emitting document ready", h, v)
-
-            if name == self.renderer.get_filename():
-                self.horizontalScrollBar().setValue(h)
-                self.verticalScrollBar().setValue(v)
-
-            for delay, func, value in self.on_document_ready:
-                print("apply", func, value)
-                utils.delayed(250, func, *value)
-
-            self.on_document_ready.clear()
-
-            # Document is ready
-            self.document_ready.emit()
-
-        self.pages_ready_mtx.unlock()
 
     def process(self):
 
@@ -215,8 +182,12 @@ class GraphView(QGraphicsView):
         for delay, func, value in self.on_document_ready:
             utils.delayed(0, func, *value)
 
+        QApplication.processEvents()
+        self.fully_update_layout()
+
+
         self.on_document_ready.clear()
-        self.document_ready.emit()
+        #self.document_ready.emit()
 
 
     def add_annotation(self, annot):

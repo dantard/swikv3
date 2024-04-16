@@ -37,7 +37,7 @@ class ToolCrop(Tool, Undoable):
             after = self.renderer.get_cropbox(page.index)
             self.view.scene().removeItem(self.rubberband)
             self.rubberband = None
-            self.notify_change(Action.ACTION_CHANGED, (page.index, before, self.view.get_ratio()), (page.index, after, self.view.get_ratio()))
+            self.notify_any_change(Action.ACTION_CHANGED, (page.index, before, self.view.get_ratio()), (page.index, after, self.view.get_ratio()), self.view.scene())
             print(before, after)
 
     def mouse_moved(self, event):

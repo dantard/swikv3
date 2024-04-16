@@ -26,6 +26,12 @@ class Undoable:
             # scene.tracker().item_changed(Action(self, kind, old, new))
             scene.notify_change(self, kind, old, new)
 
+    def notify_any_change(self, kind, old, new, scene=None):
+        if old != new:
+            scene = self.scene() if scene is None else scene
+            # scene.tracker().item_changed(Action(self, kind, old, new))
+            scene.notify_any_change(kind, self, old, new)
+
     def notify_position_change(self, old, new, scene=None):
         scene = self.scene() if scene is None else scene
         scene.notify_position_change(self, old, new)

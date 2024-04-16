@@ -31,6 +31,14 @@ class Scene(QGraphicsScene):
                 old = elem.get_full_state()
                 elem.set_common_state(full_state)
                 action.push(elem, kind, old, elem.get_full_state())
+    def notify_any_change(self, kind, item, old, new):
+        action = Action(item, kind, old, new)
+
+        for elem in self.selectedItems():
+            if elem is not item and elem in self.poses and elem.pos() != self.poses[elem]:
+                action.push(elem, kind, self.poses[elem], elem.pos())
+
+        self.tracker().item_changed(action)
 
     def notify_position_change(self, item, old, new):
         action = Action(item, Action.POSE_CHANGED, old, new)
