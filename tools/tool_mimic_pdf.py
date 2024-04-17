@@ -48,7 +48,7 @@ class ToolMimicPDF(Tool):
 
         def process():
             for i in range(0, self.view.get_page_count()):
-                if not self.progressing.update(i):
+                if not self.progressing.set_progress(i):
                     break
                 spans = self.renderer.extract_spans(i)
                 page = self.view.pages[i]

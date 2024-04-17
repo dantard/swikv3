@@ -111,18 +111,18 @@ class SwikTabWidget(QTabWidget):
         close_button.setFlat(True)
         close_button.widget = widget
         close_button.clicked.connect(lambda y, x=widget: self.close_tab_request(x))
-
+        '''
         other_button = QPushButton("▽")
         other_button.setContentsMargins(0, 0, 0, 0)
         other_button.setFixedSize(20, 20)
         other_button.setFlat(True)
         other_button.widget = widget
         other_button.clicked.connect(lambda: self.menu_popup(other_button.mapToGlobal(QPoint(0, 20)), widget))
-
+        '''
         widget.a = QWidget()
         widget.a.setLayout(QHBoxLayout())
         widget.a.layout().setContentsMargins(10, 0, 0, 0)
-        widget.a.layout().addWidget(other_button)
+        #widget.a.layout().addWidget(other_button)
         widget.a.layout().addWidget(close_button)
         widget.a.layout().setSpacing(0)
 

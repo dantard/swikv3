@@ -116,7 +116,6 @@ class MainWindow(QMainWindow):
         # with a delay to allow the window to create
         # tabs first and ALSO to show the window if
         # some files has a password dialog to show
-
         tabs, zoom, pages = self.config.get_tabs()
         if tabs is not None and len(tabs) > 0:
             for tab, zoom, page in zip(tabs, zoom, pages):

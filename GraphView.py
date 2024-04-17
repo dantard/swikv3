@@ -110,8 +110,6 @@ class GraphView(QGraphicsView):
              page.fit_width()
         self.fully_update_layout()
 
-
-
     def is_fitting_width(self):
         return self.fitting_width
 
@@ -183,7 +181,10 @@ class GraphView(QGraphicsView):
             utils.delayed(0, func, *value)
 
         QApplication.processEvents()
-        self.fully_update_layout()
+        if self.is_fitting_width():
+            self.fit_width()
+        else:
+            self.fully_update_layout()
 
 
         self.on_document_ready.clear()
@@ -253,8 +254,14 @@ class GraphView(QGraphicsView):
         self.viewport().setCursor(Qt.ArrowCursor)
 
     def page_updated(self, index):
-        self.pages[index].page_updated(index)
+        self.pages[index].invalidate()
         v, h = self.verticalScrollBar().value(), self.horizontalScrollBar().value()
+        print("PAGE UPDDAAAAAATED", self)
+        if self.is_fitting_width():
+            self.pages[index].fit_width()
+
+        QApplication.processEvents()
+
         self.fully_update_layout()
         self.verticalScrollBar().setValue(v)
         self.horizontalScrollBar().setValue(h)

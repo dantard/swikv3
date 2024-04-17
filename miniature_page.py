@@ -37,7 +37,7 @@ class MiniaturePage(SimplePage):
         super().update_image(ratio)
         if self.background is not None:
             self.background.setPos(0, self.rect().height() + 10 / self.ratio)
-            self.background.setRect(QRectF(0, 0, self.boundingRect().width() * self.ratio, 35))
+            self.background.setRect(QRectF(0, 0, self.get_scaled_width(), 35))
             center = (self.background.rect().width() - self.number.boundingRect().width()) / 2
             self.number.setPos(center, 0)
 
@@ -48,14 +48,15 @@ class MiniaturePage(SimplePage):
 
     def set_highlighted(self, value):
         if value:
-            self.box.setBrush(QBrush(QColor(255, 255, 0, 30)))
+            #self.box.setBrush(QBrush(QColor(255, 255, 0, 30)))
             self.background.setBrush(QBrush(QColor(255, 180, 180, 255)))
         else:
             self.background.setBrush(QBrush(QColor(180, 180, 180, 255)))
 
-        self.box.setVisible(value)
+        #self.box.setVisible(value)
 
     def paint_accessories(self):
+        pass
         # Selection Box
-        self.box.setRect(QRectF(-5, -5, self.get_scaled_width() + 10, self.get_scaled_height() + 10))
-        self.box.setBrush(QBrush(QColor(255, 255, 0, 30)))
+        #self.box.setRect(QRectF(-5, -5, self.get_scaled_width() + 10, self.get_scaled_height() + 10))
+        #self.box.setBrush(QBrush(QColor(255, 255, 0, 30)))

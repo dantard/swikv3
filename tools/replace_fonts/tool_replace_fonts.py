@@ -40,7 +40,7 @@ class ToolReplaceFonts(Tool):
         fonts = list()
         self.progressing = Progressing(self.view, self.view.get_page_count(), "Generating PDF", cancel=True)
         for i in range(0, self.view.get_page_count()):
-            if not self.progressing.update(i+1):
+            if not self.progressing.set_progress(i+1):
                 break
             spans = self.renderer.extract_spans(i)
             page = self.view.pages[i]

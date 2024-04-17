@@ -36,6 +36,17 @@ class Progressing(QDialog):
             self.cancel_button.clicked.connect(self.cancel_clicked)
             self.widget_layout.addWidget(self.cancel_button)
         self.show()
+    def set_progress(self, value):
+        if self.been_canceled:
+            return False
+        self.bar.setValue(value)
+        #QApplication.processEvents()
+        if self.bar.value() == self.bar.maximum():
+            self.hide()
+            self.done.emit(None)
+            if self.callback:
+                self.callback(None)
+        return True
 
     def run(self):
         self.ret_value = self.func(*self.args)

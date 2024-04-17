@@ -5,7 +5,7 @@ from PyQt5 import QtGui
 from PyQt5.QtCore import Qt, QRectF, pyqtSignal, QPointF, QObject, QPoint, QThread, QMutex, QThreadPool, QRect, QTimer
 from PyQt5.QtGui import QBrush, QColor, QFontMetrics, QTransform, QPen, QImage, QPixmap
 from PyQt5.QtWidgets import QWidget, QGraphicsPixmapItem, \
-    QGraphicsView, QGraphicsRectItem, QGraphicsItem, QGraphicsTextItem, QMenu
+    QGraphicsView, QGraphicsRectItem, QGraphicsItem, QGraphicsTextItem, QMenu, QApplication
 
 
 class ImageLoaderThread(QThread):
@@ -194,7 +194,8 @@ class SimplePage(QGraphicsRectItem):
         self.image = None
         self.w, self.h = self.renderer.get_page_size(self.index)
         self.setRect(QRectF(0, 0, self.w, self.h))
-        self.paint_accessories()
+        self.box.setRect(QRectF(0, 0, self.w, self.h))
+        #self.paint_accessories()
         self.update()
 
     def get_orig_size(self):
@@ -208,7 +209,7 @@ class SimplePage(QGraphicsRectItem):
 
     def paint_accessories(self):
         # Selection Box
-        self.box.setRect(QRectF(-5, -5, self.get_scaled_width() + 10, self.get_scaled_height() + 10))
+        self.box.setRect(self.rect())
         self.box.setBrush(QBrush(QColor(128, 128, 128, 80)))
 
         # Shadow
@@ -256,10 +257,6 @@ class SimplePage(QGraphicsRectItem):
         item_rect = self.mapRectFromScene(scene_rect)
         isec = item_rect.intersected(self.boundingRect())
         return isec
-
-    def page_updated(self, index):
-        if index == self.index:
-            self.invalidate()
 
     def is_selected(self):
         return self.box.isVisible()
