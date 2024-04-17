@@ -413,13 +413,15 @@ class MuPDFRenderer(QLabel):
             cx, cy = 0, 0
 
         print(x, y, w, h, cx, cy, "cropbox")
+        print(self.document[page].mediabox)
 
         self.document[page].set_cropbox(fitz.Rect(x + cx,
                                                   y + cy,
                                                   x + cx + w,
                                                   y + cy + h) * self.document[
                                             page].derotation_matrix)
-
+        print(self.document[page].mediabox, "mediabox")
+        print(self.document[page].cropbox, "cropbox")
         w, h = self.get_page_size(page)
         self.images[page].update(w, h)
         self.page_updated.emit(page)

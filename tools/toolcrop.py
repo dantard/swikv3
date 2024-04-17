@@ -33,12 +33,14 @@ class ToolCrop(Tool, Undoable):
             page = self.rubberband.parentItem()
             self.rubberband.view_mouse_release_event(self.view, event)
             before = self.renderer.get_cropbox(page.index)
+            print("before CB", before)
             self.renderer.set_cropbox(page.index, self.rubberband.get_rect_on_parent(), self.view.get_ratio())
             after = self.renderer.get_cropbox(page.index)
+            print("after CB", after)
             self.view.scene().removeItem(self.rubberband)
             self.rubberband = None
-            self.notify_any_change(Action.ACTION_CHANGED, (page.index, before, self.view.get_ratio()), (page.index, after, self.view.get_ratio()), self.view.scene())
-            print(before, after)
+            self.notify_any_change(Action.ACTION_CHANGED, (page.index, before, 1), (page.index, after, 1), self.view.scene())
+            print("BEFORE AFTER", before, after)
 
     def mouse_moved(self, event):
         if self.rubberband is not None:
@@ -52,7 +54,7 @@ class ToolCrop(Tool, Undoable):
 
     def undo(self, kind, info):
         index, rect, ratio = info
-        print(info)
+        print(info, "undo cropbox")
         self.renderer.set_cropbox(index, rect, ratio, True)
 
     def redo(self, kind, info):
