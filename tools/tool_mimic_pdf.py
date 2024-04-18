@@ -50,28 +50,33 @@ class ToolMimicPDF(Tool):
             for i in range(0, self.view.get_page_count()):
                 if not self.progressing.set_progress(i):
                     break
+
                 spans = self.renderer.extract_spans(i)
                 page = self.view.pages[i]
                 for span in spans:
+                    print(span.font)
                     font = self.font_manager.get_font_info_from_nickname(span.font)
                     self.renderer.add_redact_annot(page.index, span.rect, Qt.white, minimize=True, apply=False)
-                    if font is None:
+                    if font is None or font.get('supported', True) is False:
                         font = self.font_manager.get_font_info_from_nickname("helv")
                         color = QColor(255, 0, 0)
                     else:
                         color = QColor(0, 0, 0)
 
-                    swik_text = SwikText(span.text, page, self.font_manager,font["path"], span.size * 0.75)
+                    swik_text = SwikText(span.text, page, self.font_manager, font["path"], span.size * 0.75)
                     midpoint = self.rectangle_midpoint(span.rect)
                     top_left = self.top_left_corner(midpoint, swik_text.boundingRect().width(), swik_text.boundingRect().height())
                     swik_text.setToolTip(font["nickname"])
-                    swik_text.setPos(top_left)# + QPointF(span.size*0.01, 0))
+                    swik_text.setPos(top_left)  # + QPointF(span.size*0.01, 0))
                     swik_text.setDefaultTextColor(color)
+
+                print("page REDA", i)
+                try:
+                    self.renderer.apply_redactions(i)
+                except:
+                    pass
                 self.view.pages[i].invalidate()
-                self.renderer.apply_redactions(i)
 
             self.finished.emit()
 
         self.progressing.start(process)
-
-

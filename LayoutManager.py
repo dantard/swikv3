@@ -49,14 +49,12 @@ class LayoutManager:
             page.setPos(0, y_pos)
 
         def single_column(page):
-            print("lkhsalkfdjhjlksajhflkjawshflkjashflkjhaslkfjhaslkjfhlaskjhfglkasjgfkljasdhgkjhgsakjh")
             y_pos = 20 if page.index == 0 else view.pages[page.index - 1].pos().y() + view.pages[page.index - 1].get_scaled_height() + page.get_sep()
             self.scene_height = max(self.scene_height, y_pos + page.get_scaled_height() + page.get_sep())
             view.scene().setSceneRect(0, 0, max_width * page.get_scaling_ratio(), self.scene_height)
             page.setPos(max_width * page.get_scaling_ratio() / 2 - page.get_scaled_width() / 2, y_pos)
 
-
-        #print("page processedas ****** ", page.index, view.mode)
+        # print("page processedas ****** ", page.index, view.mode)
 
         if view.mode == self.MODE_SINGLE_PAGE:
             if page.index == view.page:

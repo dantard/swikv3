@@ -228,7 +228,7 @@ class MuPDFRenderer(QLabel):
         for index, ratio in self.request_queue.items():
             print("Processing", index, ratio)
             self.load(index, ratio, True)
-        #self.request_queue.clear()
+        # self.request_queue.clear()
 
     def request_image(self, index, ratio, force=False):
         print("Requesting image", index, ratio, force)
@@ -441,7 +441,8 @@ class MuPDFRenderer(QLabel):
         rect = utils.qrectf_to_fitz_rect(rect)
         color = utils.qcolor_to_fitz_color(QColor(color))
         page.add_redact_annot(rect, "", fill=color)
-        page.apply_redactions()
+        if apply:
+            page.apply_redactions()
 
     def apply_redactions(self, index):
         self.document[index].apply_redactions()

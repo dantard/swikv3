@@ -203,7 +203,7 @@ class ToolTextSelection(Tool):
                     break
 
             font = self.font_manager.get_font_info_from_nickname(first_font)
-            print("Font: ", font, "Size: ", first_size, "Color: ", first_color)
+            print("Font: ", font, "Size: ", first_size, "Color: ", first_color, "AAAAAAAAAAA first font", first_font)
             dialog = FontAndColorDialog(self.font_manager, font.get("path") if font is not None else None, first_size, first_color)
             if dialog.exec() == QDialog.Accepted:
                 for word in self.selected:

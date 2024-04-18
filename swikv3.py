@@ -193,7 +193,8 @@ class MainWindow(QMainWindow):
         return widget
 
     def open_requested(self, filename, page, zoom):
-        widget = self.create_tab(filename)
+        widget = self.create_widget()
+        self.create_tab(widget, filename)
         widget.view.set_ratio(zoom, True)
         widget.view.set_page(page)
 
@@ -289,7 +290,7 @@ def main():
 
     window = MainWindow()
 
-    # app.installEventFilter(window)
+    app.installEventFilter(window)
 
     def received():
         while socket.hasPendingDatagrams():

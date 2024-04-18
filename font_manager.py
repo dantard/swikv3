@@ -1,4 +1,5 @@
 import os
+import re
 import shutil
 import sys
 import tempfile
@@ -54,7 +55,6 @@ class FontManager(QObject):
             base14['path'] = '@base14/' + base14['nickname']
             base14['italic'] = base14['nickname'].endswith('Oblique') or base14['nickname'].endswith('Italic')
 
-
     def clear_document_fonts(self):
         self.document_fonts.clear()
         if self.font_dir is not None:
@@ -64,6 +64,7 @@ class FontManager(QObject):
     def update_document_fonts(self):
         if len(self.document_fonts) == 0:
             self.font_dir = tempfile.mkdtemp()
+            print("diiiiiir", self.font_dir)
             self.renderer.save_fonts(self.font_dir)
             fonts = self.get_fonts([self.font_dir])
             for f in fonts:
@@ -78,14 +79,17 @@ class FontManager(QObject):
         self.update_document_fonts()
         return self.document_fonts
 
-
     def get_fully_embedded_fonts(self):
         self.update_document_fonts()
-        return [f for f in self.document_fonts if not f['subset']]
+        return [f for f in self.document_fonts if not f['subset'] and f.get('supported', True)]
 
     def get_subset_fonts(self):
         self.update_document_fonts()
-        return [f for f in self.document_fonts if f['subset']]
+        return [f for f in self.document_fonts if f['subset'] and f.get('supported', True)]
+
+    def get_unsupported_fonts(self):
+        self.update_document_fonts()
+        return [f for f in self.document_fonts if f['subset'] and not f.get('supported', True)]
 
     def get_all_available_fonts(self):
         return FontManager.base14_fonts + FontManager.swik_fonts + FontManager.system_fonts
@@ -155,29 +159,29 @@ class FontManager(QObject):
                 if f['nickname'] == nickname:
                     return f
             return None
+        try:
+            font = ttLib.TTFont(path)
+            if font.has_key('name'):
+                family_name = font['name'].getDebugName(1)
+                full_name = font['name'].getDebugName(4)
+                nickname = font['name'].getDebugName(6)
+                nickname = nickname if not '+' in nickname else nickname.split('+')[1]
+                modifiers = str(font['name'].getDebugName(2))
+                modifiers = modifiers.lower()
+                if font.has_key('OS/2'):
+                    os2_table = font['OS/2']
+                    weight_class = os2_table.usWeightClass
+                else:
+                    weight_class = 400
 
-        font = ttLib.TTFont(path)
-        if font.has_key('name'):
-            family_name = font['name'].getDebugName(1)
-            full_name = font['name'].getDebugName(4)
-            nickname = font['name'].getDebugName(6)
-            nickname = nickname if not '+' in nickname else nickname.split('+')[1]
-            modifiers = str(font['name'].getDebugName(2))
-            modifiers = modifiers.lower()
-            if font.has_key('OS/2'):
-                os2_table = font['OS/2']
-                weight_class = os2_table.usWeightClass
-            else:
-                weight_class = 400
-
-            return {'full_name': full_name, 'path': path, 'family': family_name, 'weight': weight_class, 'nickname': nickname,
-                    'italic': 'italic' in modifiers or 'oblique' in modifiers, 'subset': '+' in path}
-        else:
-            # May be encrypted
+                return {'full_name': full_name, 'path': path, 'family': family_name, 'weight': weight_class, 'nickname': nickname,
+                        'italic': 'italic' in modifiers or 'oblique' in modifiers, 'subset': '+' in path}
+        except:
             return None
 
     @staticmethod
     def get_qfont_from_ttf(filename, size=11):
+
         if filename.startswith('@base14'):
             nickname = filename[8:]
             font_info = next((f for f in FontManager.base14_fonts if f['nickname'] == nickname), FontManager.base14_fonts[0])
@@ -192,12 +196,17 @@ class FontManager(QObject):
                 font_info = FontManager.base14_fonts[0]
                 family = font_info['family']
 
-        weight = FontManager.weight_class_mapping.get(font_info['weight'], QFont.Normal)
-        font = QFont(family)
-        font.setWeight(weight)
-        font.setItalic(font_info['italic'])
-        font.setPointSizeF(size)
-        return font
+        print("Alkjddddddddddddddddddddddddddddddddgf", font_info)
+
+        if font_info is not None and font_info.get('supported', True):
+            weight = FontManager.weight_class_mapping.get(font_info['weight'], QFont.Normal)
+            font = QFont(family)
+            font.setWeight(weight)
+            font.setItalic(font_info['italic'])
+            font.setPointSizeF(size)
+            return font
+        else:
+            return None
 
     @staticmethod
     def get_fonts(font_paths):
@@ -210,15 +219,21 @@ class FontManager(QObject):
                 for root, dirs, files in walk:
                     for filename in files:
                         path = os.path.join(root, filename)
-                        try:
-                            # print("Font path: ", path)
-                            info = FontManager.get_font_info(path)
-                            if info is not None:
-                                fonts.update({info.get('nickname', None): info})
-                        except:
-                            pass
-                            # traceback.print_exc()
-                            # print("Error reading font: ", path)
+                        info = FontManager.get_font_info(path)
+                        if info is not None:
+                            nickname = info.get('nickname', None)
+                        else:
+                            nickname = os.path.basename(path)
+                            # Nickname is usually TGFFYH+ArialMT-4875.cff
+                            font_name_match = re.search(r'\+(.+?)-\d+\.cff', nickname)
+                            if font_name_match:
+                                nickname = font_name_match.group(1)
+
+                            info = {'full_name': nickname, 'path': path, 'family': 'Unknown', 'weight': 400, 'nickname': nickname,
+                                    'subset': '+' in path, 'supported': False}
+
+                        fonts[nickname] = info
+
         fonts = list(fonts.values())
         fonts = [f for f in fonts if f['full_name'] is not None]
         fonts.sort(key=lambda x: x['full_name'])

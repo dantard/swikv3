@@ -82,10 +82,10 @@ class PasswordDialog(QDialog):
 class FontAndColorDialog(ComposableDialog):
     def __init__(self, font_manager, default_font, font_size, text_color):
         super().__init__()
-        self.font_manager:FontManager = font_manager
+        self.font_manager: FontManager = font_manager
         self.fp = self.add_row("Font", FontPicker())
         self.add_row("Text Color", Color(text_color))
-        self.set_ok_enabled(default_font is not None)
+        self.set_ok_enabled(False)
         self.progressing = None
         utils.delayed(100, self.update_fonts, default_font, font_size)
 
@@ -96,11 +96,11 @@ class FontAndColorDialog(ComposableDialog):
             self.fp.add_fonts_section("Swik Fonts", self.font_manager.get_swik_fonts())
             self.fp.add_fonts_section("Base14 Fonts", self.font_manager.get_base14_fonts())
             self.fp.add_fonts_section("System Fonts", self.font_manager.get_system_fonts())
+            self.fp.add_fonts_section("Unsupported", self.font_manager.get_unsupported_fonts(), False)
             self.fp.set_default(default, font_size)
+
         self.progressing = Progressing(self, 0, "Updating Fonts")
         self.progressing.start(process)
-
-
 
     def get_font_filename(self):
         return self.get('Font').get_font_filename()
@@ -140,7 +140,7 @@ class ReplaceFontsDialog2(QDialog):
         self.setLayout(layout)
 
     def get_data(self):
-        return  self.treeWidget.traverse_tree(self.treeWidget.invisibleRootItem().child(0))
+        return self.treeWidget.traverse_tree(self.treeWidget.invisibleRootItem().child(0))
 
 
 class ReplaceFontsDialog(QDialog):
@@ -161,7 +161,7 @@ class ReplaceFontsDialog(QDialog):
             combobox = QComboBox()
             combobox.addItem("Keep")
             for font in self.font_manager.get_all_available_fonts():
-                #combobox.addItem(font.)
+                # combobox.addItem(font.)
                 combobox.addItem(font.get("full_name"))
             oldfonts = str()
             for oldfont in value.get("oldfont"):
@@ -174,7 +174,6 @@ class ReplaceFontsDialog(QDialog):
             item.addChild(item2)
             self.treeWidget.invisibleRootItem().addChild(item)
             self.treeWidget.setItemWidget(item, 1, combobox)
-
 
         self.resize_columns()
 
@@ -194,4 +193,4 @@ class ReplaceFontsDialog(QDialog):
         self.treeWidget.resizeColumnToContents(1)
 
     def get_data(self):
-        return  self.treeWidget.traverse_tree(self.treeWidget.invisibleRootItem().child(0))
+        return self.treeWidget.traverse_tree(self.treeWidget.invisibleRootItem().child(0))

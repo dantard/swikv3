@@ -26,7 +26,8 @@ class KeyboardManager(object):
     def key_pressed(self, event):
         print("key_pressed", event)
         if event.key() in self.press_actions:
-            return self.press_actions[event.key()]()
+            self.press_actions[event.key()]()
+            return True
         elif event.key() in self.release_actions:
             return True
         return False
@@ -34,7 +35,8 @@ class KeyboardManager(object):
     def key_released(self, event):
         if event.key() in self.release_actions:
             print("ibne")
-            return self.release_actions[event.key()]()
+            self.release_actions[event.key()]()
+            return True
         elif event.key() in self.press_actions:
             print("tqtq")
             return True
