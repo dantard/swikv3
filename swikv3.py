@@ -8,10 +8,11 @@ from PyQt5 import QtGui
 from PyQt5.QtCore import QEvent, QTimer
 from PyQt5.QtGui import QGuiApplication
 from PyQt5.QtNetwork import QUdpSocket, QHostAddress
-from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog
+from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QProgressBar, QWidget, QVBoxLayout
 import resources
 
 import utils
+from progressing import Progressing
 from swik_tab_widget import SwikTabWidget
 from swik_widget import SwikWidget
 from swikconfig import SwikConfig
@@ -101,14 +102,17 @@ class MainWindow(QMainWindow):
         self.tab_widget.set_menu_callback(self.tab_menu)
         # Done
 
-        self.setCentralWidget(self.tab_widget)
+        # self.tab_widget.setVisible(False)
         self.config.apply_window_config(self)
         self.update_interaction_status()
+        self.show()
 
         if self.config.general.get("open_last"):
-            utils.delayed(100, self.open_tabs)
+            self.progress = Progressing(None, 0, "Opening", True)
+            # utils.delayed(100, self.open_tabs)
+            self.progress.start(self.open_tabs)
         else:
-            self.show()
+            self.setCentralWidget(self.tab_widget)
 
     def open_tabs(self):
 
@@ -116,10 +120,12 @@ class MainWindow(QMainWindow):
         # with a delay to allow the window to create
         # tabs first and ALSO to show the window if
         # some files has a password dialog to show
+
         tabs, zoom, pages = self.config.get_tabs()
         if tabs is not None and len(tabs) > 0:
             for tab, zoom, page in zip(tabs, zoom, pages):
                 widget = self.create_widget()
+
                 # Not especially happy with this but it seems to work
                 widget.view.append_on_document_ready(0, widget.view.set_ratio, zoom, True)
                 widget.view.append_on_document_ready(0, widget.view.set_page, page)
@@ -128,7 +134,7 @@ class MainWindow(QMainWindow):
 
             self.tab_widget.setCurrentIndex(0)
             self.update_title()
-        self.show()
+        self.setCentralWidget(self.tab_widget)
 
     def plus_clicked(self):
         widget = self.create_widget()
@@ -226,13 +232,25 @@ class MainWindow(QMainWindow):
             filename, _ = QFileDialog.getOpenFileName(self, "Open PDF", "", "PDF Files (*.pdf)")
 
         if filename:
-            for widget in self.get_widgets():
+            '''for widget in self.get_widgets():
                 if widget.get_filename() is None:
                     widget.open_file(filename)
                     break
             else:
                 widget = self.create_widget()
                 self.create_tab(widget, filename)
+            '''
+
+            def kk():
+                widget = self.create_widget()
+                widget.open_file(filename)
+                w = self.create_widget()
+                self.tab_widget.removeTab(0)
+                w.deleteLater()
+                self.tab_widget.insertTab(0, widget, filename)
+                print("OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO")
+
+            utils.delayed(100, kk)
 
     def save_file(self):
         self.current().save_file()

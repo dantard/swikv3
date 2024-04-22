@@ -20,7 +20,7 @@ class SwikText(QGraphicsTextItem, Undoable):
         move_started = pyqtSignal(object)
         move_finished = pyqtSignal(object)
 
-    def __init__(self, text, parent, font_manager, font, size=11):
+    def __init__(self, text, parent, font_manager, font_info, size=11):
         super(SwikText, self).__init__()
         self.signals = self.Signals()
 
@@ -29,20 +29,20 @@ class SwikText(QGraphicsTextItem, Undoable):
         self.font_manager = font_manager
         self.setParentItem(parent)
         self.setFlag(QGraphicsTextItem.ItemIsMovable, True)
-        self.ttf_filename = None
+        self.font_info = font_info
         self.bg_color = Qt.transparent
-        document = self.document()
-        document.setDocumentMargin(9)
-        self.setDocument(document)
         self.setDefaultTextColor(Qt.black)
         self.document().setPlainText(text)
         self.setFlag(QGraphicsTextItem.ItemIsSelectable, True)
         self.setFlag(QGraphicsTextItem.ItemIsFocusable, True)
         self.setFlag(QGraphicsTextItem.ItemSendsGeometryChanges, True)
-        self.set_ttf_font(font, size)
+        self.apply_font(size)
         self.notify_creation(self)
         self.current_pose = None
         self.current_state = None
+
+    def get_font_info(self):
+        return self.font_info
 
     def set_background_color(self, color: Color):
         self.bg_color = QColor(color)
@@ -84,10 +84,12 @@ class SwikText(QGraphicsTextItem, Undoable):
         res = menu.exec(event.screenPos())
         self.current_state = self.get_full_state()
         if res == action:
-            font_dialog = FontAndColorDialog(self.font_manager, self.get_ttf_filename(), self.get_font_size(), self.defaultTextColor())
+            font_dialog = FontAndColorDialog(self.font_manager, self.get_font_info().nickname, self.get_font_size(), self.defaultTextColor())
             if font_dialog.exec() == ComposableDialog.Accepted:
-                self.set_ttf_font(font_dialog.get("Font").get_font_filename(), font_dialog.get("Font").get_font_size())
-                self.setDefaultTextColor(font_dialog.get("Text Color").get_color())
+                font, color = font_dialog.get("Font"), font_dialog.get("Text Color")
+                self.set_font_info(font.get_font(), font.get_font_size())
+                self.setDefaultTextColor(color.get_color())
+
                 self.signals.font_changed.emit(self, self.font())
 
                 if self.current_state != self.get_full_state():
@@ -150,20 +152,16 @@ class SwikText(QGraphicsTextItem, Undoable):
     def set_text(self, text):
         self.document().setPlainText(text)
 
-    def set_ttf_font(self, filename, size=11):
+    def apply_font(self, size):
         document = self.document()
         # TODO: This is a magic number, it should be calculated based on the font size
         document.setDocumentMargin(9 / 34 * size)
-        # document.setDocumentMargin(0)
         self.setDocument(document)
+        self.setFont(self.font_info.get_qfont(size))
 
-        self.ttf_filename = filename
-        font = FontManager.get_qfont_from_ttf(filename, size)
-        #font.setStretch(100)
-        self.setFont(font)
-
-    def get_ttf_filename(self):
-        return self.ttf_filename
+    def set_font_info(self, font_info, size=11):
+        self.font_info = font_info
+        self.apply_font(size)
 
     def set_font(self, font, size=None):
         super().setFont(font)
@@ -182,7 +180,7 @@ class SwikText(QGraphicsTextItem, Undoable):
 
     # State management
     def get_full_state(self):
-        return {"text": self.toPlainText(), "font_ttf_filename": self.ttf_filename, "font_size": self.get_font_size(),
+        return {"text": self.toPlainText(), "font": self.font_info, "font_size": self.get_font_size(),
                 "text_color": self.defaultTextColor()}
 
     def set_full_state(self, state):
@@ -190,8 +188,8 @@ class SwikText(QGraphicsTextItem, Undoable):
         self.document().setPlainText(state["text"] if "state" in state else self.document().toPlainText())
 
     def set_common_state(self, state):
-        if "font_ttf_filename" in state:
-            self.set_ttf_font(state["font_ttf_filename"], state["font_size"] if "font_size" in state else None)
+        if "font" in state:
+            self.set_font_info(state["font"], state["font_size"] if "font_size" in state else None)
         self.setDefaultTextColor(state["text_color"] if "text_color" in state else self.defaultTextColor())
 
     def get_common_state(self):
@@ -199,8 +197,8 @@ class SwikText(QGraphicsTextItem, Undoable):
 
 
 class SwikTextReplace(SwikText):
-    def __init__(self, word, font_manager, path, size, color=Qt.black):
-        super(SwikTextReplace, self).__init__(word.get_text(), word.parentItem(), font_manager, path, size)
+    def __init__(self, word, font_manager, font, size, color=Qt.black):
+        super(SwikTextReplace, self).__init__(word.get_text(), word.parentItem(), font_manager, font, size)
         self.setFlag(QGraphicsItem.ItemIsMovable, False)
         self.setZValue(1)
         self.setPos(word.pos() - QPointF(size / 3.5, size / 3.5))

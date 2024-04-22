@@ -48,4 +48,4 @@ class Progressing(QProgressDialog):
         self.func = func
         self.args = args
         self.callback = kwargs.get("callback", None)
-        QTimer.singleShot(100, self.run)
+        QTimer.singleShot(50, self.run)

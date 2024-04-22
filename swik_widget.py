@@ -50,6 +50,7 @@ class SwikWidget(QWidget):
     interaction_changed = pyqtSignal(QWidget)
     open_requested = pyqtSignal(str, int, float)
     file_changed = pyqtSignal()
+    progress = pyqtSignal(float)
 
     def __init__(self, window, tab_widget, config):
         super().__init__()
@@ -62,6 +63,7 @@ class SwikWidget(QWidget):
 
         self.scene = Scene()
         self.manager = Manager(self.renderer, self.config)
+        self.miniature_view = MiniatureView(self.manager, self.renderer, QGraphicsScene())
         self.view = SwikGraphView(self.manager, self.renderer, self.scene, page=Page,
                                   mode=self.config.private.get('mode', default=LayoutManager.MODE_VERTICAL))
         self.view.setRenderHint(QPainter.Antialiasing)
@@ -70,7 +72,6 @@ class SwikWidget(QWidget):
         self.view.drop_event.connect(self.drop_event_received)
         self.view.document_ready.connect(self.document_ready)
 
-        self.miniature_view = MiniatureView(self.manager, self.renderer, QGraphicsScene())
         self.miniature_view.setRenderHint(QPainter.Antialiasing)
         self.miniature_view.setRenderHint(QPainter.TextAntialiasing)
         self.miniature_view.setRenderHint(QPainter.SmoothPixmapTransform)
@@ -86,8 +87,8 @@ class SwikWidget(QWidget):
         self.manager.set_view(self.view)
 
         self.font_manager = FontManager(self.renderer)
-        self.font_manager.update_system_fonts()
-        self.font_manager.update_swik_fonts()
+        # self.font_manager.update_system_fonts()
+        # self.font_manager.update_swik_fonts()
 
         self.lateral_bar_layout = QHBoxLayout()
 

@@ -8,6 +8,7 @@ import utils
 from annotations.highlight_annotation import HighlightAnnotation
 from annotations.redactannotation import RedactAnnotation
 from dialogs import FontAndColorDialog
+from font_manager import Font
 from selector import SelectorRectItem
 from simplepage import SimplePage
 from swiktext import SwikText, SwikTextReplace
@@ -187,7 +188,7 @@ class ToolTextSelection(Tool):
             self.clear_selection()
 
         elif res == add_text:
-            st = SwikText("New Text", page, self.font_manager, "fonts/Arial.ttf", 11)
+            st = SwikText("New Text", page, self.font_manager, Font("fonts/Arial.ttf"), 11)
             on_scene = self.view.mapToScene(event.pos())
             st.setPos(st.mapFromScene(on_scene))
 
@@ -202,12 +203,12 @@ class ToolTextSelection(Tool):
                     QMessageBox.warning(self.view, "Warning", "Selected words have different font, size or color.")
                     break
 
-            font = self.font_manager.get_font_info_from_nickname(first_font)
-            print("Font: ", font, "Size: ", first_size, "Color: ", first_color, "AAAAAAAAAAA first font", first_font)
-            dialog = FontAndColorDialog(self.font_manager, font.get("path") if font is not None else None, first_size, first_color)
+            print("Font: ", first_font)
+
+            dialog = FontAndColorDialog(self.font_manager, first_font, first_size, first_color)
             if dialog.exec() == QDialog.Accepted:
                 for word in self.selected:
-                    SwikTextReplace(word, self.font_manager, dialog.get_font_filename(), dialog.get_font_size() / 1.34, dialog.get_text_color())
+                    SwikTextReplace(word, self.font_manager, dialog.get_font(), dialog.get_font_size() / 1.34, dialog.get_text_color())
                     self.clear_selection()
 
     def mouse_double_clicked(self, event):

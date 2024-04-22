@@ -91,19 +91,30 @@ class FontAndColorDialog(ComposableDialog):
 
     def update_fonts(self, default, font_size):
         def process():
-            self.fp.add_fonts_section("Fully Embedded", self.font_manager.get_fully_embedded_fonts())
-            self.fp.add_fonts_section("Subset", self.font_manager.get_subset_fonts(), False)
-            self.fp.add_fonts_section("Swik Fonts", self.font_manager.get_swik_fonts())
-            self.fp.add_fonts_section("Base14 Fonts", self.font_manager.get_base14_fonts())
-            self.fp.add_fonts_section("System Fonts", self.font_manager.get_system_fonts())
-            self.fp.add_fonts_section("Unsupported", self.font_manager.get_unsupported_fonts(), False)
+            self.font_manager.update_fonts()
+            parent = self.fp.add_section("Document Fonts")
+            sec1 = self.fp.add_section("Fully embedded", parent)
+            sec2 = self.fp.add_section("Subset", parent)
+            sec3 = self.fp.add_section("Unsupported", parent)
+            self.fp.add_elements(sec1, self.font_manager.filter('document', subset=False, supported=True))
+            self.fp.add_elements(sec2, self.font_manager.filter('document', subset=True, supported=True))
+            self.fp.add_elements(sec3, self.font_manager.filter('document', supported=False))
+
+            parent = self.fp.add_section("Base14 Fonts")
+            self.fp.add_elements(parent, self.font_manager.get_base14_fonts())
+
+            parent = self.fp.add_section("Swik Fonts")
+            self.fp.add_elements(parent, self.font_manager.get_swik_fonts())
+
+            parent = self.fp.add_section("System Fonts")
+            self.fp.add_elements(parent, self.font_manager.get_system_fonts())
             self.fp.set_default(default, font_size)
 
         self.progressing = Progressing(self, 0, "Updating Fonts")
         self.progressing.start(process)
 
-    def get_font_filename(self):
-        return self.get('Font').get_font_filename()
+    def get_font(self):
+        return self.get('Font').get_font()
 
     def get_font_size(self):
         return self.get('Font').get_font_size()

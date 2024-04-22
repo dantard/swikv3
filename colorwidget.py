@@ -133,19 +133,15 @@ class FontPicker(QWidget):
     enable = pyqtSignal(bool)
 
     class TreeWidgetItem(QTreeWidgetItem):
-        def __init__(self):
+        def __init__(self, font_info=None):
             super().__init__()
-            self.path = None
-            self.supported = False
+            self.font_info = font_info
 
     class TreeWidget(QTreeWidget):
 
         def selectionCommand(self, index, event=None):
             item: FontPicker.TreeWidgetItem = self.itemFromIndex(index)
-            print("selectionCommand", item, event)
-            if item.parent() is None:  # Check if it's a top-level item
-                return QItemSelectionModel.NoUpdate
-            elif item.path is None:
+            if not isinstance(item, FontPicker.TreeWidgetItem):
                 return QItemSelectionModel.NoUpdate
 
             return super().selectionCommand(index, event)
@@ -187,34 +183,44 @@ class FontPicker(QWidget):
         super().resizeEvent(a0)
         self.example_label.setMaximumWidth(self.width() - 45)
 
-    def add_fonts_section(self, name, fonts, use_own_font=True):
-        # if len(fonts) == 0 and omit_if_empty:
-        #    return
-        parent = FontPicker.TreeWidgetItem()
-        parent.setText(0, name)
-        self.list_widget.addTopLevelItem(parent)
+    def add_section(self, name, parent=None):
+        header = QTreeWidgetItem()
+        header.setText(0, name)
+        if parent is None:
+            self.list_widget.addTopLevelItem(header)
+        else:
+            parent.addChild(header)
+
+        return header
+
+    def add_elements(self, parent, fonts, use_own_font=True):
 
         for font_info in fonts:
-            item = FontPicker.TreeWidgetItem()
-            item.path = font_info.get('path')
-            item.supported = font_info.get('supported', True)
-            label = QLabel(font_info.get('nickname'))
+            item = FontPicker.TreeWidgetItem(font_info)
+            label = QLabel(font_info.nickname)
             if use_own_font:
-                if font := FontManager.get_qfont_from_ttf(item.path):
-                    label.setFont(font)
+                qfont = font_info.get_qfont(12)
+                print()
+                if qfont:
+                    label.setFont(qfont)
             parent.addChild(item)
             self.list_widget.setItemWidget(item, 0, label)
             self.items.append(item)
 
-    def set_default(self, ttf_file_name, size):
-        self.size.setValue(int(size))
+    def find(self, name):
         for item in self.items:
-            print("test", item.path, ttf_file_name)
-            if item.path == ttf_file_name:
-                print("done")
-                self.list_widget.setCurrentItem(item)
-                item.parent().setExpanded(True)
-                break
+            if item.font_info.nickname == name:
+                return item
+        return None
+
+    def set_default(self, nickname, size):
+        self.size.setValue(int(size))
+        current = self.find(nickname)
+        if current:
+            self.list_widget.setCurrentItem(current)
+            while current.parent():
+                current.parent().setExpanded(True)
+                current = current.parent()
 
     def set_default_id(self, section_id, item_id, size):
         self.size.setValue(size)
@@ -224,15 +230,16 @@ class FontPicker(QWidget):
                 self.list_widget.setCurrentItem(top_level.child(item_id))
 
     def change_font(self):
-        item = self.get_selected()
+        ok = False
+        item: FontPicker.TreeWidgetItem = self.get_selected()
         if item is not None:
-            if item.supported:
-                font = FontManager.get_qfont_from_ttf(item.path, self.size.value())
-                if font is not None:
-                    self.example_label.setFont(font)
-                    self.example_label.update()
+            if item.font_info is not None and item.font_info.supported:
+                font = item.font_info.get_qfont(self.size.value())
+                self.example_label.setFont(font)
+                self.example_label.update()
+                ok = True
 
-            self.enable.emit(item.supported)
+        self.enable.emit(ok)
 
     def set_font_size(self, size):
         self.size_label.setText(str(size))
@@ -248,9 +255,4 @@ class FontPicker(QWidget):
         return self.size.value()
 
     def get_font(self):
-        return FontManager.get_qfont_from_ttf(self.get_font_filename(), self.size.value())
-
-    def get_font_filename(self):
-        selected = self.get_selected()
-        if selected is not None:
-            return selected.path
+        return self.get_selected().font_info

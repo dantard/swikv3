@@ -68,7 +68,7 @@ class SimplePage(QGraphicsRectItem):
         self.box.setRect(QRectF(0, 0, self.w, self.h))
         self.box.setBrush(QBrush(QColor(80, 80, 80, 80)))
         self.box.setVisible(False)
-        #self.box.setFlag(QGraphicsItem.ItemIgnoresTransformations)
+        # self.box.setFlag(QGraphicsItem.ItemIgnoresTransformations)
 
         # Shadow
         brush = QBrush(QColor(80, 80, 80, 255))
@@ -162,17 +162,17 @@ class SimplePage(QGraphicsRectItem):
 
     def paint(self, painter, option, widget: typing.Optional[QWidget] = ...) -> None:
         super().paint(painter, option, widget)
-        if True: #self.state == SimplePage.STATE_INVALID or self.state == SimplePage.STATE_FORCED:
+        if True:  # self.state == SimplePage.STATE_INVALID or self.state == SimplePage.STATE_FORCED:
             # self.renderer.request_image(self.index, self.ratio, self.state == SimplePage.STATE_FORCED)
             if self.image is None or self.ratio != self.image_ratio:
-                print('Requesting image for page', self.index)
+                print('Requesting image for page', self.index, self.view)
                 self.request_image(self.ratio, self.image is None)
                 self.state = SimplePage.STATE_IMAGE_REQUESTED
 
         if self.image is not None:
             self.lock.lock()
             painter.drawImage(QRectF(0, 0, self.rect().width(), self.rect().height()), self.image.toImage())
-            #painter.drawPixmap(QPointF(0, 0), self.image, QRectF(0, 0, self.rect().width()/self.ratio, self.rect().height()/self.ratio))
+            # painter.drawPixmap(QPointF(0, 0), self.image, QRectF(0, 0, self.rect().width()/self.ratio, self.rect().height()/self.ratio))
             self.lock.unlock()
 
     def image_ready(self, image, ratio):
@@ -195,7 +195,7 @@ class SimplePage(QGraphicsRectItem):
         self.w, self.h = self.renderer.get_page_size(self.index)
         self.setRect(QRectF(0, 0, self.w, self.h))
         self.box.setRect(QRectF(0, 0, self.w, self.h))
-        #self.paint_accessories()
+        # self.paint_accessories()
         self.update()
 
     def get_orig_size(self):

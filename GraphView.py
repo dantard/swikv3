@@ -1,3 +1,4 @@
+import time
 from concurrent.futures import ThreadPoolExecutor, Future
 from threading import Lock
 
@@ -57,7 +58,6 @@ class GraphView(QGraphicsView):
         self.renderer.page_updated.connect(self.page_updated)
         self.m_layout = LayoutManager(self.renderer)
 
-
     def append_on_document_ready(self, delay, func, *args):
         print("append", (delay, func, *args))
         self.on_document_ready.append((delay, func, args))
@@ -107,7 +107,7 @@ class GraphView(QGraphicsView):
 
     def fit_width(self):
         for page in self.pages.values():
-             page.fit_width()
+            page.fit_width()
         self.fully_update_layout()
 
     def is_fitting_width(self):
@@ -149,8 +149,6 @@ class GraphView(QGraphicsView):
     def set_natural_hscroll(self, value):
         self.natural_hscroll = value
 
-
-
     def process(self):
 
         # Clear all ## DO NOT change
@@ -166,10 +164,19 @@ class GraphView(QGraphicsView):
         self.scene().clear()
         self.scene().setSceneRect(0, 0, 0, 0)
         self.m_layout.clear()
-
+        time1 = time.time()
         for i in range(self.renderer.get_num_of_pages()):
             self.pages[i] = self.page_object(i, self, self.manager, self.renderer, self.get_ratio())
+            self.update_layout(self.pages[i])
             self.scene().addItem(self.pages[i])
+            QApplication.processEvents()
+
+        print("EOOOOOOOOOOOOOOOOOO1", time.time() - time1)
+
+        time1 = time.time()
+        # for page in self.pages.values():
+
+        print("EOOOOOOOOOOOOOOOOOO2", time.time() - time1)
 
         h, v, name = self.previous_state
 
@@ -184,12 +191,10 @@ class GraphView(QGraphicsView):
         if self.is_fitting_width():
             self.fit_width()
         else:
-            self.fully_update_layout()
-
+            pass  # self.fully_update_layout()
 
         self.on_document_ready.clear()
-        #self.document_ready.emit()
-
+        # self.document_ready.emit()
 
     def add_annotation(self, annot):
         self.pages[annot.page].create_annotation(annot)
@@ -342,6 +347,8 @@ class GraphView(QGraphicsView):
         for i in range(self.renderer.get_num_of_pages()):
             if (p := self.pages.get(i)) is not None:
                 self.update_layout(p)
+
+        QApplication.processEvents()
 
         self.setAlignment(Qt.AlignBottom | Qt.AlignRight)
         self.setAlignment(self.align | Qt.AlignHCenter)

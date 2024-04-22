@@ -580,7 +580,7 @@ class MuPDFRenderer(QLabel):
         color = utils.qcolor_to_fitz_color(item.defaultTextColor())
         tw = fitz.TextWriter(self.document[index].rect, color=color)
         x, y, h = item.pos().x(), item.pos().y(), item.sceneBoundingRect().height()
-        font_file = item.get_ttf_filename()
+        font_file = item.get_font_info().path
         if font_file.startswith('@base14'):
             font = Font(fontname=font_file[8:])
         else:
