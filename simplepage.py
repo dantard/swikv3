@@ -8,25 +8,6 @@ from PyQt5.QtWidgets import QWidget, QGraphicsPixmapItem, \
     QGraphicsView, QGraphicsRectItem, QGraphicsItem, QGraphicsTextItem, QMenu, QApplication
 
 
-class ImageLoaderThread(QThread):
-    imageLoaded = pyqtSignal(QPixmap, float)
-
-    def __init__(self, renderer):
-        super().__init__()
-        self.renderer = renderer
-        self.queue = queue.Queue()
-
-    def submit(self, index, ratio):
-        self.queue.put((index, ratio))
-
-    def run(self):
-        while True:
-            index, ratio = self.queue.get()
-            print("Rendering page", index, "with ratio", ratio)
-            image = self.renderer.render_page(index, ratio)
-            self.imageLoaded.emit(image, ratio)
-
-
 class SimplePage(QGraphicsRectItem):
     STATE_BLANK = 0
     STATE_WAITING_FINAL = 1
@@ -41,6 +22,9 @@ class SimplePage(QGraphicsRectItem):
     class Box(QGraphicsRectItem):
         pass
 
+    class Signals(QObject):
+        image_prepared = pyqtSignal(QPixmap, float)
+
     def __init__(self, index, view: QGraphicsView, manager, renderer, ratio):
         super().__init__()
         self.words = None
@@ -49,6 +33,8 @@ class SimplePage(QGraphicsRectItem):
         self.index = index
         self.manager = manager
         self.renderer = renderer
+        self.signals2 = SimplePage.Signals()
+        self.signals2.image_prepared.connect(self.image_ready)
         # self.renderer.image_ready.connect(self.image_ready)
         self.ratio = ratio
         self.view = view
@@ -89,9 +75,6 @@ class SimplePage(QGraphicsRectItem):
         self.requested_image_ratio = 1
 
         self.image_ratio = 0
-        self.image_loader = ImageLoaderThread(self.renderer)
-        self.image_loader.imageLoaded.connect(self.image_ready)
-        self.image_loader.start()
 
     def get_index(self):
         return self.index
@@ -158,7 +141,18 @@ class SimplePage(QGraphicsRectItem):
 
     def process_requested_image(self):
         if self.isShown():
-            self.image_loader.submit(self.index, self.requested_image_ratio)
+            image = self.renderer.render_page(self.index, self.requested_image_ratio)
+            self.image_ready(image, self.requested_image_ratio)
+
+    def kk(self):
+        print("inside kk")
+        image = self.renderer.render_page(self.index, self.requested_image_ratio)
+        print("image", image)
+        self.signals2.image_prepared.emit(image, self.requested_image_ratio)
+        print("emitted", image)
+
+    def aprocess_requested_image(self):
+        self.view.submit(self.kk)
 
     def paint(self, painter, option, widget: typing.Optional[QWidget] = ...) -> None:
         super().paint(painter, option, widget)
@@ -170,17 +164,18 @@ class SimplePage(QGraphicsRectItem):
                 self.state = SimplePage.STATE_IMAGE_REQUESTED
 
         if self.image is not None:
-            self.lock.lock()
+            # self.lock.lock()
             painter.drawImage(QRectF(0, 0, self.rect().width(), self.rect().height()), self.image.toImage())
             # painter.drawPixmap(QPointF(0, 0), self.image, QRectF(0, 0, self.rect().width()/self.ratio, self.rect().height()/self.ratio))
-            self.lock.unlock()
+            # self.lock.unlock()
 
     def image_ready(self, image, ratio):
         print("Image ready for page", self.index, "with state", self.state, "and image", image.width(), "x", image.height())
         self.image = image
         self.image_ratio = ratio
         self.state = SimplePage.STATE_FINAL
-        self.update()
+        if self.isShown():
+            self.update()
 
     def image_ready2(self, index, ratio, image):
         if index == self.index:  # and ratio == self.ratio:

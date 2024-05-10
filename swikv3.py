@@ -106,13 +106,12 @@ class MainWindow(QMainWindow):
         self.config.apply_window_config(self)
         self.update_interaction_status()
         self.show()
+        self.setCentralWidget(self.tab_widget)
 
         if self.config.general.get("open_last"):
             self.progress = Progressing(None, 0, "Opening", True)
             # utils.delayed(100, self.open_tabs)
             self.progress.start(self.open_tabs)
-        else:
-            self.setCentralWidget(self.tab_widget)
 
     def open_tabs(self):
 
@@ -121,24 +120,27 @@ class MainWindow(QMainWindow):
         # tabs first and ALSO to show the window if
         # some files has a password dialog to show
 
-        tabs, zoom, pages = self.config.get_tabs()
-        if tabs is not None and len(tabs) > 0:
-            for tab, zoom, page in zip(tabs, zoom, pages):
+        filenames, zoom, pages = self.config.get_tabs()
+        if filenames is not None and len(filenames) > 0:
+            for filename, zoom, page in zip(filenames, zoom, pages):
+                if self.progress.wasCanceled():
+                    break
                 widget = self.create_widget()
 
                 # Not especially happy with this but it seems to work
-                widget.view.append_on_document_ready(0, widget.view.set_ratio, zoom, True)
-                widget.view.append_on_document_ready(0, widget.view.set_page, page)
-                widget.miniature_view.append_on_document_ready(0, widget.miniature_view.set_page, page)
-                self.create_tab(widget, tab)
+                # widget.view.append_on_document_ready(0, widget.view.set_ratio, zoom, True)
+                # widget.view.append_on_document_ready(0, widget.view.set_page, page)
+                # widget.miniature_view.append_on_document_ready(0, widget.miniature_view.set_page, page)
+                self.open_tab(widget, filename)
 
             self.tab_widget.setCurrentIndex(0)
             self.update_title()
-        self.setCentralWidget(self.tab_widget)
 
     def plus_clicked(self):
-        widget = self.create_widget()
-        self.create_tab(widget, None)
+        filename, _ = QFileDialog.getOpenFileName(self, "Open PDF", "", "PDF Files (*.pdf)")
+        if filename:
+            widget = self.create_widget()
+            self.open_tab(widget, filename)
 
     def create_widget(self):
         widget = SwikWidget(self, self.tab_widget, self.config)
@@ -151,7 +153,7 @@ class MainWindow(QMainWindow):
         print("tab_menu", action, code, data, widget)
         filename = widget.get_filename()
         if code == self.TAB_MENU_OPEN_IN_OTHER_TAB:
-            self.create_tab(filename)
+            self.open_tab(filename)
         elif code == self.TAB_MENU_OPEN_IN_OTHER_WINDOW:
             subprocess.Popen([sys.executable, os.path.realpath(__file__), filename])
         elif code == self.TAB_MENU_OPEN_WITH:
@@ -190,7 +192,7 @@ class MainWindow(QMainWindow):
         for action in self.file_menu_actions:
             action.setEnabled(value)
 
-    def create_tab(self, widget, filename=None):
+    def open_tab(self, widget, filename=None):
         self.tab_widget.new_tab(widget, filename)
         if filename is not None:
             widget.open_file(filename)
@@ -200,7 +202,7 @@ class MainWindow(QMainWindow):
 
     def open_requested(self, filename, page, zoom):
         widget = self.create_widget()
-        self.create_tab(widget, filename)
+        self.open_tab(widget, filename)
         widget.view.set_ratio(zoom, True)
         widget.view.set_page(page)
 

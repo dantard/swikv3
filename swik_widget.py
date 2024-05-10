@@ -11,11 +11,11 @@ from PyQt5 import QtGui
 from PyQt5.QtCore import QPointF, Qt, QTimer, pyqtSignal, QRectF, QEvent
 from PyQt5.QtGui import QPainter, QIcon, QKeySequence, QKeyEvent
 from PyQt5.QtWidgets import QApplication, QMainWindow, QShortcut, QFileDialog, QDialog, QMessageBox, QHBoxLayout, QWidget, QTabWidget, QVBoxLayout, QToolBar, \
-    QPushButton, QSizePolicy, QTabBar, QProgressDialog, QSplitter, QGraphicsScene, QLabel
+    QPushButton, QSizePolicy, QTabBar, QProgressDialog, QSplitter, QGraphicsScene, QLabel, QProgressBar
 
 import utils
 from GraphView import GraphView
-from LayoutManager import LayoutManager
+from LayoutManager import LayoutManager, Formatter, SingleColumn
 from SwikGraphView import SwikGraphView
 from changestracker import ChangesTracker
 from dialogs import PasswordDialog
@@ -46,6 +46,24 @@ from toolbars.searchtoolbar import TextSearchToolbar
 from widgets.pdf_widget import PdfCheckboxWidget
 
 
+class Splitter(QSplitter):
+
+    def __init__(self, a):
+        super().__init__(a)
+
+    def moveEvent(self, a0: QtGui.QMoveEvent) -> None:
+        super().moveEvent(a0)
+        print("moveevent", a0)
+
+    def mousePressEvent(self, a0: QtGui.QMouseEvent) -> None:
+        super().mousePressEvent(a0)
+        print("Moveevntnt")
+
+    def releaseMouse(self) -> None:
+        super().releaseMouse()
+        print("splitter released")
+
+
 class SwikWidget(QWidget):
     interaction_changed = pyqtSignal(QWidget)
     open_requested = pyqtSignal(str, int, float)
@@ -63,7 +81,6 @@ class SwikWidget(QWidget):
 
         self.scene = Scene()
         self.manager = Manager(self.renderer, self.config)
-        self.miniature_view = MiniatureView(self.manager, self.renderer, QGraphicsScene())
         self.view = SwikGraphView(self.manager, self.renderer, self.scene, page=Page,
                                   mode=self.config.private.get('mode', default=LayoutManager.MODE_VERTICAL))
         self.view.setRenderHint(QPainter.Antialiasing)
@@ -72,6 +89,7 @@ class SwikWidget(QWidget):
         self.view.drop_event.connect(self.drop_event_received)
         self.view.document_ready.connect(self.document_ready)
 
+        self.miniature_view = MiniatureView(self.manager, self.renderer, QGraphicsScene())
         self.miniature_view.setRenderHint(QPainter.Antialiasing)
         self.miniature_view.setRenderHint(QPainter.TextAntialiasing)
         self.miniature_view.setRenderHint(QPainter.SmoothPixmapTransform)
@@ -79,8 +97,8 @@ class SwikWidget(QWidget):
         self.miniature_view.setRenderHint(QPainter.NonCosmeticDefaultPen)
         self.miniature_view.setMaximumWidth(350)
         self.miniature_view.setMinimumWidth(180)
-        self.miniature_view.set_alignment(Qt.AlignTop)
-        self.miniature_view.set_fit_width(True)
+        # self.miniature_view.set_alignment(Qt.AlignTop)
+        #        self.miniature_view.set_fit_width(True)
         self.view.page_clicked.connect(self.miniature_view.set_page)
         self.miniature_view.page_clicked.connect(self.view.set_page)
 
@@ -150,8 +168,13 @@ class SwikWidget(QWidget):
         self.zoom_toolbar = ZoomToolbar(self.view, self.toolbar)
         self.nav_toolbar = NavigationToolbar(self.view, self.toolbar)
         self.finder_toolbar = TextSearchToolbar(self.view, self.renderer, self.toolbar)
+        self.load_progress = QProgressBar()
+        self.load_progress.setMaximumWidth(250)
+        self.load_progress.setFormat("Loading...")
+        self.load_progress_action = self.toolbar.addWidget(self.load_progress)
+        self.load_progress_action.setVisible(False)
 
-        self.splitter = QSplitter(Qt.Horizontal)
+        self.splitter = Splitter(Qt.Horizontal)
 
         self.setLayout(QVBoxLayout())
         self.layout().addWidget(self.splitter)
@@ -165,6 +188,9 @@ class SwikWidget(QWidget):
 
         # Lateral Bar
         self.lateral_bar = QToolBar()
+        self.lateral_bar.setMaximumWidth(60)
+        self.lateral_bar.setMinimumWidth(60)
+
         self.lateral_bar.addSeparator()
         self.mode_group.append(self.lateral_bar)
         self.update_lateral_bar_position()
@@ -176,6 +202,7 @@ class SwikWidget(QWidget):
         self.splitter.addWidget(helper)
         self.set_interactable(False)
         self.preferences_changed()
+        QApplication.processEvents()
 
     def set_ratio(self, ratio):
         self.view.set_ratio(ratio, True)
@@ -289,8 +316,36 @@ class SwikWidget(QWidget):
         pass
 
     def document_changed(self):
+        # Clear views and fonts
+        self.view.clear()
+        self.miniature_view.clear()
         self.font_manager.clear_document_fonts()
 
+        self.load_progress_action.setVisible(True)
+        self.load_progress.setMaximum(self.renderer.get_num_of_pages())
+
+        # Create pages
+        self.view.layout_manager.reset()
+        self.miniature_view.layout_manager.reset()
+        for i in range(self.renderer.get_num_of_pages()):
+            # Create Page
+            page = self.view.create_page(i)
+            self.view.layout_manager.update_layout(page)
+
+            # Create Miniature Page
+            mini_page = self.miniature_view.create_page(i)
+            self.miniature_view.layout_manager.update_layout(mini_page)
+
+            # Update progress bar
+            self.load_progress.setValue(i + 1)
+        # self.view.scene().setSceneRect(self.view.layout_manager.compute_scene_rect())
+        # self.view.setAlignment(Qt.AlignBottom | Qt.AlignRight)
+        # self.view.setAlignment(Qt.AlignVCenter | Qt.AlignHCenter)
+
+        self.load_progress_action.setVisible(False)
+        self.update_tab_text()
+
+    def update_tab_text(self):
         # Update the tab name
         my_index = self.tabw.indexOf(self)
         text = os.path.basename(self.renderer.get_filename())

@@ -1,12 +1,13 @@
 import time
 from concurrent.futures import ThreadPoolExecutor, Future
+from multiprocessing.pool import ThreadPool
 from threading import Lock
 
 from PyQt5 import QtGui, QtWidgets, QtCore
 from PyQt5.QtCore import pyqtSignal, QCoreApplication, Qt, QRectF, QEvent, QPoint, QThreadPool, QTimer, QMutex, QThread, \
     QRect, QPointF
-from PyQt5.QtGui import QWheelEvent, QPainter, QTransform, QCursor
-from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsRectItem, QApplication, QGraphicsItem, QLabel
+from PyQt5.QtGui import QWheelEvent, QPainter, QTransform, QCursor, QColor
+from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsRectItem, QApplication, QGraphicsItem, QLabel, QScrollBar
 
 import utils
 # import EnhancedPage
@@ -14,6 +15,10 @@ from LayoutManager import LayoutManager
 from simplepage import SimplePage
 from SyncDict import SyncDict
 from word import Word
+
+
+class SB(QScrollBar):
+    pass
 
 
 class GraphView(QGraphicsView):
@@ -45,6 +50,7 @@ class GraphView(QGraphicsView):
         self.mode = mode
         self.pages = SyncDict()
         self.futures = list()
+        self.pool = ThreadPool(processes=100)
 
         self.setScene(scene)
         self.scene().setBackgroundBrush(Qt.gray)
@@ -52,11 +58,22 @@ class GraphView(QGraphicsView):
         self.setRenderHint(QPainter.SmoothPixmapTransform)
         self.get_page_size_future = None
         self.align = Qt.AlignVCenter
-
+        self.setVerticalScrollBar(SB())
         # ## Connect signals
-        self.renderer.document_changed.connect(self.document_changed)
+        # self.renderer.document_changed.connect(self.document_changed)
         self.renderer.page_updated.connect(self.page_updated)
-        self.m_layout = LayoutManager(self.renderer)
+        self.layout_manager = LayoutManager(self, self.renderer, mode)
+        self.timer = QTimer()
+        self.timer.setSingleShot(True)
+        self.timer.timeout.connect(self.delayed_resize)
+        self.hhh = QGraphicsRectItem()
+        self.hhh.setBrush(QColor(10, 10, 10, 255))
+        self.hhh.setPos(0, 0)
+        self.scene().addItem(self.hhh)
+
+    def submit(self, func):
+        print("submitting", func)
+        self.pool.apply_async(func)
 
     def append_on_document_ready(self, delay, func, *args):
         print("append", (delay, func, *args))
@@ -65,7 +82,8 @@ class GraphView(QGraphicsView):
     def set_mode(self, mode, force=False):
         if mode != self.mode or force:
             self.mode = mode
-            self.fully_update_layout()
+            self.layout_manager.set_mode(mode)
+            self.layout_manager.fully_update_layout()
 
     def finish(self):
         self.pages.clear()
@@ -78,16 +96,16 @@ class GraphView(QGraphicsView):
 
     # ## EVENTS
     def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
+        self.timer.stop()
         if event.oldSize().width() != event.size().width():
-            print("resize")
-            scrollbar = self.horizontalScrollBar() if self.mode == LayoutManager.MODE_HORIZONTAL else self.verticalScrollBar()
-            value = scrollbar.value()
+            self.timer.start(50)
 
-            if self.fitting_width:
-                self.fit_width()
-            self.fully_update_layout()
-
-            scrollbar.setValue(value)
+    def delayed_resize(self):
+        scrollbar = self.horizontalScrollBar() if self.mode == LayoutManager.MODE_HORIZONTAL else self.verticalScrollBar()
+        value = scrollbar.value()
+        #        self.fully_update_layout2()
+        self.layout_manager.fully_update_layout()
+        scrollbar.setValue(value)
 
     # ## DOCUMENT
 
@@ -100,7 +118,7 @@ class GraphView(QGraphicsView):
     def get_page_width(self, index):
         return self.pages[index].get_orig_width()
 
-    def set_fit_width(self, value):
+    def aaaset_fit_width(self, value):
         self.fitting_width = value
         if value:
             self.fit_width()
@@ -120,24 +138,26 @@ class GraphView(QGraphicsView):
         return self.tpe
 
     def set_ratio(self, ratio, inform=False):
-        ratio = min(max(self.m_layout.ratio_min, ratio), self.m_layout.ratio_max)
+        ratio = min(max(self.layout_manager.ratio_min, ratio), self.layout_manager.ratio_max)
         if round(ratio, 2) != round(self.get_ratio(), 2):
+            # Record radio change
+            self.ratio = ratio
 
-            if self.mode in [LayoutManager.MODE_VERTICAL, LayoutManager.MODE_VERTICAL_MULTIPAGE,
-                             LayoutManager.MODE_SINGLE_PAGE]:
+            # Recorde scrollbar position
+            vertical = self.layout_manager.get_mode() in [LayoutManager.MODE_VERTICAL,
+                                                          LayoutManager.MODE_VERTICAL_MULTIPAGE,
+                                                          LayoutManager.MODE_SINGLE_PAGE]
+            if vertical:
                 percent = self.verticalScrollBar().value() / self.scene().height() if self.scene().height() != 0 else 1
             else:
                 percent = self.horizontalScrollBar().value() / self.scene().width() if self.scene().width() != 0 else 1
 
-            self.ratio = ratio
+            for page in self.pages.values():
+                page.update_image(self.ratio)
 
-            for k, p in self.pages.items():
-                p.update_image(self.get_ratio())
+            self.layout_manager.fully_update_layout()
 
-            self.fully_update_layout()
-
-            if self.mode in [LayoutManager.MODE_VERTICAL, LayoutManager.MODE_VERTICAL_MULTIPAGE,
-                             LayoutManager.MODE_SINGLE_PAGE]:
+            if vertical:
                 self.verticalScrollBar().setValue(int(self.scene().height() * percent))
             else:
                 self.horizontalScrollBar().setValue(int(self.scene().width() * percent))
@@ -149,6 +169,7 @@ class GraphView(QGraphicsView):
     def set_natural_hscroll(self, value):
         self.natural_hscroll = value
 
+    '''
     def process(self):
 
         # Clear all ## DO NOT change
@@ -195,6 +216,31 @@ class GraphView(QGraphicsView):
 
         self.on_document_ready.clear()
         # self.document_ready.emit()
+    '''
+
+    def process(self):
+        self.pages.clear()
+
+        for item in self.scene().items():
+            if hasattr(item, "die"):
+                item.die()
+
+        self.scene().clear()
+        # self.scene().setSceneRect(0, 0, 0, 0)
+        self.layout_manager.clear()
+        time1 = time.time()
+        for i in range(self.renderer.get_num_of_pages()):
+            self.create_page(i)
+
+    def clear(self):
+        self.scene().clear()
+        # self.scene().setSceneRect(0, 0, 0, 0)
+        self.layout_manager.reset()
+
+    def create_page(self, i):
+        self.pages[i] = self.page_object(i, self, self.manager, self.renderer, self.get_ratio())
+        self.scene().addItem(self.pages[i])
+        return self.pages[i]
 
     def add_annotation(self, annot):
         self.pages[annot.page].create_annotation(annot)
@@ -237,7 +283,7 @@ class GraphView(QGraphicsView):
             self.page = index
 
             if self.mode == LayoutManager.MODE_SINGLE_PAGE:
-                self.fully_update_layout()
+                self.layout_manager.fully_update_layout()
 
             if self.fitting_width:
                 self.fit_width()
@@ -340,15 +386,20 @@ class GraphView(QGraphicsView):
         else:
             return self.get_page_at_pos(event.pos())
 
-    def fully_update_layout(self):
-
-        self.m_layout.clear()
-
+    def fully_update_layout2(self):
+        '''
+        rect = self.m_layout.compute_scene_rect(self.pages, self.get_ratio())
+        self.scene().setSceneRect(rect)
         for i in range(self.renderer.get_num_of_pages()):
             if (p := self.pages.get(i)) is not None:
+                p.update_image(self.get_ratio())
                 self.update_layout(p)
+        '''
+        self.scene().setSceneRect(QRectF())
+        for i in range(self.renderer.get_num_of_pages()):
+            self.layout_manager.update_layout(self.pages[i])
 
-        QApplication.processEvents()
+    def aaafully_update_layout(self):
 
         self.setAlignment(Qt.AlignBottom | Qt.AlignRight)
         self.setAlignment(self.align | Qt.AlignHCenter)
@@ -358,6 +409,8 @@ class GraphView(QGraphicsView):
         else:
             self.verticalScrollBar().setValue(int(self.verticalScrollBar().maximum() / 2))
 
+        # self.update()
+        # self.scene().update()
         # print("fully done", type(self))
 
     def resize_scene(self):
@@ -366,10 +419,10 @@ class GraphView(QGraphicsView):
             item: SimplePage
             bounding_rect = bounding_rect.united(item.mapToScene(item.boundingRect()).boundingRect())
 
-        self.scene().setSceneRect(bounding_rect)
+        # self.scene().setSceneRect(bounding_rect)
 
     def update_layout(self, page):
-        self.m_layout.update_layout(self, page)
+        self.layout_manager.update_layout(self, page)
 
     # ## REIMPLEMENTED METHODS
     def scrollContentsBy(self, dx: int, dy: int) -> None:
@@ -414,12 +467,14 @@ class GraphView(QGraphicsView):
         return self.pages[index]
 
     # ## SLOTS
+    '''
     def document_changed(self):
         self.previous_state = (self.horizontalScrollBar().value(),
                                self.verticalScrollBar().value(),
                                self.renderer.get_filename())
         self.page_changed.emit(0, self.renderer.get_num_of_pages())
         self.process()
+    '''
 
     def set_page(self, index):
         self.move_to_page(index)

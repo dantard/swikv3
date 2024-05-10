@@ -28,6 +28,9 @@ class MiniaturePage(SimplePage):
         center = (self.rect().width() - self.number.boundingRect().width() * 2) / 2
         self.number.setPos(center, self.boundingRect().height() + 10)
         self.number.setFlag(QGraphicsItem.ItemIgnoresTransformations)
+        self.number.setVisible(False)
+        self.box.setVisible(False)
+        self.background.setVisible(False)
 
     def get_sep(self):
         self.number.setPlainText(str(self.index + 1))
@@ -44,19 +47,17 @@ class MiniaturePage(SimplePage):
     def connect_signals(self):
         super().connect_signals()
 
-
-
     def set_highlighted(self, value):
         if value:
-            #self.box.setBrush(QBrush(QColor(255, 255, 0, 30)))
+            # self.box.setBrush(QBrush(QColor(255, 255, 0, 30)))
             self.background.setBrush(QBrush(QColor(255, 180, 180, 255)))
         else:
             self.background.setBrush(QBrush(QColor(180, 180, 180, 255)))
 
-        #self.box.setVisible(value)
+        # self.box.setVisible(value)
 
     def paint_accessories(self):
         pass
         # Selection Box
-        #self.box.setRect(QRectF(-5, -5, self.get_scaled_width() + 10, self.get_scaled_height() + 10))
-        #self.box.setBrush(QBrush(QColor(255, 255, 0, 30)))
+        # self.box.setRect(QRectF(-5, -5, self.get_scaled_width() + 10, self.get_scaled_height() + 10))
+        # self.box.setBrush(QBrush(QColor(255, 255, 0, 30)))

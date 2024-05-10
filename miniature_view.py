@@ -12,7 +12,7 @@ from simplepage import SimplePage
 class MiniatureView(GraphView):
 
     def __init__(self, manager, renderer, scene):
-        super(MiniatureView, self).__init__(manager, renderer, scene, page=MiniaturePage, mode=LayoutManager.MODE_VERTICAL)
+        super(MiniatureView, self).__init__(manager, renderer, scene, page=MiniaturePage, mode=LayoutManager.MODE_FIT_WIDTH)
 
     def wheelEvent(self, event: 'QGraphicsSceneWheelEvent') -> None:
         super(QGraphicsView, self).wheelEvent(event)

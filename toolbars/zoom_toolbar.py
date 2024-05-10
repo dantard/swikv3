@@ -50,7 +50,6 @@ class ZoomToolbar(Toolbar):
         self.setButtonsEnabled(["Zoom In", "Zoom Out"], value)
 
     def zoom(self, value):
-        self.view.set_fit_width(False)
         self.view.set_ratio(value, True)
 
     def ratio_changed(self, ratio):
