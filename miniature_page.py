@@ -28,9 +28,6 @@ class MiniaturePage(SimplePage):
         center = (self.rect().width() - self.number.boundingRect().width() * 2) / 2
         self.number.setPos(center, self.boundingRect().height() + 10)
         self.number.setFlag(QGraphicsItem.ItemIgnoresTransformations)
-        self.number.setVisible(False)
-        self.box.setVisible(False)
-        self.background.setVisible(False)
 
     def get_sep(self):
         self.number.setPlainText(str(self.index + 1))

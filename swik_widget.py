@@ -15,7 +15,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QShortcut, QFileDialog, Q
 
 import utils
 from GraphView import GraphView
-from LayoutManager import LayoutManager, Formatter, SingleColumn
+from LayoutManager import LayoutManager
 from SwikGraphView import SwikGraphView
 from changestracker import ChangesTracker
 from dialogs import PasswordDialog
@@ -325,8 +325,10 @@ class SwikWidget(QWidget):
         self.load_progress.setMaximum(self.renderer.get_num_of_pages())
 
         # Create pages
+        self.set_ratio(1.0)
         self.view.layout_manager.reset()
         self.miniature_view.layout_manager.reset()
+
         for i in range(self.renderer.get_num_of_pages()):
             # Create Page
             page = self.view.create_page(i)
@@ -338,9 +340,6 @@ class SwikWidget(QWidget):
 
             # Update progress bar
             self.load_progress.setValue(i + 1)
-        # self.view.scene().setSceneRect(self.view.layout_manager.compute_scene_rect())
-        # self.view.setAlignment(Qt.AlignBottom | Qt.AlignRight)
-        # self.view.setAlignment(Qt.AlignVCenter | Qt.AlignHCenter)
 
         self.load_progress_action.setVisible(False)
         self.update_tab_text()
@@ -361,22 +360,6 @@ class SwikWidget(QWidget):
     def manage_tool(self, tool):
         self.manager.use_tool(tool)
 
-    '''
-    def keyPressEvent(self, a0: QtGui.QKeyEvent) -> None:
-
-        print("swik_widge1t", a0)
-        if not self.key_manager.key_pressed(a0) and not self.manager.key_pressed(a0):
-            super().keyPressEvent(a0)
-
-    def keyReleaseEvent(self, a0: QtGui.QKeyEvent) -> None:
-        print("swik_widget2", a0)
-        a0.setAccepted(False)
-        return
-
-        if not self.key_manager.key_released(a0) and not self.manager.key_released(a0):
-            super().keyReleaseEvent(a0)
-    '''
-
     # ### Tools
 
     def open_file(self, filename=None):
@@ -395,12 +378,8 @@ class SwikWidget(QWidget):
             if res == MuPDFRenderer.OPEN_OK:
                 self.set_interactable(True)
                 self.file_changed.emit()
-                self.config.private.set('last', self.renderer.get_filename())
                 self.config.update_recent(self.renderer.get_filename())
                 self.config.flush()
-                if self.config.general.get('fit_width_on_open'):
-                    ratio = self.view.pages[0].compute_fit_width()
-                    self.view.set_ratio(ratio, True)
 
             else:
                 QMessageBox.warning(self, "Error", "Error opening file")
@@ -429,6 +408,7 @@ class SwikWidget(QWidget):
         else:
             self.config.edit()
 
+    # TODO::::CONVERT
     def append_pdf(self, filename):
         pd = Progressing(self)
 

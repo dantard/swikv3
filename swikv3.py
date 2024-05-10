@@ -131,7 +131,7 @@ class MainWindow(QMainWindow):
                 # widget.view.append_on_document_ready(0, widget.view.set_ratio, zoom, True)
                 # widget.view.append_on_document_ready(0, widget.view.set_page, page)
                 # widget.miniature_view.append_on_document_ready(0, widget.miniature_view.set_page, page)
-                self.open_tab(widget, filename)
+                self.open_new_tab(widget, filename)
 
             self.tab_widget.setCurrentIndex(0)
             self.update_title()
@@ -140,12 +140,12 @@ class MainWindow(QMainWindow):
         filename, _ = QFileDialog.getOpenFileName(self, "Open PDF", "", "PDF Files (*.pdf)")
         if filename:
             widget = self.create_widget()
-            self.open_tab(widget, filename)
+            self.open_new_tab(widget, filename)
 
     def create_widget(self):
         widget = SwikWidget(self, self.tab_widget, self.config)
         widget.interaction_changed.connect(self.update_interaction_status)
-        widget.open_requested.connect(self.open_requested)
+        widget.open_requested.connect(self.open_requested_by_tab)
         widget.file_changed.connect(self.update_title)
         return widget
 
@@ -153,7 +153,7 @@ class MainWindow(QMainWindow):
         print("tab_menu", action, code, data, widget)
         filename = widget.get_filename()
         if code == self.TAB_MENU_OPEN_IN_OTHER_TAB:
-            self.open_tab(filename)
+            self.open_new_tab(filename)
         elif code == self.TAB_MENU_OPEN_IN_OTHER_WINDOW:
             subprocess.Popen([sys.executable, os.path.realpath(__file__), filename])
         elif code == self.TAB_MENU_OPEN_WITH:
@@ -192,7 +192,7 @@ class MainWindow(QMainWindow):
         for action in self.file_menu_actions:
             action.setEnabled(value)
 
-    def open_tab(self, widget, filename=None):
+    def open_new_tab(self, widget, filename=None):
         self.tab_widget.new_tab(widget, filename)
         if filename is not None:
             widget.open_file(filename)
@@ -200,9 +200,9 @@ class MainWindow(QMainWindow):
 
         return widget
 
-    def open_requested(self, filename, page, zoom):
+    def open_requested_by_tab(self, filename, page, zoom):
         widget = self.create_widget()
-        self.open_tab(widget, filename)
+        self.open_new_tab(widget, filename)
         widget.view.set_ratio(zoom, True)
         widget.view.set_page(page)
 
@@ -234,25 +234,7 @@ class MainWindow(QMainWindow):
             filename, _ = QFileDialog.getOpenFileName(self, "Open PDF", "", "PDF Files (*.pdf)")
 
         if filename:
-            '''for widget in self.get_widgets():
-                if widget.get_filename() is None:
-                    widget.open_file(filename)
-                    break
-            else:
-                widget = self.create_widget()
-                self.create_tab(widget, filename)
-            '''
-
-            def kk():
-                widget = self.create_widget()
-                widget.open_file(filename)
-                w = self.create_widget()
-                self.tab_widget.removeTab(0)
-                w.deleteLater()
-                self.tab_widget.insertTab(0, widget, filename)
-                print("OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO")
-
-            utils.delayed(100, kk)
+            self.current().open_file(filename)
 
     def save_file(self):
         self.current().save_file()
@@ -280,7 +262,7 @@ class MainWindow(QMainWindow):
         if filename:
             self.current().append_pdf(filename)
 
-    def eventFilter(self, a0: 'QObject', a1: 'QEvent') -> bool:
+    def eventFilter(self, a0, a1) -> bool:
         if a1.type() == QEvent.KeyPress:
             a = self.current().key_manager.key_pressed(a1)
             print("pessed return", a1)

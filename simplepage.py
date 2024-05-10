@@ -73,7 +73,6 @@ class SimplePage(QGraphicsRectItem):
         self.request_image_timer.setSingleShot(True)
         self.request_image_timer.timeout.connect(self.process_requested_image)
         self.requested_image_ratio = 1
-
         self.image_ratio = 0
 
     def get_index(self):

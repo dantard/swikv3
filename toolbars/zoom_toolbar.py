@@ -2,6 +2,7 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QToolBar, QComboBox
 
 from GraphView import GraphView
+from LayoutManager import LayoutManager
 from toolbars.toolbar import Toolbar
 
 
@@ -29,9 +30,9 @@ class ZoomToolbar(Toolbar):
 
     def option_selected(self):
         if self.lb_zoom.currentText() == "Fit Width":
-            self.view.set_fit_width(True)
+            self.view.layout_manager.set_mode(LayoutManager.MODE_FIT_WIDTH)
         else:
-            self.view.set_fit_width(False)
+            self.view.layout_manager.set_mode(LayoutManager.MODE_VERTICAL)
             self.view.set_ratio(float(self.lb_zoom.currentText().replace("%", "")) / 100, False)
 
     def zoom_entered(self):

@@ -129,7 +129,7 @@ class ToolRearrange(Tool, Undoable):
 
             if self.insert_at_page is None:
                 for view in self.views:
-                    view.fully_update_layout()
+                    view.update_layout()
             else:
                 # I'm actually change order of pages
                 for page in self.selected:
@@ -171,7 +171,7 @@ class ToolRearrange(Tool, Undoable):
 
     def operation_done(self):
         for view in self.views:
-            view.fully_update_layout()
+            view.update_layout()
         self.leader_page = None
         self.insert_at_page = None
         self.pickup_point = None
@@ -229,14 +229,15 @@ class ToolRearrange(Tool, Undoable):
             self.renderer.rearrange_pages(list_of_pages, False)
             for view in self.views:
                 view.rearrange(list_of_pages)
-                view.fully_update_layout()
+                view.update_layout()
+
         elif res == insert_blank:
             pass
         elif res == rotate:
             for page in self.selected:
                 self.renderer.rotate_page(page.index, 90)
                 page.invalidate()
-            self.view.fully_update_layout()
+            self.view.update_layout()
 
     def undo(self, kind, info):
         print(kind, info)

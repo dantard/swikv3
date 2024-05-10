@@ -104,8 +104,8 @@ class SwikGraphView(GraphView):
         for index in pages_to_refresh:
             self.pages[index].invalidate()
 
-    def page_processed(self, page):
-        super().page_processed(page)
+    def create_page(self, page):
+        page = super().create_page(page)
         self.renderer.get_annotations(page)
         self.renderer.get_widgets(page)
         links = self.renderer.get_links(page)
@@ -113,6 +113,7 @@ class SwikGraphView(GraphView):
             if type(link) == InternalLink:
                 link.signals.clicked.connect(self.link_clicked)
                 # self.pages[page.index].add_link(link[0], link[1], link[2])
+        return page
 
     def link_clicked(self, page, pos):
         # self.move_to_page(page)
