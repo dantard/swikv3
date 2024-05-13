@@ -61,9 +61,9 @@ class SwikConfig(EasyConfig):
         self.private.addString("last_dir_for_image")
         self.private.addDict("print_options")
 
-        self.tabs = self.private.addList("tabs")
-        self.zoom = self.private.addList("zoom")
-        self.pages = self.private.addList("pages")
+        self.tabs = self.private.addDict("tabs")
+        #self.zoom = self.private.addList("zoom")
+        #self.pages = self.private.addList("pages")
 
     def flush(self):
         self.save(self.base_dir + "swikV3.yaml")
@@ -75,16 +75,12 @@ class SwikConfig(EasyConfig):
         self.load(self.base_dir + "swikV3.yaml")
 
     def get_tabs(self, index=None):
-        if index is not None:
-            tab, zoom, page = self.tabs.get_value()[index]
-        else:
-            tab, zoom, page = self.tabs.get_value(), self.zoom.get_value(), self.pages.get_value()
-        return tab, zoom, page
+        return self.tabs.get_value()
 
-    def set_tabs(self, tabs, zoom, page):
+    def set_tabs(self, tabs):
         self.tabs.set_value(tabs)
-        self.zoom.set_value(zoom)
-        self.pages.set_value(page)
+        #self.zoom.set_value(zoom)
+        #self.pages.set_value(page)
 
     def push_window_config(self, window):
         # self.set("Ratio", view.get_ratio())

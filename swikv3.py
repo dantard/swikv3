@@ -12,6 +12,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QProgressBar
 import resources
 
 import utils
+from LayoutManager import LayoutManager
 from progressing import Progressing
 from swik_tab_widget import SwikTabWidget
 from swik_widget import SwikWidget
@@ -103,11 +104,12 @@ class MainWindow(QMainWindow):
         # Done
 
         # self.tab_widget.setVisible(False)
+        self.setCentralWidget(self.tab_widget)
         self.config.apply_window_config(self)
         self.update_interaction_status()
         self.show()
-        self.setCentralWidget(self.tab_widget)
 
+    def restore(self):
         if self.config.general.get("open_last"):
             self.progress = Progressing(None, 0, "Opening", True)
             # utils.delayed(100, self.open_tabs)
@@ -119,31 +121,35 @@ class MainWindow(QMainWindow):
         # with a delay to allow the window to create
         # tabs first and ALSO to show the window if
         # some files has a password dialog to show
+        tabs = self.config.get_tabs()
+        tabs = tabs if tabs is not None else {}
 
-        filenames, zoom, pages = self.config.get_tabs()
-        if filenames is not None and len(filenames) > 0:
-            for filename, zoom, page in zip(filenames, zoom, pages):
-                if self.progress.wasCanceled():
-                    break
-                widget = self.create_widget()
+        for filename, values in tabs.items():
+            if self.progress.wasCanceled():
+                break
+            widget = self.create_widget()
 
-                # Not especially happy with this but it seems to work
-                # widget.view.append_on_document_ready(0, widget.view.set_ratio, zoom, True)
-                # widget.view.append_on_document_ready(0, widget.view.set_page, page)
-                # widget.miniature_view.append_on_document_ready(0, widget.miniature_view.set_page, page)
-                self.open_new_tab(widget, filename)
+            # Not especially happy with this but it seems to work
+            # widget.view.append_on_document_ready(0, widget.view.set_ratio, zoom, True)
+            # widget.view.append_on_document_ready(0, widget.view.set_page, page)
+            # widget.miniature_view.append_on_document_ready(0, widget.miniature_view.set_page, page)
+            self.open_new_tab(widget, values[0])
+            widget.view.set_mode(values[1])
+            widget.view.set_ratio(values[2], True)
+            widget.view.set_scroll_value(values[3])
 
-            self.tab_widget.setCurrentIndex(0)
-            self.update_title()
+        self.tab_widget.setCurrentIndex(0)
+        self.update_title()
 
     def plus_clicked(self):
         filename, _ = QFileDialog.getOpenFileName(self, "Open PDF", "", "PDF Files (*.pdf)")
         if filename:
-            widget = self.create_widget()
+            widget = self.create_widget(LayoutManager.MODE_FIT_WIDTH)
             self.open_new_tab(widget, filename)
 
-    def create_widget(self):
+    def create_widget(self, mode=LayoutManager.MODE_VERTICAL):
         widget = SwikWidget(self, self.tab_widget, self.config)
+        widget.set_mode(mode)
         widget.interaction_changed.connect(self.update_interaction_status)
         widget.open_requested.connect(self.open_requested_by_tab)
         widget.file_changed.connect(self.update_title)
@@ -214,15 +220,13 @@ class MainWindow(QMainWindow):
         # self.setWindowTitle("Swik" + (" - " + filename) if filename is not None else "")
 
     def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
-        tabs, zoom, page = [], [], []
+        tabs = {}
         for index in range(self.tab_widget.count()):
             swik_widget = self.tab_widget.widget(index)
             if (filename := swik_widget.get_filename()) is not None:
-                tabs.append(filename)
-                zoom.append(swik_widget.view.get_ratio())
-                page.append(swik_widget.view.get_page())
+                tabs[index] = [filename, swik_widget.view.get_mode(), swik_widget.view.get_ratio(), swik_widget.view.get_scroll_value()]
 
-        self.config.set_tabs(tabs, zoom, page)
+        self.config.set_tabs(tabs)
         self.config.push_window_config(self)
         self.config.flush()
         super().closeEvent(a0)
@@ -298,13 +302,19 @@ def main():
         while socket.hasPendingDatagrams():
             datagram, host, port = socket.readDatagram(socket.pendingDatagramSize())
             window.hide()
+            #window.activateWindow()
+            widget = window.create_widget()
+            window.open_new_tab(widget, datagram.decode())
             window.show()
-            window.open_file(datagram.decode())
 
     socket.readyRead.connect(received)
 
     if len(sys.argv) > 1:
-        window.open_file(sys.argv[1])
+        #window.open_file(sys.argv[1])
+        widget = window.create_widget()
+        window.open_new_tab(widget, sys.argv[1])
+    else:
+        window.restore()
 
     app.exec_()
 

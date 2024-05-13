@@ -80,10 +80,9 @@ class GraphView(QGraphicsView):
         self.on_document_ready.append((delay, func, args))
 
     def set_mode(self, mode, force=False):
-        if mode != self.mode or force:
-            self.mode = mode
-            self.layout_manager.set_mode(mode)
-            self.layout_manager.fully_update_layout()
+        self.mode = mode
+        self.layout_manager.set_mode(mode, force)
+        self.ratio_changed.emit(-1)
 
     def finish(self):
         self.pages.clear()
@@ -92,7 +91,7 @@ class GraphView(QGraphicsView):
         self.align = align
 
     def get_mode(self):
-        return self.mode
+        return self.layout_manager.get_mode()
 
     # ## EVENTS
     def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
@@ -143,7 +142,7 @@ class GraphView(QGraphicsView):
             # Record radio change
             self.ratio = ratio
 
-            # Recorde scrollbar position
+            # Record scrollbar position
             vertical = self.layout_manager.get_mode() in [LayoutManager.MODE_VERTICAL,
                                                           LayoutManager.MODE_VERTICAL_MULTIPAGE,
                                                           LayoutManager.MODE_SINGLE_PAGE]
@@ -152,15 +151,17 @@ class GraphView(QGraphicsView):
             else:
                 percent = self.horizontalScrollBar().value() / self.scene().width() if self.scene().width() != 0 else 1
 
-            for page in self.pages.values():
-                page.update_image(self.ratio)
-
-            self.layout_manager.fully_update_layout()
+            self.layout_manager.reset()
 
             if vertical:
                 self.verticalScrollBar().setValue(int(self.scene().height() * percent))
+                self.horizontalScrollBar().setValue(int(self.horizontalScrollBar().maximum()/2))
             else:
                 self.horizontalScrollBar().setValue(int(self.scene().width() * percent))
+
+            for page in self.pages.values():
+                page.update_image(self.ratio)
+                self.layout_manager.update_layout(page)
 
         if inform:
             self.ratio_changed.emit(self.get_ratio())
@@ -183,6 +184,18 @@ class GraphView(QGraphicsView):
 
     def get_page(self):
         return self.page
+
+    def get_scroll_value(self):
+        if self.layout_manager.mode in [LayoutManager.MODE_VERTICAL, LayoutManager.MODE_VERTICAL_MULTIPAGE, LayoutManager.MODE_SINGLE_PAGE]:
+            return self.verticalScrollBar().value()
+        else:
+            return self.horizontalScrollBar().value()
+
+    def set_scroll_value(self, value):
+        if self.layout_manager.mode in [LayoutManager.MODE_VERTICAL, LayoutManager.MODE_VERTICAL_MULTIPAGE, LayoutManager.MODE_SINGLE_PAGE]:
+            self.verticalScrollBar().setValue(value)
+        else:
+            self.horizontalScrollBar().setValue(value)
 
     def get_num_of_pages(self):
         return len(self.pages)

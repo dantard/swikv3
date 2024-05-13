@@ -136,37 +136,23 @@ class SimplePage(QGraphicsRectItem):
     def request_image(self, ratio, now=False):
         self.requested_image_ratio = ratio
         self.request_image_timer.stop()
-        self.request_image_timer.start(500 if not now else 5)
+        self.request_image_timer.start(200 if not now else 5)
 
     def process_requested_image(self):
         if self.isShown():
             image = self.renderer.render_page(self.index, self.requested_image_ratio)
             self.image_ready(image, self.requested_image_ratio)
 
-    def kk(self):
-        print("inside kk")
-        image = self.renderer.render_page(self.index, self.requested_image_ratio)
-        print("image", image)
-        self.signals2.image_prepared.emit(image, self.requested_image_ratio)
-        print("emitted", image)
-
-    def aprocess_requested_image(self):
-        self.view.submit(self.kk)
 
     def paint(self, painter, option, widget: typing.Optional[QWidget] = ...) -> None:
         super().paint(painter, option, widget)
-        if True:  # self.state == SimplePage.STATE_INVALID or self.state == SimplePage.STATE_FORCED:
-            # self.renderer.request_image(self.index, self.ratio, self.state == SimplePage.STATE_FORCED)
-            if self.image is None or self.ratio != self.image_ratio:
-                print('Requesting image for page', self.index, self.view)
-                self.request_image(self.ratio, self.image is None)
-                self.state = SimplePage.STATE_IMAGE_REQUESTED
+        if self.image is None or self.ratio != self.image_ratio:
+            print('Requesting image for page', self.index, self.view)
+            self.request_image(self.ratio, self.image is None)
+            self.state = SimplePage.STATE_IMAGE_REQUESTED
 
         if self.image is not None:
-            # self.lock.lock()
             painter.drawImage(QRectF(0, 0, self.rect().width(), self.rect().height()), self.image.toImage())
-            # painter.drawPixmap(QPointF(0, 0), self.image, QRectF(0, 0, self.rect().width()/self.ratio, self.rect().height()/self.ratio))
-            # self.lock.unlock()
 
     def image_ready(self, image, ratio):
         print("Image ready for page", self.index, "with state", self.state, "and image", image.width(), "x", image.height())

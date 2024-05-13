@@ -757,6 +757,7 @@ class MuPDFRenderer(QLabel):
     def insert_image(self, index, rect, qimage):
         self.document[index].clean_contents()
         rect = fitz.Rect(rect.x(), rect.y(), rect.x() + rect.width(), rect.y() + rect.height())
+        print("jsjsjs", rect, qimage.width())
         byte_array = QByteArray()
         buffer = QBuffer(byte_array)
         buffer.open(QIODevice.WriteOnly)

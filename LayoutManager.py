@@ -36,10 +36,11 @@ class LayoutManager:
     def get_mode(self):
         return self.mode
 
-    def set_mode(self, mode):
+    def set_mode(self, mode, update=True):
         self.mode = mode
-        self.reset()
-        self.fully_update_layout()
+        if update:
+            self.reset()
+            self.fully_update_layout()
 
     def fully_update_layout(self):
         self.reset()

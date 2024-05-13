@@ -54,7 +54,7 @@ class ZoomToolbar(Toolbar):
         self.view.set_ratio(value, True)
 
     def ratio_changed(self, ratio):
-        if self.view.is_fitting_width():
+        if ratio < 0:
             self.lb_zoom.setCurrentText("Fit Width")
             self.lb_zoom.blockSignals(True)
             self.lb_zoom.setEditable(False)

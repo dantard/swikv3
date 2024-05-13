@@ -210,6 +210,9 @@ class SwikWidget(QWidget):
     def set_page(self, page):
         self.view.set_page(page)
 
+    def set_mode(self, mode):
+        self.view.layout_manager.set_mode(mode, False)
+
     def document_ready(self):
         pass
 
@@ -325,7 +328,7 @@ class SwikWidget(QWidget):
         self.load_progress.setMaximum(self.renderer.get_num_of_pages())
 
         # Create pages
-        self.set_ratio(1.0)
+        self.view.set_ratio(1, False)
         self.view.layout_manager.reset()
         self.miniature_view.layout_manager.reset()
 
@@ -378,6 +381,7 @@ class SwikWidget(QWidget):
             if res == MuPDFRenderer.OPEN_OK:
                 self.set_interactable(True)
                 self.file_changed.emit()
+                self.view.set_page(0)
                 self.config.update_recent(self.renderer.get_filename())
                 self.config.flush()
 

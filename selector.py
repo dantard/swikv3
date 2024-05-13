@@ -3,7 +3,7 @@ import typing
 from PyQt5 import QtGui
 from PyQt5.QtCore import QObject, QRectF, Qt
 from PyQt5.QtGui import QFont, QFontMetrics, QImage, QPainter
-from PyQt5.QtWidgets import QGraphicsRectItem, QWidget
+from PyQt5.QtWidgets import QGraphicsRectItem, QWidget, QLabel
 
 from coloreable import ColoreableRectItem
 from paintable import PaintableRectItem
@@ -162,7 +162,13 @@ class PaintableSelectorRectItem(SelectorRectItem):
         painter = QPainter(image)
         painter.setRenderHint(QPainter.SmoothPixmapTransform)
         painter.setRenderHint(QPainter.Antialiasing)
+        painter.setRenderHint(QPainter.HighQualityAntialiasing)
         painter.drawImage(rect, img)
+        '''
+        self.label = QLabel()
+        self.label.setPixmap(QtGui.QPixmap(image))
+        self.label.show()
+        '''
         return image
 
     def paint(self, painter: QtGui.QPainter, option, widget: typing.Optional[QWidget] = ...) -> None:
