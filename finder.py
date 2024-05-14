@@ -26,6 +26,12 @@ class Finder(QObject):
         self.thread = None
         self.keep_running = True
 
+
+    def finish(self):
+        self.keep_running = False
+        if self.thread is not None:
+            self.thread.join()
+
     def set_mode(self, mode):
         self.set_mode(mode)
 

@@ -25,6 +25,10 @@ class InsertImageRectItem(ResizableRectItem):
         maintain_size = menu.addAction("Set Mode Maintain Size")
         maintain_size.setCheckable(True)
         maintain_size.setChecked(image_mode == self.IMAGE_MODE_MAINTAIN_SIZE)
+        menu.addSeparator()
+        delete = menu.addAction("Delete")
+
+
         res = menu.exec(event.screenPos())
         if res == stretch:
             self.set_image_mode(self.IMAGE_MODE_STRETCH)
@@ -32,6 +36,9 @@ class InsertImageRectItem(ResizableRectItem):
             self.set_image_mode(self.IMAGE_MODE_MAINTAIN_RATIO)
         elif res == maintain_size:
             self.set_image_mode(self.IMAGE_MODE_MAINTAIN_SIZE)
+        elif res == delete:
+            self.notify_deletion(self)
+            self.scene().removeItem(self)
         self.update()
 
 

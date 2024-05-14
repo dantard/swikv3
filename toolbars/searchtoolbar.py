@@ -45,8 +45,8 @@ class TextSearchToolbar(Toolbar):
         self.finder = Finder(self.view, renderer)
         self.finder.found.connect(self.found_word)
 
-        self.found_how_many = 0
-        self.found = list()
+        #self.found_how_many = 0
+        #self.found = list()
         self.found_index = None
         self.prev_word = None
         #        self.words = self.view.get_words()
@@ -92,7 +92,8 @@ class TextSearchToolbar(Toolbar):
         self.setVisible(False)
 
     def document_changed(self):
-        pass
+        self.finder.clear()
+        self.close()
 
     def setEnabled(self, value):
         for w in self.widgets:
@@ -126,6 +127,7 @@ class TextSearchToolbar(Toolbar):
             self.next_word(1)
 
     def close(self):
+        self.finder.finish()
         self.find_label.setText("Not found")
         self.setVisible(False)
 

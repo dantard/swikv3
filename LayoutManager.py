@@ -16,7 +16,9 @@ class LayoutManager:
     MODE_FIT_WIDTH = 4
 
     modes = {MODE_VERTICAL: 'Vertical', MODE_VERTICAL_MULTIPAGE: 'Multi page',
-             MODE_HORIZONTAL: 'Horizontal', MODE_SINGLE_PAGE: 'Single Page', MODE_FIT_WIDTH: 'Fit Width'}
+             MODE_HORIZONTAL: 'Horizontal' , MODE_SINGLE_PAGE: 'Single Page', MODE_FIT_WIDTH: 'Fit Width'}
+
+    Vertical = [MODE_VERTICAL, MODE_VERTICAL_MULTIPAGE, MODE_SINGLE_PAGE, MODE_FIT_WIDTH]
 
     ratio_max = 5
     ratio_min = 0.25
@@ -35,6 +37,9 @@ class LayoutManager:
 
     def get_mode(self):
         return self.mode
+
+    def is_vertical(self):
+        return self.mode in self.Vertical
 
     def set_mode(self, mode, update=True):
         self.mode = mode

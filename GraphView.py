@@ -44,7 +44,6 @@ class GraphView(QGraphicsView):
         self.natural_hscroll = False
         self.renderer = renderer
         self.manager = manager
-        self.fitting_width = False
         self.exiting = False
         self.page = 0
         self.mode = mode
@@ -80,6 +79,7 @@ class GraphView(QGraphicsView):
         self.on_document_ready.append((delay, func, args))
 
     def set_mode(self, mode, force=False):
+        print("Setting mode", mode, force)
         self.mode = mode
         self.layout_manager.set_mode(mode, force)
         self.ratio_changed.emit(-1)
@@ -117,43 +117,27 @@ class GraphView(QGraphicsView):
     def get_page_width(self, index):
         return self.pages[index].get_orig_width()
 
-    def aaaset_fit_width(self, value):
-        self.fitting_width = value
-        if value:
-            self.fit_width()
-
-    def fit_width(self):
-        for page in self.pages.values():
-            page.fit_width()
-        self.fully_update_layout()
-
-    def is_fitting_width(self):
-        return self.fitting_width
 
     def get_ratio(self):
         return self.ratio
 
-    def get_thread_pool(self):
-        return self.tpe
-
     def set_ratio(self, ratio, inform=False):
+        if self.layout_manager.get_mode() == LayoutManager.MODE_FIT_WIDTH:
+            self.layout_manager.set_mode(LayoutManager.MODE_VERTICAL, False)
+
         ratio = min(max(self.layout_manager.ratio_min, ratio), self.layout_manager.ratio_max)
         if round(ratio, 2) != round(self.get_ratio(), 2):
             # Record radio change
             self.ratio = ratio
 
-            # Record scrollbar position
-            vertical = self.layout_manager.get_mode() in [LayoutManager.MODE_VERTICAL,
-                                                          LayoutManager.MODE_VERTICAL_MULTIPAGE,
-                                                          LayoutManager.MODE_SINGLE_PAGE]
-            if vertical:
+            if self.layout_manager.is_vertical():
                 percent = self.verticalScrollBar().value() / self.scene().height() if self.scene().height() != 0 else 1
             else:
                 percent = self.horizontalScrollBar().value() / self.scene().width() if self.scene().width() != 0 else 1
 
             self.layout_manager.reset()
 
-            if vertical:
+            if self.layout_manager.is_vertical():
                 self.verticalScrollBar().setValue(int(self.scene().height() * percent))
                 self.horizontalScrollBar().setValue(int(self.horizontalScrollBar().maximum()/2))
             else:
@@ -165,7 +149,8 @@ class GraphView(QGraphicsView):
 
         if inform:
             self.ratio_changed.emit(self.get_ratio())
-        self.update()
+        self.scene().setBackgroundBrush(Qt.gray)
+
 
     def set_natural_hscroll(self, value):
         self.natural_hscroll = value
@@ -233,9 +218,6 @@ class GraphView(QGraphicsView):
 
             if self.mode == LayoutManager.MODE_SINGLE_PAGE:
                 self.layout_manager.fully_update_layout()
-
-            if self.fitting_width:
-                self.fit_width()
 
             # Must be here because of the fit_width that changes the scrollbars
             if self.mode in [LayoutManager.MODE_VERTICAL_MULTIPAGE, LayoutManager.MODE_VERTICAL]:
@@ -345,9 +327,7 @@ class GraphView(QGraphicsView):
 
         modifiers = QtWidgets.QApplication.keyboardModifiers()
         if modifiers != QtCore.Qt.ControlModifier:
-            if self.mode in [LayoutManager.MODE_VERTICAL,
-                             LayoutManager.MODE_VERTICAL_MULTIPAGE,
-                             LayoutManager.MODE_SINGLE_PAGE]:
+            if self.mode in LayoutManager.Vertical:
                 super().wheelEvent(event)
             else:
                 modifiers = QtWidgets.QApplication.keyboardModifiers()
@@ -363,7 +343,6 @@ class GraphView(QGraphicsView):
                         super().wheelEvent(event)
         else:
             # if not self.fitting_width:
-            self.fitting_width = False
             delta = int((event.angleDelta().y() / 1200) * 100) / 100
             mouse_on_scene = self.mapToScene(event.pos())
             page = self.get_items_at_pos(event.pos(), SimplePage, 0, False)

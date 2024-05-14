@@ -104,8 +104,9 @@ class SwikGraphView(GraphView):
         for index in pages_to_refresh:
             self.pages[index].invalidate()
 
-    def create_page(self, page):
+    def create_page(self, page, ratio=1):
         page = super().create_page(page)
+        page.update_image(ratio)
         self.renderer.get_annotations(page)
         self.renderer.get_widgets(page)
         links = self.renderer.get_links(page)

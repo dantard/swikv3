@@ -143,7 +143,7 @@ class SwikWidget(QWidget):
 
         self.toolbar = QToolBar()
         # self.toolbar.addAction("cac", lambda: self.view.insert_blank_pages(2,4))
-        self.toolbar.addAction("Open", self.open_file).setIcon(QIcon(":/icons/open.png"))
+        self.toolbar.addAction("Open", self.open_button).setIcon(QIcon(":/icons/open.png"))
         self.save_btn = self.toolbar.addAction("Save", self.save_file)
         self.save_btn.setIcon(QIcon(":/icons/save.png"))
         # self.toolbar.addSeparator()
@@ -205,6 +205,7 @@ class SwikWidget(QWidget):
         QApplication.processEvents()
 
     def set_ratio(self, ratio):
+        print("set_ratio_widget", ratio)
         self.view.set_ratio(ratio, True)
 
     def set_page(self, page):
@@ -328,13 +329,12 @@ class SwikWidget(QWidget):
         self.load_progress.setMaximum(self.renderer.get_num_of_pages())
 
         # Create pages
-        self.view.set_ratio(1, False)
         self.view.layout_manager.reset()
         self.miniature_view.layout_manager.reset()
 
         for i in range(self.renderer.get_num_of_pages()):
             # Create Page
-            page = self.view.create_page(i)
+            page = self.view.create_page(i, self.view.get_ratio())
             self.view.layout_manager.update_layout(page)
 
             # Create Miniature Page
@@ -363,7 +363,9 @@ class SwikWidget(QWidget):
     def manage_tool(self, tool):
         self.manager.use_tool(tool)
 
-    # ### Tools
+    def open_button(self):
+        #self.set_ratio(1)
+        self.open_file()
 
     def open_file(self, filename=None):
         if filename is None:
@@ -431,3 +433,7 @@ class SwikWidget(QWidget):
             self.miniature_view.fully_update_layout()
 
         pd.start(append)
+
+    def deleteLater(self):
+        self.finder_toolbar.close()
+        super().deleteLater()

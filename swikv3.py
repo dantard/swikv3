@@ -133,10 +133,11 @@ class MainWindow(QMainWindow):
             # widget.view.append_on_document_ready(0, widget.view.set_ratio, zoom, True)
             # widget.view.append_on_document_ready(0, widget.view.set_page, page)
             # widget.miniature_view.append_on_document_ready(0, widget.miniature_view.set_page, page)
-            self.open_new_tab(widget, values[0])
             widget.view.set_mode(values[1])
-            widget.view.set_ratio(values[2], True)
+            if values[1] != LayoutManager.MODE_FIT_WIDTH:
+                widget.view.set_ratio(values[2], True)
             widget.view.set_scroll_value(values[3])
+            self.open_new_tab(widget, values[0])
 
         self.tab_widget.setCurrentIndex(0)
         self.update_title()
@@ -144,7 +145,7 @@ class MainWindow(QMainWindow):
     def plus_clicked(self):
         filename, _ = QFileDialog.getOpenFileName(self, "Open PDF", "", "PDF Files (*.pdf)")
         if filename:
-            widget = self.create_widget(LayoutManager.MODE_FIT_WIDTH)
+            widget = self.create_widget()
             self.open_new_tab(widget, filename)
 
     def create_widget(self, mode=LayoutManager.MODE_VERTICAL):
@@ -238,7 +239,11 @@ class MainWindow(QMainWindow):
             filename, _ = QFileDialog.getOpenFileName(self, "Open PDF", "", "PDF Files (*.pdf)")
 
         if filename:
-            self.current().open_file(filename)
+            if self.current() is not None:
+                #self.current().set_ratio(1)
+                self.current().open_file(filename)
+            else:
+                self.open_new_tab(self.create_widget(), filename)
 
     def save_file(self):
         self.current().save_file()

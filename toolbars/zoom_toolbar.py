@@ -31,9 +31,11 @@ class ZoomToolbar(Toolbar):
     def option_selected(self):
         if self.lb_zoom.currentText() == "Fit Width":
             self.view.layout_manager.set_mode(LayoutManager.MODE_FIT_WIDTH)
+            self.lb_zoom.setEditable(False)
         else:
             self.view.layout_manager.set_mode(LayoutManager.MODE_VERTICAL)
             self.view.set_ratio(float(self.lb_zoom.currentText().replace("%", "")) / 100, False)
+            self.lb_zoom.setEditable(True)
 
     def zoom_entered(self):
 
@@ -54,12 +56,20 @@ class ZoomToolbar(Toolbar):
         self.view.set_ratio(value, True)
 
     def ratio_changed(self, ratio):
+
+        print("received ratio", ratio)
+
         if ratio < 0:
-            self.lb_zoom.setCurrentText("Fit Width")
+            print("received ra222tio", ratio)
+
+
             self.lb_zoom.blockSignals(True)
             self.lb_zoom.setEditable(False)
+            self.lb_zoom.setCurrentText("Fit Width")
             self.lb_zoom.blockSignals(False)
         else:
+            print("received ra223332tio", ratio)
+
             self.lb_zoom.blockSignals(True)
             self.lb_zoom.setEditable(True)
             self.lb_zoom.setCurrentText("{}%".format(int(ratio * 100)))
