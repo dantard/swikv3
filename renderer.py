@@ -675,42 +675,45 @@ class MuPDFRenderer(QLabel):
 
     def flatten(self, filename):
         self.sync_requested.emit()
-
-        pre = fitz.TOOLS.mupdf_warnings()
-        pdf_bytes = self.document.convert_to_pdf()
-        post = fitz.TOOLS.mupdf_warnings()
-
-        pdf = fitz.open("pdf", pdf_bytes)
-
-        # If MuPDF complains about missing fonts, try workaround the problem
-        if post != pre:
-            # Workaround for combo boxes that don't get redacted
-            for i, page in enumerate(self.document):
-                tw = fitz.TextWriter(pdf[i].rect)
-                for field in page.widgets():
-
-                    if field.field_type == PDF_WIDGET_TYPE_COMBOBOX:
-                        pdf[i].add_redact_annot(field.rect, field.field_value, fill=(1, 1, 1), fontsize=field.text_fontsize)
-                        pdf[i].apply_redactions()
-                    elif field.field_type == PDF_WIDGET_TYPE_CHECKBOX:
-                        x1, y1, x2, y2 = field.rect
-                        x2, y2 = x1 + min(x2 - x1, y2 - y1), y1 + min(x2 - x1, y2 - y1)
-                        pdf[i].add_redact_annot(field.rect, "", fill=(1, 1, 1), fontsize=field.text_fontsize)
-                        tw.append((x1, y2), "☑" if field.field_value != "Off" else "☐", fontsize=(y2 - y1) * 1.3)
-
-                pdf[i].apply_redactions()
-                tw.write_text(pdf[i])
-
-            ret_code = MuPDFRenderer.FLATTEN_WORKAROUND
-        else:
-            ret_code = MuPDFRenderer.FLATTEN_OK
-
-        try:
-            pdf.save(filename)
-        except:
-            ret_code = MuPDFRenderer.FLATTEN_ERROR
-
-        return ret_code
+        self.document.bake()
+        self.document.save(filename, encryption=PDF_ENCRYPT_KEEP, deflate=True, garbage=3)
+        return self.FLATTEN_OK
+        # # self.set_document(self.document, True)
+        # return
+        #
+        # post = fitz.TOOLS.mupdf_warnings()
+        #
+        # pdf = fitz.open("pdf", pdf_bytes)
+        #
+        # # If MuPDF complains about missing fonts, try workaround the problem
+        # if post != pre:
+        #     # Workaround for combo boxes that don't get redacted
+        #     for i, page in enumerate(self.document):
+        #         tw = fitz.TextWriter(pdf[i].rect)
+        #         for field in page.widgets():
+        #
+        #             if field.field_type == PDF_WIDGET_TYPE_COMBOBOX:
+        #                 pdf[i].add_redact_annot(field.rect, field.field_value, fill=(1, 1, 1), fontsize=field.text_fontsize)
+        #                 pdf[i].apply_redactions()
+        #             elif field.field_type == PDF_WIDGET_TYPE_CHECKBOX:
+        #                 x1, y1, x2, y2 = field.rect
+        #                 x2, y2 = x1 + min(x2 - x1, y2 - y1), y1 + min(x2 - x1, y2 - y1)
+        #                 pdf[i].add_redact_annot(field.rect, "", fill=(1, 1, 1), fontsize=field.text_fontsize)
+        #                 tw.append((x1, y2), "☑" if field.field_value != "Off" else "☐", fontsize=(y2 - y1) * 1.3)
+        #
+        #         pdf[i].apply_redactions()
+        #         tw.write_text(pdf[i])
+        #
+        #     ret_code = MuPDFRenderer.FLATTEN_WORKAROUND
+        # else:
+        #     ret_code = MuPDFRenderer.FLATTEN_OK
+        #
+        # try:
+        #     pdf.save(filename)
+        # except:
+        #     ret_code = MuPDFRenderer.FLATTEN_ERROR
+        #
+        # return ret_code
 
     def save_fonts(self, out_dir):
         font_xrefs = set()
