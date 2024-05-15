@@ -12,7 +12,7 @@ from PyQt5.QtGui import QPixmap, QImage, QBrush, QPen, QColor
 from PyQt5.QtWidgets import QLabel
 import fitz
 from fitz import PDF_ENCRYPT_KEEP, PDF_WIDGET_TYPE_TEXT, PDF_WIDGET_TYPE_CHECKBOX, PDF_WIDGET_TYPE_COMBOBOX, Font, PDF_ANNOT_IS_LOCKED, PDF_ANNOT_HIGHLIGHT, \
-    PDF_ANNOT_SQUARE, TEXTFLAGS_DICT, TEXT_PRESERVE_IMAGES, TextWriter
+    PDF_ANNOT_SQUARE, TEXTFLAGS_DICT, TEXT_PRESERVE_IMAGES, TextWriter, PDF_WIDGET_TYPE_RADIOBUTTON
 
 import utils
 from annotations.highlight_annotation import HighlightAnnotation
@@ -20,7 +20,7 @@ from annotations.hyperlink import Link, ExternalLink, InternalLink
 from annotations.squareannotation import SquareAnnotation
 from swiktext import SwikText, SwikTextReplace
 from utils import fitz_rect_to_qrectf
-from widgets.pdf_widget import PdfTextWidget, MultiLinePdfTextWidget, PdfCheckboxWidget, PdfComboboxWidget, PdfWidget
+from widgets.pdf_widget import PdfTextWidget, MultiLinePdfTextWidget, PdfCheckboxWidget, PdfComboboxWidget, PdfWidget, PdfRadioButtonWidget
 from word import Word, MetaWord
 
 
@@ -182,9 +182,11 @@ class MuPDFRenderer(QLabel):
 
     def remove_dynamic_elements(self):
         for page in self.document:
+            widgets = page.widgets()
             for annot in page.annots():  # type: fitz.Annot
                 page.delete_annot(annot)
-            for field in page.widgets():
+            for field in widgets:
+                print("Deleting widget", field.field_name)
                 page.delete_widget(field)
 
     def get_page_size(self, index):
@@ -608,6 +610,18 @@ class MuPDFRenderer(QLabel):
 
     to_remove = []
 
+    def del_widgets(self, page):
+        for i in range(len(self.document)):
+            page2 = self.document[page]
+            widgets = page2.widgets()
+            for field in widgets:
+                self.document[page].delete_widget(field)
+            for annot in page2.annots():
+                self.document[page].delete_annot(annot)
+
+
+
+
     def get_widgets(self, page):
         page2 = self.document[page.index]
         pdf_widgets = list()
@@ -624,7 +638,9 @@ class MuPDFRenderer(QLabel):
 
                 text_field.set_info(field.field_name, field.field_flags)
                 pdf_widgets.append(text_field)
+                print("Deleting widget", field.field_name)
                 self.document[page.index].delete_widget(field)
+
 
             elif field.field_type == PDF_WIDGET_TYPE_CHECKBOX:
                 rect = QRectF(field.rect[0], field.rect[1], field.rect[2] - field.rect[0],
@@ -632,8 +648,21 @@ class MuPDFRenderer(QLabel):
                 cb_field = PdfCheckboxWidget(page, field.field_value, rect, field.text_fontsize)
                 cb_field.set_info(field.field_name, 0)
                 pdf_widgets.append(cb_field)
+                print("Deleting widget", field.field_name)
                 self.document[page.index].delete_widget(field)
                 self.to_remove.append(field)
+
+            elif field.field_type == PDF_WIDGET_TYPE_RADIOBUTTON:
+                print("Radio button", field.field_value, field.rect, field.text_fontsize, field.field_label, "8888")
+                rect = QRectF(field.rect[0], field.rect[1], field.rect[2] - field.rect[0],
+                              field.rect[3] - field.rect[1])
+                cb_field = PdfRadioButtonWidget(page, field.field_value, rect, field.text_fontsize)
+                cb_field.set_info(field.field_name, 0)
+                pdf_widgets.append(cb_field)
+                print("Deleting widget", field.field_name)
+                self.document[page.index].delete_widget(field)
+                self.to_remove.append(field)
+
 
             '''
             elif field.field_type == PDF_WIDGET_TYPE_COMBOBOX:
@@ -655,6 +684,7 @@ class MuPDFRenderer(QLabel):
         widget = fitz.Widget()
         widget.field_name = name
         widget.field_flags = flags
+        print("adding widget", name, flags, swik_widget.get_rect(), swik_widget.get_value())
         widget.rect = utils.qrectf_to_fitz_rect(swik_widget.get_rect())
         widget.field_value = swik_widget.get_value()
 
@@ -668,15 +698,30 @@ class MuPDFRenderer(QLabel):
         elif type(swik_widget) == PdfComboboxWidget:
             widget.field_type = PDF_WIDGET_TYPE_COMBOBOX
             widget.choice_values = swik_widget.get_items()
-
-        print("Adding widget", widget.field_name, widget.field_flags, widget.rect, widget.field_value)
-
+        elif type(swik_widget) == PdfRadioButtonWidget:
+            widget.field_type = PDF_WIDGET_TYPE_RADIOBUTTON
+            widget.field_value = False
+            widget.field_label = "____" + str(swik_widget.unique_id)
         page.add_widget(widget)
+
+        # WORKAROUND: MuPDF does not allow creation of checked radio buttons
+        if type(swik_widget) == PdfRadioButtonWidget:
+            field = next((f for f in page.widgets() if f.field_label == widget.field_label), None)
+            if field is not None and "___" in field.field_label:
+                field.field_value = swik_widget.get_value()
+                index = field.field_label.find("___")
+                field.field_label = field.field_label[:index]
+                field.update()
+
 
     def flatten(self, filename):
         self.sync_requested.emit()
-        self.document.bake()
-        self.document.save(filename, encryption=PDF_ENCRYPT_KEEP, deflate=True, garbage=3)
+        pdfdata = self.document.tobytes(encryption=PDF_ENCRYPT_KEEP, deflate=True, garbage=3)
+        self.del_widgets(0)
+
+        flatten_doc = fitz.open("pdf", pdfdata)
+        flatten_doc.bake()
+        flatten_doc.save(filename, encryption=PDF_ENCRYPT_KEEP, deflate=True, garbage=3)
         return self.FLATTEN_OK
         # # self.set_document(self.document, True)
         # return

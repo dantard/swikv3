@@ -24,7 +24,6 @@ class KeyboardManager(object):
         x_mode.activated.connect(action)
 
     def key_pressed(self, event):
-        print("key_pressed", event)
         if event.key() in self.press_actions:
             self.press_actions[event.key()]()
             return True

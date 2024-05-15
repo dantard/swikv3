@@ -1,10 +1,11 @@
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import QRectF, Qt, QTimer
 from PyQt5.QtGui import QColor, QTextOption, QTextDocument
-from PyQt5.QtWidgets import QGraphicsTextItem, QGraphicsRectItem, QApplication, QGraphicsProxyWidget, QTextEdit, QLineEdit, QCheckBox, QComboBox
+from PyQt5.QtWidgets import QGraphicsTextItem, QGraphicsRectItem, QApplication, QGraphicsProxyWidget, QTextEdit, QLineEdit, QCheckBox, QComboBox, QRadioButton
 
 
 class PdfWidget(QGraphicsProxyWidget):
+    count = 0
     def __init__(self, parent, content, rect, font_size):
         super(QGraphicsProxyWidget, self).__init__(parent)
         self.content = content
@@ -20,6 +21,9 @@ class PdfWidget(QGraphicsProxyWidget):
         self.setPos(rect.topLeft())
         self.name = ""
         self.flags = 0
+        self.unique_id = PdfRadioButtonWidget.count
+        PdfRadioButtonWidget.count += 1
+
 
     def set_info(self, name, flags):
         self.name = name
@@ -96,3 +100,14 @@ class PdfComboboxWidget(PdfTextWidget):
 
     def get_value(self):
         return self.widget.currentText()
+
+class PdfRadioButtonWidget(PdfWidget):
+    def set_widget(self, content):
+        print("Content: ", content)
+        cb = QRadioButton()
+        cb.setChecked(content == "On" or content == "Yes" or content == "True" or content == "1")
+        cb.setAutoExclusive(False)
+        return cb
+
+    def get_value(self):
+        return self.widget.isChecked()
