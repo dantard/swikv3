@@ -626,7 +626,7 @@ class MuPDFRenderer(QLabel):
         widgets = page2.widgets()
         for field in widgets:
 
-            field:Widget
+            field: Widget
 
             swik_widget = None
             rect = QRectF(field.rect[0], field.rect[1], field.rect[2] - field.rect[0],
@@ -656,7 +656,6 @@ class MuPDFRenderer(QLabel):
                 pdf_widgets.append(swik_widget)
                 self.document[page.index].delete_widget(field)
 
-
             '''
             elif field.field_type == PDF_WIDGET_TYPE_COMBOBOX:
                 rect = QRectF(field.rect[0], field.rect[1], field.rect[2] - field.rect[0],
@@ -674,29 +673,42 @@ class MuPDFRenderer(QLabel):
         page = self.document[index]
         name, flags = swik_widget.get_info()
 
-        widget = fitz.Widget()
-        widget.field_name = name
-        widget.field_flags = flags
-        print("adding widget", name, flags, swik_widget.get_rect(), swik_widget.get_value())
-        widget.rect = utils.qrectf_to_fitz_rect(swik_widget.get_rect())
+        widget = Widget()
+        widget.field_name = swik_widget.user_data['field_name']
+        widget.field_flags = swik_widget.user_data['field_flags']
+        widget.border_color = swik_widget.user_data['border_color']
+        widget.border_width = swik_widget.user_data['border_width']
+        widget.text_fontsize = swik_widget.user_data['text_fontsize']
+        widget.field_label = swik_widget.user_data['field_label']
+        widget.rect = swik_widget.user_data['rect']
+        widget.field_type = swik_widget.user_data['field_type']
         widget.field_value = swik_widget.get_value()
-
-        if type(swik_widget) == PdfTextWidget:
-            widget.field_type = PDF_WIDGET_TYPE_TEXT
-        if type(swik_widget) == MultiLinePdfTextWidget:
-            widget.field_type = PDF_WIDGET_TYPE_TEXT
-        elif type(swik_widget) == PdfCheckboxWidget:
-            widget.field_type = PDF_WIDGET_TYPE_CHECKBOX
-            # self.add_redact_annot(index, swik_widget.get_rect(), Qt.white)
-        elif type(swik_widget) == PdfComboboxWidget:
-            widget.field_type = PDF_WIDGET_TYPE_COMBOBOX
-            widget.choice_values = swik_widget.get_items()
-        elif type(swik_widget) == PdfRadioButtonWidget:
-            widget.field_type = PDF_WIDGET_TYPE_RADIOBUTTON
+        if widget.field_type == PDF_WIDGET_TYPE_RADIOBUTTON:
             widget.field_value = False
-            widget.field_label = "____" + str(swik_widget.unique_id)
+            widget.field_label = "___" + str(swik_widget.unique_id)
         page.add_widget(widget)
 
+
+        # print("adding widget", name, flags, swik_widget.get_rect(), swik_widget.get_value())
+        # widget.rect = utils.qrectf_to_fitz_rect(swik_widget.get_rect())
+        # widget.field_value = swik_widget.get_value()
+        #
+        # if type(swik_widget) == PdfTextWidget:
+        #     widget.field_type = PDF_WIDGET_TYPE_TEXT
+        # if type(swik_widget) == MultiLinePdfTextWidget:
+        #     widget.field_type = PDF_WIDGET_TYPE_TEXT
+        # elif type(swik_widget) == PdfCheckboxWidget:
+        #     widget.field_type = PDF_WIDGET_TYPE_CHECKBOX
+        #     # self.add_redact_annot(index, swik_widget.get_rect(), Qt.white)
+        # elif type(swik_widget) == PdfComboboxWidget:
+        #     widget.field_type = PDF_WIDGET_TYPE_COMBOBOX
+        #     widget.choice_values = swik_widget.get_items()
+        # elif type(swik_widget) == PdfRadioButtonWidget:
+        #     widget.field_type = PDF_WIDGET_TYPE_RADIOBUTTON
+        #     widget.field_value = False
+        #     widget.field_label = "____" + str(swik_widget.unique_id)
+        # page.add_widget(widget)
+        #
         # WORKAROUND: MuPDF does not allow creation of checked radio buttons
         if type(swik_widget) == PdfRadioButtonWidget:
             field = next((f for f in page.widgets() if f.field_label == widget.field_label), None)
