@@ -14,15 +14,15 @@ class PdfWidget(QGraphicsProxyWidget):
         font.setPointSizeF(font_size if font_size else 9)
         self.widget.setFont(font)
         self.widget.setContentsMargins(0, 0, 0, 0)
-        self.widget.setStyleSheet("background-color: lightblue;")
         self.widget.setFixedSize(int(rect.width()), int(rect.height()))
         self.setWidget(self.widget)
         self.resize(rect.width(), rect.height())
         self.setPos(rect.topLeft())
         self.name = ""
         self.flags = 0
-        self.unique_id = PdfRadioButtonWidget.count
-        PdfRadioButtonWidget.count += 1
+        self.unique_id = PdfWidget.count
+        self.user_data = None
+        PdfWidget.count += 1
 
 
     def set_info(self, name, flags):
@@ -49,6 +49,11 @@ class PdfWidget(QGraphicsProxyWidget):
 
 
 class PdfTextWidget(PdfWidget):
+    def __init__(self, parent, content, rect, font_size):
+        super(PdfTextWidget, self).__init__(parent, content, rect, font_size)
+        self.widget.setStyleSheet("background-color: lightblue;")
+
+
     def set_widget(self, content):
         le = QLineEdit()
         le.setText(content)
@@ -68,7 +73,7 @@ class MultiLinePdfTextWidget(PdfTextWidget):
         return self.widget.document().toPlainText()
 
 
-class PdfCheckboxWidget(PdfTextWidget):
+class PdfCheckboxWidget(PdfWidget):
     def set_widget(self, content):
         print("Content: ", content)
         cb = QCheckBox()
@@ -105,7 +110,7 @@ class PdfRadioButtonWidget(PdfWidget):
     def set_widget(self, content):
         print("Content: ", content)
         cb = QRadioButton()
-        cb.setChecked(content == "On" or content == "Yes" or content == "True" or content == "1")
+        cb.setChecked(content == "On" or content == "Yes" or content == "True" or content == "1" or content == True)
         cb.setAutoExclusive(False)
         return cb
 

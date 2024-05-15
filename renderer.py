@@ -13,6 +13,7 @@ from PyQt5.QtWidgets import QLabel
 import fitz
 from fitz import PDF_ENCRYPT_KEEP, PDF_WIDGET_TYPE_TEXT, PDF_WIDGET_TYPE_CHECKBOX, PDF_WIDGET_TYPE_COMBOBOX, Font, PDF_ANNOT_IS_LOCKED, PDF_ANNOT_HIGHLIGHT, \
     PDF_ANNOT_SQUARE, TEXTFLAGS_DICT, TEXT_PRESERVE_IMAGES, TextWriter, PDF_WIDGET_TYPE_RADIOBUTTON
+from pymupdf import Widget
 
 import utils
 from annotations.highlight_annotation import HighlightAnnotation
@@ -619,49 +620,41 @@ class MuPDFRenderer(QLabel):
             for annot in page2.annots():
                 self.document[page].delete_annot(annot)
 
-
-
-
     def get_widgets(self, page):
         page2 = self.document[page.index]
         pdf_widgets = list()
         widgets = page2.widgets()
         for field in widgets:
 
+            field:Widget
+
+            swik_widget = None
+            rect = QRectF(field.rect[0], field.rect[1], field.rect[2] - field.rect[0],
+                          field.rect[3] - field.rect[1])
+
             if field.field_type == PDF_WIDGET_TYPE_TEXT:
-                rect = QRectF(field.rect[0], field.rect[1], field.rect[2] - field.rect[0],
-                              field.rect[3] - field.rect[1])
+
                 if field.field_flags & 4096:
-                    text_field = MultiLinePdfTextWidget(page, field.field_value, rect, field.text_fontsize)
+                    swik_widget = MultiLinePdfTextWidget(page, field.field_value, rect, field.text_fontsize)
                 else:
-                    text_field = PdfTextWidget(page, field.field_value, rect, field.text_fontsize)
-
-                text_field.set_info(field.field_name, field.field_flags)
-                pdf_widgets.append(text_field)
-                print("Deleting widget", field.field_name)
-                self.document[page.index].delete_widget(field)
-
+                    swik_widget = PdfTextWidget(page, field.field_value, rect, field.text_fontsize)
 
             elif field.field_type == PDF_WIDGET_TYPE_CHECKBOX:
                 rect = QRectF(field.rect[0], field.rect[1], field.rect[2] - field.rect[0],
                               field.rect[3] - field.rect[1])
-                cb_field = PdfCheckboxWidget(page, field.field_value, rect, field.text_fontsize)
-                cb_field.set_info(field.field_name, 0)
-                pdf_widgets.append(cb_field)
-                print("Deleting widget", field.field_name)
-                self.document[page.index].delete_widget(field)
-                self.to_remove.append(field)
+                swik_widget = PdfCheckboxWidget(page, field.field_value == field.on_state(), rect, field.text_fontsize)
 
             elif field.field_type == PDF_WIDGET_TYPE_RADIOBUTTON:
                 print("Radio button", field.field_value, field.rect, field.text_fontsize, field.field_label, "8888")
                 rect = QRectF(field.rect[0], field.rect[1], field.rect[2] - field.rect[0],
                               field.rect[3] - field.rect[1])
-                cb_field = PdfRadioButtonWidget(page, field.field_value, rect, field.text_fontsize)
-                cb_field.set_info(field.field_name, 0)
-                pdf_widgets.append(cb_field)
-                print("Deleting widget", field.field_name)
+                swik_widget = PdfRadioButtonWidget(page, field.field_value == field.on_state(), rect, field.text_fontsize)
+
+            if swik_widget is not None:
+                swik_widget.set_info(field.field_name, field.field_flags)
+                swik_widget.user_data = field.__dict__.copy()
+                pdf_widgets.append(swik_widget)
                 self.document[page.index].delete_widget(field)
-                self.to_remove.append(field)
 
 
             '''
@@ -721,13 +714,11 @@ class MuPDFRenderer(QLabel):
                 widget = page.delete_widget(widget)
         self.clear_document()
 
-
     def clear_document(self):
         data = self.document.tobytes(encryption=PDF_ENCRYPT_KEEP, deflate=True, garbage=3)
         self.document.close()
         doc = fitz.open("pdf", data)
         self.set_document(doc, False)
-
 
     def flatten(self, filename):
         self.sync_requested.emit()
