@@ -713,11 +713,26 @@ class MuPDFRenderer(QLabel):
                 field.field_label = field.field_label[:index]
                 field.update()
 
+    def remove_all_widgets(self):
+        for i in range(len(self.document)):
+            page = self.document[i]
+            widget = page.first_widget
+            while widget:
+                widget = page.delete_widget(widget)
+        self.clear_document()
+
+
+    def clear_document(self):
+        data = self.document.tobytes(encryption=PDF_ENCRYPT_KEEP, deflate=True, garbage=3)
+        self.document.close()
+        doc = fitz.open("pdf", data)
+        self.set_document(doc, False)
+
 
     def flatten(self, filename):
         self.sync_requested.emit()
         pdfdata = self.document.tobytes(encryption=PDF_ENCRYPT_KEEP, deflate=True, garbage=3)
-        self.del_widgets(0)
+        self.remove_all_widgets()
 
         flatten_doc = fitz.open("pdf", pdfdata)
         flatten_doc.bake()
