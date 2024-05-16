@@ -118,7 +118,7 @@ class SimplePage(QGraphicsRectItem):
         self.ratio = ratio
         self.setTransform(QTransform(ratio, 0, 0, 0, ratio, 0, 0, 0, 1))
         self.state = SimplePage.STATE_INVALID
-        # self.paint_accessories()
+        #self.paint_accessories()
 
     def fit_width(self):
         width = self.view.width() - 50
@@ -147,7 +147,7 @@ class SimplePage(QGraphicsRectItem):
     def paint(self, painter, option, widget: typing.Optional[QWidget] = ...) -> None:
         super().paint(painter, option, widget)
         if self.image is None or self.ratio != self.image_ratio:
-            print('Requesting image for page', self.index, self.view)
+            # print('Requesting image for page', self.index, self.view)
             self.request_image(self.ratio, self.image is None)
             self.state = SimplePage.STATE_IMAGE_REQUESTED
 
@@ -155,7 +155,7 @@ class SimplePage(QGraphicsRectItem):
             painter.drawImage(QRectF(0, 0, self.rect().width(), self.rect().height()), self.image.toImage())
 
     def image_ready(self, image, ratio):
-        print("Image ready for page", self.index, "with state", self.state, "and image", image.width(), "x", image.height())
+        # print("Image ready for page", self.index, "with state", self.state, "and image", image.width(), "x", image.height())
         self.image = image
         self.image_ratio = ratio
         self.state = SimplePage.STATE_FINAL
@@ -169,7 +169,7 @@ class SimplePage(QGraphicsRectItem):
             self.update()
 
     def invalidate(self):
-        print('Invalidating page', self.index)
+        # print('Invalidating page', self.index)
         self.state = self.STATE_FORCED
         self.image = None
         self.w, self.h = self.renderer.get_page_size(self.index)

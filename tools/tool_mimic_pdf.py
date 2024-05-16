@@ -4,6 +4,7 @@ from PyQt5.QtCore import Qt, pyqtSignal, QPointF
 from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QGraphicsRectItem, QTreeWidget, QTreeWidgetItem, QComboBox, QHBoxLayout, QVBoxLayout, QPushButton, QWidget
 
+import font_manager
 from progressing import Progressing
 from swiktext import SwikText
 from tools.replace_fonts.repl_font import repl_font
@@ -55,18 +56,18 @@ class ToolMimicPDF(Tool):
                 page = self.view.pages[i]
                 for span in spans:
                     print(span.font)
-                    font = self.font_manager.get_font_info_from_nickname(span.font)
+                    font = self.font_manager.filter(nickname=span.font, pos=0)
                     self.renderer.add_redact_annot(page.index, span.rect, Qt.white, minimize=True, apply=False)
-                    if font is None or font.get('supported', True) is False:
-                        font = self.font_manager.get_font_info_from_nickname("helv")
+                    if font is None or font.supported is False:
+                        font = self.font_manager.filter(nickname='helv', pos=0)
                         color = QColor(255, 0, 0)
                     else:
                         color = QColor(0, 0, 0)
 
-                    swik_text = SwikText(span.text, page, self.font_manager, font["path"], span.size * 0.75)
+                    swik_text = SwikText(span.text, page, self.font_manager, font, span.size * 0.75)
                     midpoint = self.rectangle_midpoint(span.rect)
                     top_left = self.top_left_corner(midpoint, swik_text.boundingRect().width(), swik_text.boundingRect().height())
-                    swik_text.setToolTip(font["nickname"])
+                    swik_text.setToolTip(font.full_name)
                     swik_text.setPos(top_left)  # + QPointF(span.size*0.01, 0))
                     swik_text.setDefaultTextColor(color)
 

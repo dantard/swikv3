@@ -19,6 +19,9 @@ class Manager(QObject):
         self.renderer = renderer
         self.copy_buffer = []
 
+    def clear(self):
+        self.current.finish()
+
     def set_view(self, view):
         self.view = view
 

@@ -53,15 +53,15 @@ class Splitter(QSplitter):
 
     def moveEvent(self, a0: QtGui.QMoveEvent) -> None:
         super().moveEvent(a0)
-        print("moveevent", a0)
+        # print("moveevent", a0)
 
     def mousePressEvent(self, a0: QtGui.QMouseEvent) -> None:
         super().mousePressEvent(a0)
-        print("Moveevntnt")
+        #print("Moveevntnt")
 
     def releaseMouse(self) -> None:
         super().releaseMouse()
-        print("splitter released")
+        #print("splitter released")
 
 
 class SwikWidget(QWidget):
@@ -321,6 +321,7 @@ class SwikWidget(QWidget):
 
     def document_changed(self):
         # Clear views and fonts
+        self.manager.clear()
         self.view.clear()
         self.miniature_view.clear()
         self.font_manager.clear_document_fonts()
@@ -383,7 +384,8 @@ class SwikWidget(QWidget):
             if res == MuPDFRenderer.OPEN_OK:
                 self.set_interactable(True)
                 self.file_changed.emit()
-                self.view.set_page(0)
+                # To update the number of page
+                self.view.page_scrolled()
                 self.config.update_recent(self.renderer.get_filename())
                 self.config.flush()
 
@@ -396,6 +398,7 @@ class SwikWidget(QWidget):
             self.progressing = Progressing(self, title="Saving PDF...")
             self.progressing.start(self.renderer.save_pdf, name, callback=self.saved)
         else:
+            self.manager.clear()
             self.saved(self.renderer.save_pdf(name))
 
     def saved(self, ret_code):

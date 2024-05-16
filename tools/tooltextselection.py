@@ -44,6 +44,8 @@ class ToolTextSelection(Tool):
         # self.selected.clear()
         for word in zombies:
             self.selected.remove(word)
+        self.selected.clear()
+        self.multiple_selection.clear()
 
     def selecting(self, selector: SelectorRectItem):
         p1 = selector.get_rect_on_scene().topLeft()
@@ -161,8 +163,8 @@ class ToolTextSelection(Tool):
             pass
         elif res == paste:
             text = QGuiApplication.clipboard().text()
-            for i, word in enumerate(text.split("\n")):
-                st = SwikText(word, page, self.font_manager, "fonts/Arial.ttf", 11)
+            for i, word in enumerate(text.replace("\n"," " ).split(" ")):
+                st = SwikText(word, page, self.font_manager, Font("fonts/Arial.ttf"), 11)
                 on_scene = self.view.mapToScene(event.pos())
                 st.setPos(st.mapFromScene(on_scene) + QPointF(15 * i, 15 * i))
 
@@ -196,18 +198,20 @@ class ToolTextSelection(Tool):
             self.copy_selected_to_clipboard()
 
         elif res == replace:
-            first_font, first_size, first_color = self.renderer.get_word_font(self.selected[0])
+            first_font, first_size, first_color = self.renderer.get_word_font_info(self.selected[0])
             for word in self.selected[1:]:
-                font, size, color = self.renderer.get_word_font(word)
+                font, size, color = self.renderer.get_word_font_info(word)
                 if font != first_font or size != first_size or color != first_color:
                     QMessageBox.warning(self.view, "Warning", "Selected words have different font, size or color.")
                     break
 
-            print("Font: ", first_font)
+            print("WWWWW Font: ", first_font)
 
             dialog = FontAndColorDialog(self.font_manager, first_font, first_size, first_color)
             if dialog.exec() == QDialog.Accepted:
                 for word in self.selected:
+                    print("AAAAAAAAAAAAAPPPPPPPPPPPPPPP", dialog.get_font())
+
                     SwikTextReplace(word, self.font_manager, dialog.get_font(), dialog.get_font_size() / 1.34, dialog.get_text_color())
                     self.clear_selection()
 
@@ -221,7 +225,10 @@ class ToolTextSelection(Tool):
                 self.selected.append(word)
 
     def finish(self):
-        self.clear_selection()
+        for word in self.selected + self.multiple_selection:
+            word.set_selected(False)
+        self.selected.clear()
+        self.multiple_selection.clear()
         self.view.setCursor(Qt.ArrowCursor)
 
     def copy_selected_to_clipboard(self):

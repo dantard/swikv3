@@ -64,7 +64,7 @@ class Font(SwikFont):
             font = ttLib.TTFont(path)
             if font.has_key('name'):
                 self.family_name = font['name'].getDebugName(1)
-                self.full_name = font['name'].getDebugName(4)
+                self.full_name = font['name'].getDebugName(4) if font['name'].getDebugName(4) else self.full_name
                 self.nickname = font['name'].getDebugName(6)
                 self.nickname = self.nickname if not '+' in self.nickname else self.nickname.split('+')[1]
                 modifiers = str(font['name'].getDebugName(2))
@@ -143,7 +143,6 @@ class FontManager(QObject):
     def update_document_fonts(self):
         if len(self.document_fonts) == 0:
             self.font_dir = tempfile.mkdtemp()
-            print("diidddddddddddddddddddddddddddddddddddddddddiiiir", self.font_dir)
             self.renderer.save_fonts(self.font_dir)
             fonts = self.get_fonts([self.font_dir])
             self.document_fonts.extend(fonts)
@@ -158,6 +157,7 @@ class FontManager(QObject):
         return self.document_fonts
 
     def filter(self, section=None, **kwargs):
+        self.update_fonts()
         if section is not None:
             if section == 'document':
                 fonts = self.document_fonts
@@ -172,9 +172,18 @@ class FontManager(QObject):
         else:
             fonts = self.document_fonts + self.swik_fonts + self.base14_fonts + self.system_fonts
 
+        pos = kwargs.pop('pos', None)
+
         for key, value in kwargs.items():
             fonts = [f for f in fonts if getattr(f, key) == value]
         fonts.sort(key=lambda x: x.full_name.lower())
+
+        if pos is not None:
+            if len(fonts) > pos:
+                fonts = fonts[pos]
+            else:
+                fonts = None
+
         return fonts
 
     @staticmethod
@@ -237,6 +246,7 @@ class FontManager(QObject):
                     for filename in files:
                         if filename[-4:].lower() in ['.ttf', '.otf', '.ttc', '.cff']:
                             path = os.path.join(root, filename)
+                            # print("Path: ", path)
                             font = Font(path)
                             fonts.append(font)
 

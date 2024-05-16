@@ -97,7 +97,7 @@ class SwikGraphView(GraphView):
         images = [item for item in items if isinstance(item, InsertImageRectItem)]
         for image in images:
             page: Page = image.parentItem()
-            self.renderer.insert_image(page.get_index(), image.get_image_rect_on_parent(), image.get_image())
+            self.renderer.insert_image_from_file(page.get_index(), image.get_image_rect_on_parent(), image.get_image_filename())
             pages_to_refresh.add(page.get_index())
             self.scene().removeItem(image)
 

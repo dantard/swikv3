@@ -6,19 +6,22 @@ import time
 import traceback
 from os.path import exists
 
+import pymupdf
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt, QRunnable, QThreadPool, pyqtSignal, QMutex, QRectF, QRect, QByteArray, QBuffer, QIODevice, QUrl, QTimer
 from PyQt5.QtGui import QPixmap, QImage, QBrush, QPen, QColor
 from PyQt5.QtWidgets import QLabel
 import fitz
-from fitz import PDF_ENCRYPT_KEEP, PDF_WIDGET_TYPE_TEXT, PDF_WIDGET_TYPE_CHECKBOX, PDF_WIDGET_TYPE_COMBOBOX, Font, PDF_ANNOT_IS_LOCKED, PDF_ANNOT_HIGHLIGHT, \
-    PDF_ANNOT_SQUARE, TEXTFLAGS_DICT, TEXT_PRESERVE_IMAGES, TextWriter, PDF_WIDGET_TYPE_RADIOBUTTON
+from pymupdf.mupdf import PDF_ENCRYPT_KEEP, PDF_WIDGET_TYPE_TEXT, PDF_WIDGET_TYPE_CHECKBOX, PDF_WIDGET_TYPE_COMBOBOX, PDF_ANNOT_IS_LOCKED, PDF_ANNOT_HIGHLIGHT, \
+    PDF_ANNOT_SQUARE, PDF_WIDGET_TYPE_RADIOBUTTON
+from pymupdf import TEXTFLAGS_DICT, TEXT_PRESERVE_IMAGES, TextWriter, Font, Point, Document, Rect, Quad, Annot
 from pymupdf import Widget
 
 import utils
 from annotations.highlight_annotation import HighlightAnnotation
 from annotations.hyperlink import Link, ExternalLink, InternalLink
 from annotations.squareannotation import SquareAnnotation
+from font_manager import Base14Font
 from swiktext import SwikText, SwikTextReplace
 from utils import fitz_rect_to_qrectf
 from widgets.pdf_widget import PdfTextWidget, MultiLinePdfTextWidget, PdfCheckboxWidget, PdfComboboxWidget, PdfWidget, PdfRadioButtonWidget
@@ -65,7 +68,7 @@ def convert_box_to_upside_down(filename, index, rect):
     # that can be different from the one we are seeing (e.g. flatten + sign)
 
     # Open the doc to sign
-    doc_to_sign = fitz.open(filename)
+    doc_to_sign = pymupdf.open(filename)
 
     # The projection is necessary to take into account orientation
     # rot = self.renderer.get_rotation(page.index)
@@ -86,7 +89,7 @@ def convert_box_to_upside_down(filename, index, rect):
 
     # Rotate according to the orientation and create thw box
     # r1 = self.renderer.project(fitz.Point(rect.x(), rect.y()), page.index)
-    r1 = fitz.Point(rect.x(), rect.y()) * derot_matrix
+    r1 = Point(rect.x(), rect.y()) * derot_matrix
     box = (r1.x,
            dy - r1.y,
            r1.x + rect.width(),
@@ -132,7 +135,7 @@ class MuPDFRenderer(QLabel):
     def open_pdf(self, file, password=None):
         self.filename = file
         try:
-            self.document = fitz.Document(file)
+            self.document = Document(file)
             if self.document.needs_pass:
                 if password is None:
                     return self.OPEN_REQUIRES_PASSWORD
@@ -160,7 +163,7 @@ class MuPDFRenderer(QLabel):
             self.remove_dynamic_elements()
             return 0
         elif self.document.can_save_incrementally():
-            self.document.save(filename, encryption=PDF_ENCRYPT_KEEP, incremental=True, deflate=True, garbage=3)
+            self.document.save(filename, encryption=PDF_ENCRYPT_KEEP, incremental=True, deflate=True)
             self.remove_dynamic_elements()
             return 1
         else:
@@ -177,14 +180,14 @@ class MuPDFRenderer(QLabel):
 
             # We need to reopen the file
             # because it has actually changed
-            self.document = fitz.open(filename)
+            self.document = pymupdf.open(filename)
             self.remove_dynamic_elements()
             return 2
 
     def remove_dynamic_elements(self):
         for page in self.document:
             widgets = page.widgets()
-            for annot in page.annots():  # type: fitz.Annot
+            for annot in page.annots():  # type: Annot
                 page.delete_annot(annot)
             for field in widgets:
                 print("Deleting widget", field.field_name)
@@ -234,7 +237,7 @@ class MuPDFRenderer(QLabel):
         # self.request_queue.clear()
 
     def request_image(self, index, ratio, force=False):
-        print("Requesting image", index, ratio, force)
+        # print("Requesting image", index, ratio, force)
         if not self.images[index].loaded or force:
             self.load(index, ratio, force)
         elif self.images[index].ratio != ratio:
@@ -246,7 +249,7 @@ class MuPDFRenderer(QLabel):
         return self.images[index].get_image(ratio)
 
     def render_page(self, index, ratio):
-        mat = fitz.Matrix(ratio, ratio)
+        mat = pymupdf.Matrix(ratio, ratio)
         pix = self.get_document()[index].get_pixmap(matrix=mat, alpha=False, annots=True)
         return QPixmap.fromImage(QImage(pix.samples, pix.width, pix.height, pix.stride, QImage.Format_RGB888))
 
@@ -260,7 +263,7 @@ class MuPDFRenderer(QLabel):
                 self.force = force
 
             def get_pixmap(self):
-                mat = fitz.Matrix(self.ratio, self.ratio)
+                mat = pymupdf.Matrix(self.ratio, self.ratio)
 
                 pix = self.renderer.get_document()[self.index].get_pixmap(matrix=mat, alpha=False, annots=True)
                 image = QImage(pix.samples, pix.width, pix.height, pix.stride, QImage.Format_RGB888)
@@ -307,7 +310,7 @@ class MuPDFRenderer(QLabel):
                     sp = Span()
                     x1, y1, x2, y2 = span["bbox"]
 
-                    fitz_rect = fitz.Rect(x1, y1, x2, y2) * self.document[page_id].rotation_matrix
+                    fitz_rect = Rect(x1, y1, x2, y2) * self.document[page_id].rotation_matrix
                     x1, y1, x2, y2 = fitz_rect.x0, fitz_rect.y0, fitz_rect.x1, fitz_rect.y1
 
                     sp.text = span["text"]
@@ -331,6 +334,9 @@ class MuPDFRenderer(QLabel):
         return spans
 
     def extract_words(self, page_id):
+
+        print("QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQextraaact")
+
         boxes = self.document[page_id].get_text("words", sort=True, flags=TEXTFLAGS_DICT & ~TEXT_PRESERVE_IMAGES)
 
         word_objs = list()
@@ -339,7 +345,7 @@ class MuPDFRenderer(QLabel):
             x1, y1, x2, y2, text, block_no, line_no, word_no = w
 
             # Compute rectangle taking into account orientation
-            fitz_rect = fitz.Rect(x1, y1, x2, y2) * self.document[page_id].rotation_matrix
+            fitz_rect = Rect(x1, y1, x2, y2) * self.document[page_id].rotation_matrix
             rect = fitz_rect_to_qrectf(fitz_rect)
 
             word = Word(page_id, i, text, rect, word_no=word_no, line_no=line_no, block_no=block_no)
@@ -374,7 +380,7 @@ class MuPDFRenderer(QLabel):
                     break
         return words
 
-    def get_word_font(self, word: Word):
+    def get_word_font_info(self, word: Word):
         data = self.document[word.page_id].get_text("dict", sort=False, flags=TEXTFLAGS_DICT & ~TEXT_PRESERVE_IMAGES)
         if data is not None:
             blocks = data.get('blocks', [])
@@ -405,9 +411,10 @@ class MuPDFRenderer(QLabel):
         self.document.select(order)
         self.set_document(self.document, emit)
 
-    def set_cropbox(self, page, rect: QRect, ratio, absolute=False):
+    def set_cropbox(self, page, rect: QRect, absolute=False):
 
-        x, y, w, h = int(rect.x() / ratio), int(rect.y() / ratio), int(rect.width() / ratio), int(rect.height() / ratio)
+
+        x, y, w, h = int(rect.x()), int(rect.y()), int(rect.width()), int(rect.height())
 
         if not absolute:
             # in this case the square is relative to the current cropbox
@@ -418,7 +425,7 @@ class MuPDFRenderer(QLabel):
         print(x, y, w, h, cx, cy, "cropbox")
         print(self.document[page].mediabox)
 
-        self.document[page].set_cropbox(fitz.Rect(x + cx,
+        self.document[page].set_cropbox(Rect(x + cx,
                                                   y + cy,
                                                   x + cx + w,
                                                   y + cy + h) * self.document[
@@ -471,12 +478,12 @@ class MuPDFRenderer(QLabel):
         annoting = self.document[index]
         quads = []
         for r in swik_annot.get_quads():  # type: QRectF
-            q = fitz.Quad((r.x(), r.y()),
+            q = Quad((r.x(), r.y()),
                           (r.x() + r.width(), r.y()),
                           (r.x(), r.y() + r.height()),
                           (r.x() + r.width(), r.y() + r.height()))
             quads.append(q)
-        fitz_annot: fitz.Annot = annoting.add_highlight_annot(quads=quads)
+        fitz_annot: Annot = annoting.add_highlight_annot(quads=quads)
         color = swik_annot.get_color()
         stroke = utils.qcolor_to_fitz_color(color)
         fitz_annot.set_info(None, swik_annot.get_content(), "", "", "", "")
@@ -487,7 +494,7 @@ class MuPDFRenderer(QLabel):
 
     def get_annotations(self, page):
         annots = list()
-        for annot in self.document[page.index].annots():  # type: fitz.Annot
+        for annot in self.document[page.index].annots():  # type: Annot
             if annot.type[0] == PDF_ANNOT_SQUARE:
                 opacity = annot.opacity if 1 > annot.opacity > 0 else 0.999
                 stroke = utils.fitz_color_to_qcolor(annot.colors['stroke'], opacity) if annot.colors['stroke'] is not None else Qt.transparent
@@ -518,7 +525,7 @@ class MuPDFRenderer(QLabel):
                 if points is not None:
                     quad_count = int(len(points) / 4)
                     for i in range(quad_count):
-                        rect = fitz.Quad(points[i * 4: i * 4 + 4]).rect
+                        rect = Quad(points[i * 4: i * 4 + 4]).rect
                         rect = rect * self.document[page.index].rotation_matrix
                         quad = utils.fitz_rect_to_qrectf(rect)
                         swik_annot.add_quad(quad)
@@ -581,13 +588,13 @@ class MuPDFRenderer(QLabel):
     def add_text(self, index, item: SwikText):
         self.document[index].clean_contents()
         color = utils.qcolor_to_fitz_color(item.defaultTextColor())
-        tw = fitz.TextWriter(self.document[index].rect, color=color)
+        tw = TextWriter(self.document[index].rect, color=color)
         x, y, h = item.pos().x(), item.pos().y(), item.sceneBoundingRect().height()
-        font_file = item.get_font_info().path
-        if font_file.startswith('@base14'):
-            font = Font(fontname=font_file[8:])
+
+        if type(item.get_font_info()) == Base14Font:
+            font = Font(fontname=item.get_font_info().nickname)
         else:
-            font = Font(fontfile=font_file)
+            font = Font(fontfile=item.get_font_info().path)
 
         # tw.append((x,y + h), item.get_text(), font=font, fontsize=item.font().pointSizeF()*1.32)
         rect = utils.qrectf_and_pos_to_fitz_rect(item.get_rect_on_parent(), item.pos())
@@ -719,7 +726,7 @@ class MuPDFRenderer(QLabel):
     def clear_document(self):
         data = self.document.tobytes(encryption=PDF_ENCRYPT_KEEP, deflate=True, garbage=3)
         self.document.close()
-        doc = fitz.open("pdf", data)
+        doc = pymupdf.open("pdf", data)
         self.set_document(doc, False)
 
     def flatten(self, filename):
@@ -733,7 +740,7 @@ class MuPDFRenderer(QLabel):
         self.document.close()
 
         # Restore original document
-        no_widgets_file = fitz.open("pdf", no_widgets_file_data)
+        no_widgets_file = pymupdf.open("pdf", no_widgets_file_data)
         self.set_document(no_widgets_file, False)
 
         return self.FLATTEN_OK
@@ -749,7 +756,7 @@ class MuPDFRenderer(QLabel):
                 if xref not in font_xrefs:
                     font_xrefs.add(xref)
                     fontname, ext, k, buffer = self.document.extract_font(xref)
-                    print("Extracting", fontname, ext)
+                    #print("Extracting", fontname, ext)
                     font_names.add(fontname)
                     if ext == "n/a" or not buffer:
                         continue
@@ -762,7 +769,7 @@ class MuPDFRenderer(QLabel):
         return font_names
 
     def append_pdf(self, filename):
-        doc2 = fitz.open(filename)
+        doc2 = pymupdf.open(filename)
         self.document.insert_pdf(doc2)
         page_count = len(doc2)
         doc2.close()
@@ -771,7 +778,7 @@ class MuPDFRenderer(QLabel):
         return page_count
 
     def export_pages(self, order, filename):
-        doc = fitz.open()
+        doc = pymupdf.open()
         for i in order:
             doc.insert_pdf(self.document, from_page=i, to_page=i)
         try:
@@ -783,7 +790,7 @@ class MuPDFRenderer(QLabel):
 
     def insert_image(self, index, rect, qimage):
         self.document[index].clean_contents()
-        rect = fitz.Rect(rect.x(), rect.y(), rect.x() + rect.width(), rect.y() + rect.height())
+        rect = Rect(rect.x(), rect.y(), rect.x() + rect.width(), rect.y() + rect.height())
         print("jsjsjs", rect, qimage.width())
         byte_array = QByteArray()
         buffer = QBuffer(byte_array)
@@ -791,8 +798,13 @@ class MuPDFRenderer(QLabel):
         qimage.save(buffer, "PNG")
 
         # Create a fitz.Pixmap from the bytes
-        pixmap = fitz.Pixmap(byte_array.data())
+        pixmap = pymupdf.Pixmap(byte_array.data())
         self.document[index].insert_image(rect, pixmap=pixmap)
+
+    def insert_image_from_file(self, index, rect, filename):
+        self.document[index].clean_contents()
+        rect = Rect(rect.x(), rect.y(), rect.x() + rect.width(), rect.y() + rect.height())
+        self.document[index].insert_image(rect, filename=filename, keep_proportion=False)
 
     def append_blank_page(self, width=595, height=842):
         self.document.new_page(-1, width=width, height=height)

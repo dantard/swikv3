@@ -363,7 +363,7 @@ class GraphView(QGraphicsView):
         self.move_to_page(index)
 
     def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
-        print("View mouse pressed")
+        # print("View mouse pressed")
         super().mousePressEvent(event)
         self.manager.mouse_pressed(event)
         page = self.get_items_at_pos(event.pos(), SimplePage, 0, False)

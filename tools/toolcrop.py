@@ -34,7 +34,7 @@ class ToolCrop(Tool, Undoable):
             self.rubberband.view_mouse_release_event(self.view, event)
             before = self.renderer.get_cropbox(page.index)
             print("before CB", before)
-            self.renderer.set_cropbox(page.index, self.rubberband.get_rect_on_parent(), self.view.get_ratio())
+            self.renderer.set_cropbox(page.index, self.rubberband.get_rect_on_parent(), False)
             after = self.renderer.get_cropbox(page.index)
             print("after CB", after)
             self.view.scene().removeItem(self.rubberband)
@@ -55,7 +55,7 @@ class ToolCrop(Tool, Undoable):
     def undo(self, kind, info):
         index, rect, ratio = info
         print(info, "undo cropbox")
-        self.renderer.set_cropbox(index, rect, ratio, True)
+        self.renderer.set_cropbox(index, rect, True)
 
     def redo(self, kind, info):
         self.undo(kind, info)

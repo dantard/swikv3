@@ -136,8 +136,9 @@ class MainWindow(QMainWindow):
             widget.view.set_mode(values[1])
             if values[1] != LayoutManager.MODE_FIT_WIDTH:
                 widget.view.set_ratio(values[2], True)
-            widget.view.set_scroll_value(values[3])
             self.open_new_tab(widget, values[0])
+            widget.view.set_scroll_value(values[3])
+
 
         self.tab_widget.setCurrentIndex(0)
         self.update_title()
@@ -274,11 +275,11 @@ class MainWindow(QMainWindow):
     def eventFilter(self, a0, a1) -> bool:
         if a1.type() == QEvent.KeyPress:
             a = self.current().key_manager.key_pressed(a1)
-            print("pessed return", a1)
+
             return a
         elif a1.type() == QEvent.KeyRelease:
             a = self.current().key_manager.key_released(a1)
-            print("released return", a0, a1.key())
+
             return a
         return False
 

@@ -57,11 +57,13 @@ class ToolInsertImage(Tool):
         super().__init__(view, renderer, config)
         self.rubberband = None
         self.image = None
+        self.image_filename = None
 
     def init(self):
         filename, _ = QFileDialog.getOpenFileName(None, "Select image", "", "Image files (*.png *.jpg *.jpeg *.bmp *.gif *.tiff *.tif)")
         if filename:
             self.image = QImage(filename)
+            self.image_filename = filename
         else:
             self.finished.emit()
 
@@ -72,7 +74,7 @@ class ToolInsertImage(Tool):
             return
 
         if self.rubberband is None:
-            self.rubberband = InsertImageRectItem(page, pen=Qt.transparent, brush=Qt.transparent, image=self.image, image_mode=3)
+            self.rubberband = InsertImageRectItem(page, pen=Qt.transparent, brush=Qt.transparent, image_filename=self.image_filename, image_mode=3)
             self.rubberband.view_mouse_press_event(self.view, event)
             self.rubberband.notify_creation()
             self.view.setCursor(Qt.CrossCursor)
@@ -94,6 +96,7 @@ class ToolInsertImage(Tool):
 class ToolInsertSignatureImage(ToolInsertImage):
     def init(self):
         self.image = QImage(ToolInsertImage.signature.get_value())
+        self.image_filename = ToolInsertImage.signature.get_value()
 
     def usable(self):
         return ToolInsertImage.signature.get_value() is not None

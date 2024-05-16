@@ -80,47 +80,49 @@ class PasswordDialog(QDialog):
 
 
 class FontAndColorDialog(ComposableDialog):
-    def __init__(self, font_manager, default_font, font_size, text_color):
+    def __init__(self, font_manager, font_name, font_size, text_color):
         super().__init__()
         self.font_manager: FontManager = font_manager
-        self.fp = self.add_row("Font", FontPicker())
-        self.add_row("Text Color", Color(text_color))
+        self.font_picker = self.add_row("Font", FontPicker())
+        self.color_picker = self.add_row("Text Color", Color(text_color))
         self.set_ok_enabled(False)
         self.progressing = None
-        utils.delayed(100, self.update_fonts, default_font, font_size)
+        utils.delayed(100, self.update_fonts, font_name, font_size)
 
     def update_fonts(self, default, font_size):
         def process():
             self.font_manager.update_fonts()
-            parent = self.fp.add_section("Document Fonts")
-            sec1 = self.fp.add_section("Fully embedded", parent)
-            sec2 = self.fp.add_section("Subset", parent)
-            sec3 = self.fp.add_section("Unsupported", parent)
-            self.fp.add_elements(sec1, self.font_manager.filter('document', subset=False, supported=True))
-            self.fp.add_elements(sec2, self.font_manager.filter('document', subset=True, supported=True))
-            self.fp.add_elements(sec3, self.font_manager.filter('document', supported=False))
+            parent = self.font_picker.add_section("Document Fonts")
+            sec1 = self.font_picker.add_section("Fully embedded", parent)
+            sec2 = self.font_picker.add_section("Subset", parent)
+            sec3 = self.font_picker.add_section("Unsupported", parent)
+            self.font_picker.add_elements(sec1, self.font_manager.filter('document', subset=False, supported=True))
+            self.font_picker.add_elements(sec2, self.font_manager.filter('document', subset=True, supported=True))
+            self.font_picker.add_elements(sec3, self.font_manager.filter('document', supported=False))
 
-            parent = self.fp.add_section("Base14 Fonts")
-            self.fp.add_elements(parent, self.font_manager.get_base14_fonts())
+            parent = self.font_picker.add_section("Base14 Fonts")
+            self.font_picker.add_elements(parent, self.font_manager.get_base14_fonts())
 
-            parent = self.fp.add_section("Swik Fonts")
-            self.fp.add_elements(parent, self.font_manager.get_swik_fonts())
+            parent = self.font_picker.add_section("Swik Fonts")
+            self.font_picker.add_elements(parent, self.font_manager.get_swik_fonts())
 
-            parent = self.fp.add_section("System Fonts")
-            self.fp.add_elements(parent, self.font_manager.get_system_fonts())
-            self.fp.set_default(default, font_size)
+            parent = self.font_picker.add_section("System Fonts")
+            self.font_picker.add_elements(parent, self.font_manager.get_system_fonts())
+
+            # Set the default font and highlight it
+            self.font_picker.set_default(default, font_size)
 
         self.progressing = Progressing(self, 0, "Updating Fonts")
         self.progressing.start(process)
 
     def get_font(self):
-        return self.get('Font').get_font()
+        return self.font_picker.get_font()
 
     def get_font_size(self):
-        return self.get('Font').get_font_size()
+        return self.font_picker.get_font_size()
 
     def get_text_color(self):
-        return self.get('Text Color').get_color()
+        return self.color_picker.get_color()
 
 
 def FontTextAndColor(FontAndColorDialog):

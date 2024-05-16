@@ -197,10 +197,10 @@ class FontPicker(QWidget):
 
         for font_info in fonts:
             item = FontPicker.TreeWidgetItem(font_info)
-            label = QLabel(font_info.nickname)
+            label = QLabel(font_info.full_name)
             if use_own_font:
                 qfont = font_info.get_qfont(12)
-                print()
+                #print()
                 if qfont:
                     label.setFont(qfont)
             parent.addChild(item)

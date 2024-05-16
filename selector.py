@@ -63,7 +63,7 @@ class PaintableSelectorRectItem(SelectorRectItem):
         # Do NOT change the order of the super() call
         # because it apply_kwargs() and copy() methods would be
         # called before the initialization of the attributes
-        self.image_mode, self.image, self.text = None, None, None
+        self.image_mode, self.image, self.text, self.image_filename = None, None, None, None
         self.text_mode, self.max_font_size, self.font = None, None, None
         super().__init__(parent, **kwargs)
         self.image_rect = self.rect()
@@ -72,6 +72,13 @@ class PaintableSelectorRectItem(SelectorRectItem):
         super().apply_kwargs(**kwargs)
         self.image_mode = kwargs.get("image_mode", self.IMAGE_MODE_MAINTAIN_RATIO)
         self.image = kwargs.get("image", None)
+        self.image_filename = kwargs.get("image_filename", None)
+
+        if self.image_filename is not None and self.image is not None:
+            raise ValueError("You can't set both image and image_filename")
+        elif self.image_filename is not None:
+            self.image = QImage(self.image_filename)
+
         self.text = kwargs.get("text", "")
         self.text_mode = kwargs.get("text_mode", self.TEXT_MODE_STRETCH)
         self.max_font_size = kwargs.get("max_font_size", 100)
@@ -149,10 +156,11 @@ class PaintableSelectorRectItem(SelectorRectItem):
             image_rect, img = self.rect(), self.image
             # painter.drawImage(self.rect(), self.image)
         elif self.image_mode == self.IMAGE_MODE_MAINTAIN_SIZE:
-            w = min(self.rect().width(), self.image.width())
-            h = min(self.rect().height(), self.image.height())
+            w = self.image.width()#min(self.rect().width(), self.image.width())
+            h =  self.image.height() #min(self.rect().height(), self.image.height())
             img = self.image.copy(0, 0, int(w), int(h))
             image_rect = QRectF(self.rect().x(), self.rect().y(), w, h)
+            self.setRect(QRectF(0,0, w, h))
 
         return image_rect, img
 
@@ -198,6 +206,9 @@ class PaintableSelectorRectItem(SelectorRectItem):
             painter.setFont(self.font)
             painter.setPen(Qt.black)
             painter.drawText(self.rect(), 0, self.text)
+
+    def get_image_filename(self):
+        return self.image_filename
 
     def get_image_rect_on_parent(self):
         rect, image = self.compute_image()

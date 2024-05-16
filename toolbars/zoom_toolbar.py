@@ -57,19 +57,12 @@ class ZoomToolbar(Toolbar):
 
     def ratio_changed(self, ratio):
 
-        print("received ratio", ratio)
-
         if ratio < 0:
-            print("received ra222tio", ratio)
-
-
             self.lb_zoom.blockSignals(True)
             self.lb_zoom.setEditable(False)
             self.lb_zoom.setCurrentText("Fit Width")
             self.lb_zoom.blockSignals(False)
         else:
-            print("received ra223332tio", ratio)
-
             self.lb_zoom.blockSignals(True)
             self.lb_zoom.setEditable(True)
             self.lb_zoom.setCurrentText("{}%".format(int(ratio * 100)))

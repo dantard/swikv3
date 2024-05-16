@@ -43,4 +43,7 @@ class Page(SimplePage):
 
     def invalidate(self):
         super().invalidate()
-        self.words = None
+        if self.words is not None:
+            for word in self.words:
+                self.scene().removeItem(word)
+            self.words = None
