@@ -30,7 +30,7 @@ class Progressing(QProgressDialog):
         self.show()
 
     def set_progress(self, value):
-        self.setValue(value)
+        self.setValue(int(value))
         QApplication.processEvents()
         return not self.wasCanceled()
 

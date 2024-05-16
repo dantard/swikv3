@@ -160,7 +160,7 @@ class MuPDFRenderer(QLabel):
             self.remove_dynamic_elements()
             return 0
         elif self.document.can_save_incrementally():
-            self.document.save(filename, encryption=PDF_ENCRYPT_KEEP, incremental=True, deflate=True)
+            self.document.save(filename, encryption=PDF_ENCRYPT_KEEP, incremental=True, deflate=True, garbage=3)
             self.remove_dynamic_elements()
             return 1
         else:
@@ -642,13 +642,13 @@ class MuPDFRenderer(QLabel):
             elif field.field_type == PDF_WIDGET_TYPE_CHECKBOX:
                 rect = QRectF(field.rect[0], field.rect[1], field.rect[2] - field.rect[0],
                               field.rect[3] - field.rect[1])
-                swik_widget = PdfCheckboxWidget(page, field.field_value == field.on_state(), rect, field.text_fontsize)
+                swik_widget = PdfCheckboxWidget(page, field.field_value == field.on_state().replace("#20", " "), rect, field.text_fontsize)
 
             elif field.field_type == PDF_WIDGET_TYPE_RADIOBUTTON:
                 print("Radio button", field.field_value, field.rect, field.text_fontsize, field.field_label, "8888")
                 rect = QRectF(field.rect[0], field.rect[1], field.rect[2] - field.rect[0],
                               field.rect[3] - field.rect[1])
-                swik_widget = PdfRadioButtonWidget(page, field.field_value == field.on_state(), rect, field.text_fontsize)
+                swik_widget = PdfRadioButtonWidget(page, field.field_value == field.on_state().replace("#20", " "), rect, field.text_fontsize)
 
             if swik_widget is not None:
                 swik_widget.set_info(field.field_name, field.field_flags)
@@ -678,44 +678,34 @@ class MuPDFRenderer(QLabel):
         widget.field_flags = swik_widget.user_data['field_flags']
         widget.border_color = swik_widget.user_data['border_color']
         widget.border_width = swik_widget.user_data['border_width']
-        widget.text_fontsize = swik_widget.user_data['text_fontsize']
+        widget.text_fontsize = max(swik_widget.user_data['text_fontsize'], 11)
         widget.field_label = swik_widget.user_data['field_label']
+        widget.field_type_string = swik_widget.user_data['field_type_string']
+        widget.text_font = swik_widget.user_data['text_font']
         widget.rect = swik_widget.user_data['rect']
         widget.field_type = swik_widget.user_data['field_type']
         widget.field_value = swik_widget.get_value()
-        if widget.field_type == PDF_WIDGET_TYPE_RADIOBUTTON:
-            widget.field_value = False
-            widget.field_label = "___" + str(swik_widget.unique_id)
-        page.add_widget(widget)
 
-
-        # print("adding widget", name, flags, swik_widget.get_rect(), swik_widget.get_value())
-        # widget.rect = utils.qrectf_to_fitz_rect(swik_widget.get_rect())
-        # widget.field_value = swik_widget.get_value()
-        #
-        # if type(swik_widget) == PdfTextWidget:
-        #     widget.field_type = PDF_WIDGET_TYPE_TEXT
-        # if type(swik_widget) == MultiLinePdfTextWidget:
-        #     widget.field_type = PDF_WIDGET_TYPE_TEXT
-        # elif type(swik_widget) == PdfCheckboxWidget:
-        #     widget.field_type = PDF_WIDGET_TYPE_CHECKBOX
-        #     # self.add_redact_annot(index, swik_widget.get_rect(), Qt.white)
-        # elif type(swik_widget) == PdfComboboxWidget:
-        #     widget.field_type = PDF_WIDGET_TYPE_COMBOBOX
-        #     widget.choice_values = swik_widget.get_items()
-        # elif type(swik_widget) == PdfRadioButtonWidget:
-        #     widget.field_type = PDF_WIDGET_TYPE_RADIOBUTTON
-        #     widget.field_value = False
-        #     widget.field_label = "____" + str(swik_widget.unique_id)
-        # page.add_widget(widget)
-        #
         # WORKAROUND: MuPDF does not allow creation of checked radio buttons
-        if type(swik_widget) == PdfRadioButtonWidget:
+        if widget.field_type != PDF_WIDGET_TYPE_RADIOBUTTON:
+            page.add_widget(widget)
+        else:
+            widget.field_value = False
+            if widget.field_label is None:
+                widget.field_label = "-N-" + str(swik_widget.unique_id)
+            else:
+                widget.field_label += "-V-" + str(swik_widget.unique_id)
+
+            page.add_widget(widget)
+
             field = next((f for f in page.widgets() if f.field_label == widget.field_label), None)
-            if field is not None and "___" in field.field_label:
+            if field is not None:
                 field.field_value = swik_widget.get_value()
-                index = field.field_label.find("___")
-                field.field_label = field.field_label[:index]
+                if "-V-" in field.field_label:
+                    index = field.field_label.find("-V-")
+                    field.field_label = field.field_label[:index]
+                elif "-N-" in field.field_label:
+                    field.field_label = None
                 field.update()
 
     def remove_all_widgets(self):
@@ -733,50 +723,21 @@ class MuPDFRenderer(QLabel):
         self.set_document(doc, False)
 
     def flatten(self, filename):
-        self.sync_requested.emit()
-        pdfdata = self.document.tobytes(encryption=PDF_ENCRYPT_KEEP, deflate=True, garbage=3)
-        self.remove_all_widgets()
+        # Save document as it is
+        no_widgets_file_data = self.document.tobytes(encryption=PDF_ENCRYPT_KEEP, deflate=True, garbage=3)
 
-        flatten_doc = fitz.open("pdf", pdfdata)
-        flatten_doc.bake()
-        flatten_doc.save(filename, encryption=PDF_ENCRYPT_KEEP, deflate=True, garbage=3)
+        # Prepare for baking
+        self.sync_requested.emit()
+        self.document.bake()
+        self.document.save(filename, encryption=PDF_ENCRYPT_KEEP, deflate=True, garbage=3)
+        self.document.close()
+
+        # Restore original document
+        no_widgets_file = fitz.open("pdf", no_widgets_file_data)
+        self.set_document(no_widgets_file, False)
+
         return self.FLATTEN_OK
-        # # self.set_document(self.document, True)
-        # return
-        #
-        # post = fitz.TOOLS.mupdf_warnings()
-        #
-        # pdf = fitz.open("pdf", pdf_bytes)
-        #
-        # # If MuPDF complains about missing fonts, try workaround the problem
-        # if post != pre:
-        #     # Workaround for combo boxes that don't get redacted
-        #     for i, page in enumerate(self.document):
-        #         tw = fitz.TextWriter(pdf[i].rect)
-        #         for field in page.widgets():
-        #
-        #             if field.field_type == PDF_WIDGET_TYPE_COMBOBOX:
-        #                 pdf[i].add_redact_annot(field.rect, field.field_value, fill=(1, 1, 1), fontsize=field.text_fontsize)
-        #                 pdf[i].apply_redactions()
-        #             elif field.field_type == PDF_WIDGET_TYPE_CHECKBOX:
-        #                 x1, y1, x2, y2 = field.rect
-        #                 x2, y2 = x1 + min(x2 - x1, y2 - y1), y1 + min(x2 - x1, y2 - y1)
-        #                 pdf[i].add_redact_annot(field.rect, "", fill=(1, 1, 1), fontsize=field.text_fontsize)
-        #                 tw.append((x1, y2), "☑" if field.field_value != "Off" else "☐", fontsize=(y2 - y1) * 1.3)
-        #
-        #         pdf[i].apply_redactions()
-        #         tw.write_text(pdf[i])
-        #
-        #     ret_code = MuPDFRenderer.FLATTEN_WORKAROUND
-        # else:
-        #     ret_code = MuPDFRenderer.FLATTEN_OK
-        #
-        # try:
-        #     pdf.save(filename)
-        # except:
-        #     ret_code = MuPDFRenderer.FLATTEN_ERROR
-        #
-        # return ret_code
+
 
     def save_fonts(self, out_dir):
         font_xrefs = set()
@@ -814,7 +775,7 @@ class MuPDFRenderer(QLabel):
         for i in order:
             doc.insert_pdf(self.document, from_page=i, to_page=i)
         try:
-            doc.save(filename, encryption=PDF_ENCRYPT_KEEP)
+            doc.save(filename, encryption=PDF_ENCRYPT_KEEP, deflate=True, garbage=3)
             doc.close()
         except Exception as e:
             return False

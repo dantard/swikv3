@@ -416,21 +416,22 @@ class SwikWidget(QWidget):
 
     # TODO::::CONVERT
     def append_pdf(self, filename):
-        pd = Progressing(self)
+        pd = Progressing(self, 100)
 
         def append():
             index = self.renderer.get_num_of_pages()
             num_of_pages_added = self.renderer.append_pdf(filename)
 
             for i in range(num_of_pages_added):
-                self.view.do_create_page(index + i)
-                self.miniature_view.do_create_page(index + i)
+                self.view.create_page(index + i, self.view.get_ratio())
+                self.miniature_view.create_page(index + i)
 
                 time.sleep(0.01)
-                pd.update(i * 100 / num_of_pages_added)
+                pd.set_progress(i * 100 / num_of_pages_added)
 
-            self.view.fully_update_layout()
-            self.miniature_view.fully_update_layout()
+            pd.set_progress(100)
+            self.view.update_layout()
+            self.miniature_view.update_layout()
 
         pd.start(append)
 
