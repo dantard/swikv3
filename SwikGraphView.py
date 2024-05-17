@@ -1,6 +1,6 @@
 from PyQt5.QtCore import pyqtSignal, QRectF, Qt, QTimer
-from PyQt5.QtGui import QColor
-from PyQt5.QtWidgets import QGraphicsRectItem, QGraphicsEllipseItem
+from PyQt5.QtGui import QColor, QCursor, QHoverEvent, QTransform, QPainter
+from PyQt5.QtWidgets import QGraphicsRectItem, QGraphicsEllipseItem, QGraphicsView, QApplication, QWidget, QVBoxLayout, QPushButton
 
 import utils
 from GraphView import GraphView
@@ -17,13 +17,77 @@ from tools.tool_insert_image import InsertImageRectItem
 from widgets.pdf_widget import PdfWidget
 
 
+class Shower(QGraphicsView):
+    def __init__(self, scene):
+        super().__init__(scene)
+        self.close = QPushButton("✕")
+        self.close.setParent(self)
+        self.close.clicked.connect(self.hide)
+        self.pin = QPushButton("•")
+        self.pin.setParent(self)
+        self.pin.setCheckable(True)
+        self.setAttribute(Qt.WA_Hover, True)
+        self.timer = QTimer()
+        self.timer.setSingleShot(True)
+        self.timer.timeout.connect(self.bury)
+        self.pos1 = None
+        self.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+        #self.link_shower.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setWindowFlags(Qt.Window | Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
+        #self.setTransform(QTransform().scale(0.5, 0.5))
+        self.setRenderHint(QPainter.Antialiasing)
+        self.setRenderHint(QPainter.SmoothPixmapTransform)
+    def setPoseSize(self, x, y, w, h):
+        if self.pin.isChecked():
+            self.setGeometry(self.geometry().x(), self.geometry().y(), w, h)
+        else:
+            self.setGeometry(x, y, w, h)
+
+    def mousePressEvent(self, event):
+        super().mousePressEvent(event)
+        self.pos1 = event.pos()
+
+    def mouseMoveEvent(self, event):
+        super().mouseMoveEvent(event)
+        if self.pos1 is not None:
+            self.move(event.globalPos()-self.pos1)
+
+    def mouseReleaseEvent(self, event):
+        self.pos1 = None
+    def show(self):
+        super().show()
+        self.timer.start(2000)
+    def event(self, event):
+        if event.type() == QHoverEvent.HoverEnter:
+            self.timer.stop()
+        if event.type() == QHoverEvent.HoverLeave:
+            self.bury()
+        return super().event(event)
+    def resizeEvent(self, event):
+        self.close.setGeometry(self.width()-40, 10, 20, 20)
+        self.pin.setGeometry(self.width() - 65, 10, 20, 20)
+        super().resizeEvent(event)
+
+    def bury(self):
+        if not self.pin.isChecked():
+            self.hide()
+
+    def hoverLeaveEvent(self, event):
+        QTimer.singleShot(100, self.bury)
+
 class SwikGraphView(GraphView):
     drop_event = pyqtSignal(list)
+
+
+
 
     def __init__(self, manager, renderer, scene, page=SimplePage, mode=LayoutManager.MODE_VERTICAL_MULTIPAGE):
         super(SwikGraphView, self).__init__(manager, renderer, scene, page, mode)
         self.renderer.sync_requested.connect(self.sync_requested)
         self.setAcceptDrops(True)
+        self.link_shower = Shower(self.scene())
+
 
     def dropEvent(self, event) -> None:
         event.accept()
@@ -113,6 +177,7 @@ class SwikGraphView(GraphView):
         for link in links:
             if type(link) == InternalLink:
                 link.signals.clicked.connect(self.link_clicked)
+                link.signals.link_hovered.connect(self.link_hovered)
                 # self.pages[page.index].add_link(link[0], link[1], link[2])
         return page
 
@@ -123,8 +188,36 @@ class SwikGraphView(GraphView):
         ellipse.setPen(Qt.transparent)
         ellipse.setPos(pos)
         self.centerOn(ellipse)
-
         utils.delayed(2000, self.scene().removeItem, ellipse)
+
+
+    def link_hovered(self, kind, page, pos):
+
+
+        if kind == InternalLink.ENTER:
+            #if QApplication.keyboardModifiers() != Qt.ControlModifier:
+            #    return
+
+            if 0 <= page < len(self.pages):
+                self.link_shower.show()
+                dest_page: Page = self.pages[page]
+                #self.pages[page].request_image(1, True)
+                pos = dest_page.mapToScene(pos)
+                self.link_shower.setSceneRect(0, pos.y()-600, dest_page.sceneBoundingRect().width(), 1200)
+                self.link_shower.setPoseSize(QCursor.pos().x()+5, QCursor.pos().y()+20, int(dest_page.sceneBoundingRect().width()), 400)
+                self.link_shower.verticalScrollBar().setValue(int(pos.y()))
+                print("777777777777777777777777777777", self.link_shower.verticalScrollBar().maximum())
+
+
+        elif kind == InternalLink.LEAVE:
+            pass#self.link_shower.hide()
+
+
+
+
+
+
+
 
     def toggle_page_info(self):
         for page in self.pages.values():

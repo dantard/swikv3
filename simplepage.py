@@ -216,11 +216,15 @@ class SimplePage(QGraphicsRectItem):
         return intersection.width() * intersection.height(), intersection
 
     def isShown(self):
-        port_rect = self.view.viewport().rect()
-        scene_rect = self.view.mapToScene(port_rect).boundingRect()
-        item_rect = self.mapRectFromScene(scene_rect)
-        intersection = item_rect.intersected(self.boundingRect())
-        return not intersection.isEmpty()
+        views = self.scene().views()
+        shown = False
+        for view in views:
+            port_rect = view.viewport().rect()
+            scene_rect = view.mapToScene(port_rect).boundingRect()
+            item_rect = self.mapRectFromScene(scene_rect)
+            intersection = item_rect.intersected(self.boundingRect())
+            shown = shown or (not intersection.isEmpty())
+        return shown
 
     def is_completely_shown(self):
         port_rect = self.view.viewport().rect()
