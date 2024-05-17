@@ -126,26 +126,26 @@ class GraphView(QGraphicsView):
             self.layout_manager.set_mode(LayoutManager.MODE_VERTICAL, False)
 
         ratio = min(max(self.layout_manager.ratio_min, ratio), self.layout_manager.ratio_max)
-        if round(ratio, 2) != round(self.get_ratio(), 2):
-            # Record radio change
-            self.ratio = ratio
 
-            if self.layout_manager.is_vertical():
-                percent = self.verticalScrollBar().value() / self.scene().height() if self.scene().height() != 0 else 1
-            else:
-                percent = self.horizontalScrollBar().value() / self.scene().width() if self.scene().width() != 0 else 1
+        # Record radio change
+        self.ratio = ratio
 
-            self.layout_manager.reset()
+        if self.layout_manager.is_vertical():
+            percent = self.verticalScrollBar().value() / self.scene().height() if self.scene().height() != 0 else 1
+        else:
+            percent = self.horizontalScrollBar().value() / self.scene().width() if self.scene().width() != 0 else 1
 
-            if self.layout_manager.is_vertical():
-                self.verticalScrollBar().setValue(int(self.scene().height() * percent))
-                self.horizontalScrollBar().setValue(int(self.horizontalScrollBar().maximum()/2))
-            else:
-                self.horizontalScrollBar().setValue(int(self.scene().width() * percent))
+        self.layout_manager.reset()
 
-            for page in self.pages.values():
-                page.update_image(self.ratio)
-                self.layout_manager.update_layout(page)
+        if self.layout_manager.is_vertical():
+            self.verticalScrollBar().setValue(int(self.scene().height() * percent))
+            self.horizontalScrollBar().setValue(int(self.horizontalScrollBar().maximum()/2))
+        else:
+            self.horizontalScrollBar().setValue(int(self.scene().width() * percent))
+
+        for page in self.pages.values():
+            page.update_image(self.ratio)
+            self.layout_manager.update_layout(page)
 
         if inform:
             self.ratio_changed.emit(self.get_ratio())

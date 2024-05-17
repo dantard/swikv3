@@ -33,8 +33,8 @@ class ZoomToolbar(Toolbar):
             self.view.layout_manager.set_mode(LayoutManager.MODE_FIT_WIDTH)
             self.lb_zoom.setEditable(False)
         else:
-            self.view.layout_manager.set_mode(LayoutManager.MODE_VERTICAL)
             self.view.set_ratio(float(self.lb_zoom.currentText().replace("%", "")) / 100, False)
+            self.view.layout_manager.set_mode(LayoutManager.MODE_VERTICAL)
             self.lb_zoom.setEditable(True)
 
     def zoom_entered(self):
