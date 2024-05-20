@@ -200,6 +200,8 @@ class FontPicker(QWidget):
             label = QLabel(font_info.full_name)
             if use_own_font:
                 qfont = font_info.get_qfont(12)
+                if not qfont:
+                    continue
                 #print()
                 if qfont:
                     label.setFont(qfont)

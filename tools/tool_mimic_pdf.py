@@ -1,8 +1,9 @@
 import sys
 
-from PyQt5.QtCore import Qt, pyqtSignal, QPointF
+from PyQt5.QtCore import Qt, pyqtSignal, QPointF, QRectF
 from PyQt5.QtGui import QColor
-from PyQt5.QtWidgets import QGraphicsRectItem, QTreeWidget, QTreeWidgetItem, QComboBox, QHBoxLayout, QVBoxLayout, QPushButton, QWidget
+from PyQt5.QtWidgets import QGraphicsRectItem, QTreeWidget, QTreeWidgetItem, QComboBox, QHBoxLayout, QVBoxLayout, QPushButton, QWidget, QGraphicsLineItem
+from pymupdf import Rect, Point
 
 import font_manager
 from progressing import Progressing
@@ -10,6 +11,7 @@ from swiktext import SwikText
 from tools.replace_fonts.repl_font import repl_font
 from tools.replace_fonts.repl_fontnames import repl_fontnames
 from tools.tool import Tool
+from utils import fitz_rect_to_qrectf
 
 
 class ToolMimicPDF(Tool):
@@ -53,6 +55,27 @@ class ToolMimicPDF(Tool):
                     break
 
                 spans = self.renderer.extract_spans(i)
+
+                # a = self.renderer.document[i].get_drawings()
+                # for j in a:
+                #     print(j)
+                #     items = j["items"]
+                #     for item in items:
+                #         if item[0] == "re":
+                #             re:Rect = item[1]
+                #             rect = fitz_rect_to_qrectf(re)
+                #             pp = QGraphicsRectItem(self.view.pages[i])
+                #             pp.setRect(QRectF(0, 0, rect.width(), rect.height()))
+                #             pp.setPos(rect.topLeft())
+                #             pp.setBrush(Qt.cyan)
+                #         elif item[0] == "l":
+                #             p1:Point = item[1]
+                #             p2:Point = item[2]
+                #             pp = QGraphicsLineItem(self.view.pages[i])
+                #             pp.setPen(Qt.magenta)
+                #             pp.setLine(p1.x, p1.y, p2.x, p2.y)
+
+
                 page = self.view.pages[i]
                 for span in spans:
                     print(span.font)
@@ -72,10 +95,14 @@ class ToolMimicPDF(Tool):
                     swik_text.setDefaultTextColor(color)
 
                 print("page REDA", i)
+
+                print("DONEEEEEEEEEEE", self.renderer.document[0].annots())
+
                 try:
                     self.renderer.apply_redactions(i)
                 except:
                     pass
+
                 self.view.pages[i].invalidate()
 
             self.finished.emit()

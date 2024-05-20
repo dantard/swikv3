@@ -304,6 +304,7 @@ class MuPDFRenderer(QLabel):
 
         spans = []
         boxes = self.document[page_id].get_text("dict", sort=True, flags=TEXTFLAGS_DICT & ~TEXT_PRESERVE_IMAGES)["blocks"]
+
         for box in boxes:
             for line in box.get("lines", []):
                 for span in line.get("spans", []):
@@ -317,6 +318,7 @@ class MuPDFRenderer(QLabel):
                     sp.rect = QRectF(x1, y1, x2 - x1, y2 - y1)
                     sp.font = span["font"]
                     sp.size = span["size"]
+                    #print("span", span)
                     if "Slanted" in sp.text:
                         print(span)
                     '''
@@ -443,14 +445,16 @@ class MuPDFRenderer(QLabel):
         x1, y1 = self.document[page].cropbox.x1, self.document[page].cropbox.y1
         return QRectF(x0, y0, x1 - x0, y1 - y0)
 
-    def add_redact_annot(self, index, rect, color, minimize=False, apply=True):
+    def add_redact_annot(self, index, rect, color=None, minimize=False, apply=True):
         if minimize:
-            # Create a 2 pixel high rect to avoid removing adjacent text
-            rect = QRectF(rect.x(), rect.center().y() - 1, rect.width(), 1)
+            # Create a 1 pixel high rect to avoid removing adjacent text
+            rect = QRectF(rect.x(), rect.center().y(), rect.width(), 1)
         page = self.document[index]
         rect = utils.qrectf_to_fitz_rect(rect)
-        color = utils.qcolor_to_fitz_color(QColor(color))
-        page.add_redact_annot(rect, "", fill=color)
+        if color is not None:
+            color = utils.qcolor_to_fitz_color(QColor(color))
+
+        page.add_redact_annot(rect, fill=color)
         if apply:
             page.apply_redactions()
 
@@ -613,7 +617,7 @@ class MuPDFRenderer(QLabel):
         patch = text.get_patch_on_page()
         patch.setY(patch.center().y() - 1)
         patch.setHeight(2)
-        self.add_redact_annot(index, patch, text.get_patch_color())
+        self.add_redact_annot(index, patch)
         self.add_text(index, text)
 
     to_remove = []

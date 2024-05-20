@@ -98,7 +98,7 @@ class FontAndColorDialog(ComposableDialog):
             sec3 = self.font_picker.add_section("Unsupported", parent)
             self.font_picker.add_elements(sec1, self.font_manager.filter('document', subset=False, supported=True))
             self.font_picker.add_elements(sec2, self.font_manager.filter('document', subset=True, supported=True))
-            self.font_picker.add_elements(sec3, self.font_manager.filter('document', supported=False))
+            self.font_picker.add_elements(sec3, self.font_manager.filter('document', supported=False), use_own_font=False)
 
             parent = self.font_picker.add_section("Base14 Fonts")
             self.font_picker.add_elements(parent, self.font_manager.get_base14_fonts())
