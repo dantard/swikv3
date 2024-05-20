@@ -201,7 +201,7 @@ class SwikTextReplace(SwikText):
         super(SwikTextReplace, self).__init__(word.get_text(), word.parentItem(), font_manager, font, size)
         self.setFlag(QGraphicsItem.ItemIsMovable, False)
         self.setZValue(1)
-        self.setPos(word.pos() - QPointF(size / 3.5, size / 3.5))
+        self.setPos(word.pos() - QPointF(size / 3.5, size / 3.4))
         self.bg = QGraphicsRectItem(self)
         self.bg.setFlag(QGraphicsItem.ItemNegativeZStacksBehindParent)
         self.bg.setPen(QPen(Qt.red))

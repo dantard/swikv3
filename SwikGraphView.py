@@ -30,6 +30,11 @@ class Shower(QGraphicsView):
         self.timer = QTimer()
         self.timer.setSingleShot(True)
         self.timer.timeout.connect(self.bury)
+
+        self.timer2 = QTimer()
+        self.timer2.setSingleShot(True)
+        self.timer2.timeout.connect(self.show_link)
+
         self.pos1 = None
         self.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
         #self.link_shower.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -57,7 +62,7 @@ class Shower(QGraphicsView):
         self.pos1 = None
     def show(self):
         super().show()
-        self.timer.start(2000)
+        self.timer.start(1500)
     def event(self, event):
         if event.type() == QHoverEvent.HoverEnter:
             self.timer.stop()
@@ -75,6 +80,21 @@ class Shower(QGraphicsView):
 
     def hoverLeaveEvent(self, event):
         QTimer.singleShot(100, self.bury)
+
+    def enter(self, page, pos):
+        self.page = page
+        self.pos = self.page.mapToScene(pos)
+        self.timer2.start(1000)
+
+    def leave(self, page, pos):
+        self.timer2.stop()
+
+    def show_link(self):
+        self.setSceneRect(0, self.pos.y() - 600, self.page.sceneBoundingRect().width(), 1200)
+        self.setPoseSize(QCursor.pos().x() + 5, QCursor.pos().y() + 20, int(self.page.sceneBoundingRect().width()), 400)
+        self.verticalScrollBar().setValue(int(self.pos.y()))
+        self.show()
+
 
 class SwikGraphView(GraphView):
     drop_event = pyqtSignal(list)
@@ -193,24 +213,14 @@ class SwikGraphView(GraphView):
 
     def link_hovered(self, kind, page, pos):
 
+        dest_page = self.pages[page]
 
         if kind == InternalLink.ENTER:
-            #if QApplication.keyboardModifiers() != Qt.ControlModifier:
-            #    return
-
-            if 0 <= page < len(self.pages):
-                self.link_shower.show()
-                dest_page: Page = self.pages[page]
-                #self.pages[page].request_image(1, True)
-                pos = dest_page.mapToScene(pos)
-                self.link_shower.setSceneRect(0, pos.y()-600, dest_page.sceneBoundingRect().width(), 1200)
-                self.link_shower.setPoseSize(QCursor.pos().x()+5, QCursor.pos().y()+20, int(dest_page.sceneBoundingRect().width()), 400)
-                self.link_shower.verticalScrollBar().setValue(int(pos.y()))
-                print("777777777777777777777777777777", self.link_shower.verticalScrollBar().maximum())
+            self.link_shower.enter(dest_page, pos)
 
 
         elif kind == InternalLink.LEAVE:
-            pass#self.link_shower.hide()
+            self.link_shower.leave(dest_page, pos)
 
 
 
