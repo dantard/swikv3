@@ -6,8 +6,12 @@ from simplepage import SimplePage
 from word import Word
 
 
+
 class Manager(QObject):
-    tool_finished = pyqtSignal()
+    FINISHED = 0
+    OPEN_REQUESTED = 1
+
+    tool_finished = pyqtSignal(int, object)
 
     def __init__(self, renderer, config):
         super(Manager, self).__init__()
@@ -98,5 +102,5 @@ class Manager(QObject):
             return True
         return False
 
-    def finished(self):
-        self.tool_finished.emit()
+    def finished(self, a, b):
+        self.tool_finished.emit(a, b)

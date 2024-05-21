@@ -34,7 +34,7 @@ class ToolReplaceFonts(Tool):
         self.helper = QWidget()
         self.helper.setLayout(v_layout)
         self.helper.setMaximumWidth(200)
-        self.layout.insertWidget(0, self.helper)
+        self.layout.insertWidget(max(self.layout.count()-1,0), self.helper)
 
         colors = [Qt.red, Qt.green, Qt.blue, Qt.yellow, Qt.magenta, Qt.cyan, Qt.darkRed, Qt.darkGreen,
                   Qt.darkBlue, Qt.darkYellow, Qt.darkMagenta, Qt.darkCyan, Qt.gray, Qt.darkGray, Qt.lightGray]

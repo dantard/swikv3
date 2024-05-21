@@ -107,6 +107,8 @@ class Scene(QGraphicsScene):
         items = self.selectedItems()
         self.tracker().items_removed(items)
         for item in items:
+            if hasattr(item, "deleted"):
+                item.deleted()
             self.removeItem(item)
 
     def keyReleaseEvent(self, event) -> None:

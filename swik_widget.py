@@ -29,7 +29,6 @@ from progressing import Progressing
 from scene import Scene
 from toolbars.zoom_toolbar import ZoomToolbar
 from tools.replace_fonts.tool_replace_fonts import ToolReplaceFonts
-from tools.tool_drag import ToolDrag
 from tools.tool_insert_image import ToolInsertImage, ToolInsertSignatureImage
 from tools.tool_mimic_pdf import ToolMimicPDF
 from tools.tool_numerate import ToolNumerate
@@ -110,9 +109,9 @@ class SwikWidget(QWidget):
 
         self.lateral_bar_layout = QHBoxLayout()
 
-        tool_drag = self.manager.register_tool(ToolDrag(self.view, self.renderer, self.config))
+        #tool_drag = self.manager.register_tool(ToolDrag(self.view, self.renderer, self.config))
         tool_text = self.manager.register_tool(ToolTextSelection(self.view, self.renderer, self.font_manager, self.config), True)
-        tool_sign = self.manager.register_tool(ToolSign(self.view, self.renderer, self.config))
+        self.tool_sign = self.manager.register_tool(ToolSign(self.view, self.renderer, self.config, layout=self.lateral_bar_layout))
         tool_rear = self.manager.register_tool(ToolRearrange(self.view, [self.miniature_view], self.renderer, self.config))
         tool_reda = self.manager.register_tool(ToolRedactAnnotation(self.view, self.renderer, self.config))
         tool_sqan = self.manager.register_tool(ToolSquareAnnotation(self.view, self.renderer, self.config))
@@ -130,7 +129,7 @@ class SwikWidget(QWidget):
 
         self.key_manager = KeyboardManager(self)
 
-        self.key_manager.register_action(Qt.Key_Shift, lambda: self.manager.use_tool(tool_drag), self.manager.finished)
+#        self.key_manager.register_action(Qt.Key_Shift, lambda: self.manager.use_tool(tool_drag), self.manager.finished)
         self.key_manager.register_combination_action('Ctrl+R', lambda: self.open_file(self.renderer.get_filename()))
         self.key_manager.register_combination_action('Ctrl+i', self.view.toggle_page_info)
         self.key_manager.register_combination_action('Ctrl+C', lambda: self.manager.keyboard('Ctrl+C'))
@@ -151,7 +150,7 @@ class SwikWidget(QWidget):
 
         self.mode_group = GroupBox(self.manager.use_tool)
         self.mode_group.add(tool_text, icon=":/icons/text_cursor.png", text="Select Text", default=True)
-        self.sign_btn = self.mode_group.add(tool_sign, icon=":/icons/sign.png", text="Sign")
+        self.sign_btn = self.mode_group.add(self.tool_sign, icon=":/icons/sign.png", text="Sign")
         self.mode_group.add(tool_crop, icon=":/icons/crop.png", text="Crop")
         self.mode_group.add(tool_sqan, icon=":/icons/annotate.png", text="Annotate")
         self.mode_group.add(tool_reda, icon=":/icons/white.png", text="Anonymize")
@@ -163,7 +162,7 @@ class SwikWidget(QWidget):
         self.mode_group.add(tool_nume, icon=":/icons/numerate.png", text="Replace Fonts")
         # self.mode_group.append(self.toolbar)
 
-        self.manager.tool_finished.connect(self.mode_group.reset)
+        self.manager.tool_finished.connect(self.tool_finished)
 
         self.zoom_toolbar = ZoomToolbar(self.view, self.toolbar)
         self.nav_toolbar = NavigationToolbar(self.view, self.toolbar)
@@ -203,6 +202,13 @@ class SwikWidget(QWidget):
         self.set_interactable(False)
         self.preferences_changed()
         QApplication.processEvents()
+
+    def tool_finished(self, action, data):
+        if action == Manager.OPEN_REQUESTED:
+            self.open_file(data)
+            self.manager.use_tool(self.tool_sign)
+        else:
+            self.mode_group.reset()
 
     def set_ratio(self, ratio):
         print("set_ratio_widget", ratio)

@@ -48,8 +48,15 @@ class SelectorRectItem(ColoreableRectItem):
 
     def view_mouse_release_event(self, view, event):
         if self.p1 is not None:
+            if self.is_ok():
+                self.signals.done.emit(self)
+            else:
+                view.scene().removeItem(self)
             self.p1 = None
-            self.signals.done.emit(self)
+        return self.is_ok()
+
+    def is_ok(self):
+        return self.rect().width() > 20 and self.rect().height() > 20
 
 
 class PaintableSelectorRectItem(SelectorRectItem):

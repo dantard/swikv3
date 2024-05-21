@@ -1,7 +1,7 @@
 import tempfile
 
-from PyQt5.QtCore import Qt, QPointF, QRectF, QUrl
-from PyQt5.QtGui import QFont, QFontDatabase, QColor, QClipboard, QGuiApplication, QDesktopServices
+from PyQt5.QtCore import Qt, QPointF, QRectF, QUrl, QMimeData
+from PyQt5.QtGui import QFont, QFontDatabase, QColor, QClipboard, QGuiApplication, QDesktopServices, QDrag
 from PyQt5.QtWidgets import QMenu, QGraphicsRectItem, QGraphicsScene, QDialog, QMessageBox
 
 import utils
@@ -98,6 +98,15 @@ class ToolTextSelection(Tool):
 
     def mouse_pressed(self, event):
         if event.button() == Qt.RightButton:
+            return
+
+        if event.modifiers() & Qt.ShiftModifier:
+            event.accept()
+            drag = QDrag(self)
+            mime_data = QMimeData()
+            mime_data.setUrls([QUrl.fromLocalFile(self.renderer.get_filename())])
+            drag.setMimeData(mime_data)
+            drag.exec_(Qt.CopyAction)
             return
 
         if self.view.there_is_any_other_than(event.pos(), (SimplePage, Word)):

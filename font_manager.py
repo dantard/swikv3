@@ -60,8 +60,6 @@ class Font(SwikFont):
     def get_font_info(self, path):
         self.subset = '+' in path
 
-        print("PathAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa: ", path)
-
         try:
             font = ttLib.TTFont(path)
             if font.has_key('name'):
@@ -143,11 +141,8 @@ class FontManager(QObject):
         self.font_dir = None
 
     def update_document_fonts(self):
-        print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPPPPPPPPSDJDDDDDDDDDDDDDDDD", self.document_fonts)
         if len(self.document_fonts) == 0:
-            print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPPPPPPPPSDJDDDDDDDDDDDDDDDD2")
             self.font_dir = tempfile.mkdtemp()
-            print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPPPPPPPPSDJDDDDDDDDDDDDDDDD2", self.font_dir)
             self.renderer.save_fonts(self.font_dir)
             fonts = self.get_fonts([self.font_dir])
             self.document_fonts.extend(fonts)

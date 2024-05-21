@@ -216,8 +216,10 @@ class ResizableRectItem(PaintableSelectorRectItem, Undoable):
             self.notify_change(Action.FULL_STATE, self.current_state, self.get_full_state())
 
     def view_mouse_release_event(self, view, event):
-        super(ResizableRectItem, self).view_mouse_release_event(view, event)
+        res = super(ResizableRectItem, self).view_mouse_release_event(view, event)
         self.update_handles_position()
+        return res
+
 
     def set_handle_visibility(self, visible: bool):
         for handle in self.handles:

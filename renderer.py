@@ -318,7 +318,13 @@ class MuPDFRenderer(QLabel):
                     sp.rect = QRectF(x1, y1, x2 - x1, y2 - y1)
                     sp.font = span["font"]
                     sp.size = span["size"]
-                    #print("span", span)
+                    h = span["color"]
+                    b = h & 255
+                    g = (h >> 8) & 255
+                    r = (h >> 16) & 255
+                    sp.color = QColor(r, g, b)
+
+                    print("span", span)
                     if "Slanted" in sp.text:
                         print(span)
                     '''
@@ -453,7 +459,6 @@ class MuPDFRenderer(QLabel):
         rect = utils.qrectf_to_fitz_rect(rect)
         if color is not None:
             color = utils.qcolor_to_fitz_color(QColor(color))
-
         page.add_redact_annot(rect, fill=color)
         if apply:
             page.apply_redactions()
@@ -606,6 +611,7 @@ class MuPDFRenderer(QLabel):
         rect.y0 += item.font().pointSizeF() / 3.5
         rect.y1 += item.font().pointSizeF() / 3.5
 
+        # align=pymupdf.TEXT_ALIGN_JUSTIFY
         tw.fill_textbox(rect, item.get_text(), font=font, fontsize=item.font().pointSizeF() * 1.34)  ## TODO: 1.325
         tw.write_text(self.document[index])
 

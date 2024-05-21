@@ -1,8 +1,10 @@
 from PyQt5.QtCore import QObject, pyqtSignal
 
+from manager import Manager
+
 
 class BasicTool(QObject):
-    finished = pyqtSignal()
+    finished = pyqtSignal(int, object)
 
     def __init__(self, view, renderer, config, **kwargs):
         super(BasicTool, self).__init__()
@@ -31,6 +33,9 @@ class BasicTool(QObject):
 
     def usable(self):
         return True
+
+    def emit_finished(self, status=Manager.FINISHED, data=None):
+        self.finished.emit(status, data)
 
 
 class Tool(BasicTool):
