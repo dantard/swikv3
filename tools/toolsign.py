@@ -2,14 +2,16 @@ import base64
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QImage, QColor
-from PyQt5.QtWidgets import QMenu, QDialog, QMessageBox, QVBoxLayout, QWidget, QPushButton
+from PyQt5.QtWidgets import QMenu, QDialog, QMessageBox, QVBoxLayout, QWidget, QPushButton, QTreeWidget, QTreeWidgetItem
 
+import signer
 from dialogs import PasswordDialog
 from manager import Manager
 from renderer import convert_box_to_upside_down
 from resizeable import ResizableRectItem
 from signer import P12Signer
 from tools.tool import Tool
+import contextlib
 
 
 class SignerRectItem(ResizableRectItem):
@@ -68,16 +70,41 @@ class ToolSign(Tool):
         self.helper = None
         self.sign_btn = None
         self.draw_btn = None
+        self.tree = None
 
     def init(self):
+        v_layout = QVBoxLayout()
         self.helper = QWidget()
+
+        self.tree = QTreeWidget()
+        self.tree.setColumnCount(2)
+        v_layout.addWidget(self.tree)
+
+        try:
+            valid = signer.get_signature_info(self.renderer.get_filename(),
+                                               '/home/danilo/Desktop/AC_FNMT_Usuarios.cer')
+
+
+            for i, value in enumerate(valid):
+                item = QTreeWidgetItem(["Signer " + str(i+1)])
+                self.tree.addTopLevelItem(item)
+                for key, value in value:
+                    item.addChild(QTreeWidgetItem([key, value]))
+        except Exception as e:
+            print(e)
+
+        #= '/home/danilo/Downloads/20240510_Resolucion_240510_Expresion_de_Interes_bolsa_viajes_general_2024-signed.pdf'
+        #root_cert = load_cert_from_pemder('/home/danilo/Desktop/AC_FNMT_Usuarios.cer')
+
+
+
         self.draw_btn = QPushButton("Draw")
         self.draw_btn.clicked.connect(self.draw_signature)
         self.draw_btn.setCheckable(True)
 
         self.sign_btn = QPushButton("Sign")
         self.sign_btn.clicked.connect(self.sign_document)
-        v_layout = QVBoxLayout()
+
         self.sign_btn.setEnabled(False)
         v_layout.setAlignment(Qt.AlignTop)
         v_layout.addWidget(self.draw_btn)

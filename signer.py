@@ -1,12 +1,18 @@
+import contextlib
 from random import randint
 
 from pyhanko import stamp
 from pyhanko.pdf_utils import text, images
 from pyhanko.pdf_utils.incremental_writer import IncrementalPdfFileWriter
 from pyhanko.pdf_utils.layout import InnerScaling, SimpleBoxLayoutRule, AxisAlignment
+from pyhanko.pdf_utils.reader import PdfFileReader
 from pyhanko.sign import signers, fields
 from pyhanko.sign.fields import VisibleSigSettings
-
+from pyhanko.sign.validation import validate_pdf_signature
+from pyhanko.keys import load_cert_from_pemder
+from pyhanko_certvalidator import ValidationContext
+from pyhanko.pdf_utils.reader import PdfFileReader
+from pyhanko.sign.validation import validate_pdf_signature
 
 class P12Signer:
     OK = 0
@@ -97,3 +103,16 @@ class P12Signer:
             return self.OK
 
         return self.ERROR_SIGNING_FAILED
+
+def get_signature_info(pdf_path, cert_path):
+    with contextlib.redirect_stderr(None):
+
+        root_cert = load_cert_from_pemder(cert_path)
+        vc = ValidationContext(trust_roots=[root_cert])
+        result = []
+        with open(pdf_path, 'rb') as doc:
+            r = PdfFileReader(doc)
+            for sig in r.embedded_signatures:
+                status = validate_pdf_signature(sig, vc)
+                result.append(status.pretty_print_sections())
+    return result
