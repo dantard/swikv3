@@ -98,6 +98,9 @@ class ToolMimicPDF(Tool):
             self.tree.setItemWidget(child1, 1, q)
 
     def apply(self):
+        self.renderer.sync_requested.emit()
+        self.view.pages[0].invalidate()
+        return
         filename = self.renderer.get_filename().replace(".pdf", "-mimic.pdf")
         self.renderer.save_elsewhere(filename)
         self.widget.open_requested.emit(filename, self.view.page, self.view.get_ratio())
@@ -191,7 +194,7 @@ class ToolMimicPDF(Tool):
                         color = QColor(255, 0, 0)
                     else:
                         color = span.color
-                        # color = QColor(255, 0, 0)
+                        color = QColor(255, 0, 0)
 
                     swik_text = SwikText(span.text, page, self.font_manager, font, span.size * 72.0 / 96.0)
                     self.texts.append(swik_text)
@@ -213,7 +216,11 @@ class ToolMimicPDF(Tool):
                                                     swik_text.boundingRect().height())
                     swik_text.setToolTip(font.full_name)
                     ### swik_text.setPos(top_left)  # + QPointF(span.size*0.01, 0))
-                    swik_text.setPos(span.rect.topLeft() - QPointF(span.size * 0.19, (span.size + span.ascender - span.descender) * 0.19))
+                    swik_text.setPos(
+                        span.rect.topLeft())  # - QPointF(span.size * 0.19, (span.size + span.ascender - span.descender) * 0.19))
+                    # swik_text.setPos(swik_text.pos().x(), swik_text.pos().y() - span.ascender + 0.74)
+                    swik_text.setPos(swik_text.pos().x(),
+                                     swik_text.pos().y() - (span.ascender + span.descender) * 72.0 / 96.0)
                     swik_text.setDefaultTextColor(color)
                 try:
                     self.renderer.apply_redactions(i)

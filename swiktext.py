@@ -84,7 +84,8 @@ class SwikText(QGraphicsTextItem, Undoable):
         res = menu.exec(event.screenPos())
         self.current_state = self.get_full_state()
         if res == action:
-            font_dialog = FontAndColorDialog(self.font_manager, self.get_font_info().nickname, self.get_font_size(), self.defaultTextColor())
+            font_dialog = FontAndColorDialog(self.font_manager, self.get_font_info().nickname, self.get_font_size(),
+                                             self.defaultTextColor())
             if font_dialog.exec() == ComposableDialog.Accepted:
                 font, color = font_dialog.get("Font"), font_dialog.get("Text Color")
                 self.set_font_info(font.get_font(), font.get_font_size())
@@ -155,7 +156,7 @@ class SwikText(QGraphicsTextItem, Undoable):
     def apply_font(self, size):
         document = self.document()
         # TODO: This is a magic number, it should be calculated based on the font size
-        document.setDocumentMargin(9 / 34 * size)
+        document.setDocumentMargin(0)
         self.setDocument(document)
         qfont = self.font_info.get_qfont(size)
         # qfont.setStretch(98)
@@ -195,7 +196,8 @@ class SwikText(QGraphicsTextItem, Undoable):
         self.setDefaultTextColor(state["text_color"] if "text_color" in state else self.defaultTextColor())
 
     def get_common_state(self):
-        return {"font_ttf_filename": self.ttf_filename, "font_size": self.get_font_size(), "text_color": self.defaultTextColor()}
+        return {"font_ttf_filename": self.ttf_filename, "font_size": self.get_font_size(),
+                "text_color": self.defaultTextColor()}
 
 
 class SwikTextReplace(SwikText):

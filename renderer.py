@@ -616,9 +616,10 @@ class MuPDFRenderer(QLabel):
 
         # tw.append((x,y + h), item.get_text(), font=font, fontsize=item.font().pointSizeF()*1.32)
         rect = utils.qrectf_and_pos_to_fitz_rect(item.get_rect_on_parent(), item.pos())
-        rect.x1 = rect.x1  # + 100
-        rect.y0 += item.font().pointSizeF() / 3.5
-        rect.y1 += item.font().pointSizeF() / 3.5
+        rect.x1 = rect.x1 + 5
+        rect.x0 = rect.x0 - item.font().pointSizeF() / 3.5
+        # rect.y0 += item.font().pointSizeF() / 3.5
+        # rect.y1 += item.font().pointSizeF() / 3.5
 
         page: pymupdf.Page = self.document[index]
 
@@ -626,13 +627,14 @@ class MuPDFRenderer(QLabel):
         if True:
             css = """
             @font-face {font-family: comic; src: url(""" + item.get_font_info().path + """);}            
-            * {font-family: comic; font-size: """ + str(item.font().pointSizeF() * 1.34) + """px; color: rgb(0,255,0);}
+            * {font-family: comic; font-size: """ + str(item.font().pointSizeF() * 96.0 / 72.0) + """px; color: rgb(255,0,0);}
             """
-            # tw.fill_textbox(rect, item.get_text(), font=font, fontsize=item.font().pointSizeF() * 96 / 72)
+            tw.fill_textbox(rect, item.get_text(), font=font, fontsize=item.font().pointSizeF() * 96 / 72)
             # align=pymupdf.TEXT_ALIGN_JUSTIFY)  ## TODO: 1.325
             #            text = "<div>Some text</div>"
 
-            page.insert_htmlbox(rect, item.get_text(), css=css)
+            # rect.x0 = rect.x0 + item.font().pointSizeF() / 3.5
+            # page.insert_htmlbox(rect, item.get_text(), css=css)
             #                                css="* {font-family:" + item.font().family() + ";font-size:" + str(item.font().pointSizeF() * 96 / 72) + "px;}")
             # css=)
 
@@ -652,9 +654,9 @@ class MuPDFRenderer(QLabel):
                 rect.x0 += font.text_length(c, item.font().pointSizeF() * 1.34) + (padding if c == " " else 0)
                 rect.x1 = rect.x0 + 100
 
-        # tw.write_text(self.document[index])
+        tw.write_text(self.document[index])
         # page: pymupdf.Page = self.document[index]
-        # page.draw_rect(rect, color=(1, 0, 0), width=1)
+        page.draw_rect(rect, color=(1, 0, 0), width=1)
 
     def replace_word(self, index, text: SwikTextReplace):
         self.document[index].clean_contents()

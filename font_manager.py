@@ -109,19 +109,26 @@ class Font(SwikFont):
 class FontManager(QObject):
     base14_fonts_def = [
         {'full_name': 'Helvetica', 'path': None, 'family': 'Helvetica', 'weight': 400, 'nickname': 'helv', },
-        {'full_name': 'Helvetica-Bold', 'path': None, 'family': 'Helvetica', 'weight': 700, 'nickname': 'Helvetica-Bold', },
-        {'full_name': 'Helvetica-Oblique', 'path': None, 'family': 'Helvetica', 'weight': 400, 'nickname': 'Helvetica-Oblique', },
-        {'full_name': 'Helvetica-BoldOblique', 'path': None, 'family': 'Helvetica', 'weight': 700, 'nickname': 'Helvetica-BoldOblique', },
+        {'full_name': 'Helvetica-Bold', 'path': None, 'family': 'Helvetica', 'weight': 700,
+         'nickname': 'Helvetica-Bold', },
+        {'full_name': 'Helvetica-Oblique', 'path': None, 'family': 'Helvetica', 'weight': 400,
+         'nickname': 'Helvetica-Oblique', },
+        {'full_name': 'Helvetica-BoldOblique', 'path': None, 'family': 'Helvetica', 'weight': 700,
+         'nickname': 'Helvetica-BoldOblique', },
         {'full_name': 'Courier', 'path': None, 'family': 'Courier', 'weight': 400, 'nickname': 'Courier', },
         {'full_name': 'Courier-Bold', 'path': None, 'family': 'Courier', 'weight': 700, 'nickname': 'Courier-Bold', },
-        {'full_name': 'Courier-Oblique', 'path': None, 'family': 'Courier', 'weight': 400, 'nickname': 'Courier-Oblique', },
-        {'full_name': 'Courier-BoldOblique', 'path': None, 'family': 'Courier', 'weight': 700, 'nickname': 'Courier-BoldOblique', },
+        {'full_name': 'Courier-Oblique', 'path': None, 'family': 'Courier', 'weight': 400,
+         'nickname': 'Courier-Oblique', },
+        {'full_name': 'Courier-BoldOblique', 'path': None, 'family': 'Courier', 'weight': 700,
+         'nickname': 'Courier-BoldOblique', },
         {'full_name': 'Times-Roman', 'path': None, 'family': 'Times', 'weight': 400, 'nickname': 'Times-Roman', },
         {'full_name': 'Times-Bold', 'path': None, 'family': 'Times', 'weight': 700, 'nickname': 'Times-Bold', },
         {'full_name': 'Times-Italic', 'path': None, 'family': 'Times', 'weight': 400, 'nickname': 'Times-Italic', },
-        {'full_name': 'Times-BoldItalic', 'path': None, 'family': 'Times', 'weight': 700, 'nickname': 'Times-BoldItalic', },
+        {'full_name': 'Times-BoldItalic', 'path': None, 'family': 'Times', 'weight': 700,
+         'nickname': 'Times-BoldItalic', },
         {'full_name': 'Symbol', 'path': None, 'family': 'Symbol', 'weight': 400, 'nickname': 'Symbol', },
-        {'full_name': 'ZapfDingbats', 'path': None, 'family': 'ZapfDingbats', 'weight': 400, 'nickname': 'ZapfDingbats', }
+        {'full_name': 'ZapfDingbats', 'path': None, 'family': 'ZapfDingbats', 'weight': 400,
+         'nickname': 'ZapfDingbats', }
     ]
 
     base14_fonts = []
@@ -170,7 +177,7 @@ class FontManager(QObject):
             else:
                 raise ValueError("Invalid section")
         else:
-            fonts = self.document_fonts + self.swik_fonts + self.base14_fonts + self.system_fonts
+            fonts = self.swik_fonts + self.base14_fonts + self.system_fonts + self.document_fonts
 
         pos = kwargs.pop('pos', None)
 
