@@ -24,6 +24,7 @@ from annotations.highlight_annotation import HighlightAnnotation
 from annotations.hyperlink import Link, ExternalLink, InternalLink
 from annotations.squareannotation import SquareAnnotation
 from font_manager import Base14Font
+from span import Span
 from swiktext import SwikText, SwikTextReplace
 from utils import fitz_rect_to_qrectf
 from widgets.pdf_widget import PdfTextWidget, MultiLinePdfTextWidget, PdfCheckboxWidget, PdfComboboxWidget, PdfWidget, \
@@ -301,9 +302,6 @@ class MuPDFRenderer(QLabel):
         return self.filename
 
     def extract_spans(self, page_id):
-
-        class Span:
-            __slots__ = "rect", "text", "font", "size", "color", "ascender", "descender"
 
         spans = []
         boxes = self.document[page_id].get_text("dict", sort=True, flags=TEXTFLAGS_DICT & ~TEXT_PRESERVE_IMAGES)[

@@ -1,4 +1,5 @@
 import sys
+import time
 
 from PyQt5.QtCore import Qt, pyqtSignal, QPointF, QRectF
 from PyQt5.QtGui import QColor
@@ -9,7 +10,9 @@ from pymupdf import Rect, Point
 import font_manager
 from annotations.redactannotation import RedactAnnotation
 from dialogs import FontAndColorDialog, ComposableDialog
+from page import Page
 from progressing import Progressing
+from span import Span
 from swiktext import SwikText
 from tools.replace_fonts.repl_font import repl_font
 from tools.replace_fonts.repl_fontnames import repl_fontnames
@@ -159,30 +162,27 @@ class ToolMimicPDF(Tool):
             for i in range(0, self.view.get_page_count()):
                 if not self.progressing.set_progress(i):
                     break
+                page: Page = self.view.pages[i]
+
+                if not page.has_words():
+                    words = self.renderer.extract_words(page.index)
+                    page.set_words(words)
+                '''
+                for word in page.get_words():
+                    font, size, color = self.renderer.get_word_font_info(word)
+                    span = Span()
+                    span.font = font
+                    span.size = size
+                    span.color = color
+                    span.text = word.get_text()
+                    span.rect = QRectF(word.pos().x(), word.pos().y(), word.rect().width(), word.rect().height())
+                    span.ascender = 0
+                    span.descender = 0
+                '''
 
                 spans = self.renderer.extract_spans(i)
-
-                # a = self.renderer.document[i].get_drawings()
-                # for j in a:
-                #     print(j)
-                #     items = j["items"]
-                #     for item in items:
-                #         if item[0] == "re":
-                #             re:Rect = item[1]
-                #             rect = fitz_rect_to_qrectf(re)
-                #             pp = QGraphicsRectItem(self.view.pages[i])
-                #             pp.setRect(QRectF(0, 0, rect.width(), rect.height()))
-                #             pp.setPos(rect.topLeft())
-                #             pp.setBrush(Qt.cyan)
-                #         elif item[0] == "l":
-                #             p1:Point = item[1]
-                #             p2:Point = item[2]
-                #             pp = QGraphicsLineItem(self.view.pages[i])
-                #             pp.setPen(Qt.magenta)
-                #             pp.setLine(p1.x, p1.y, p2.x, p2.y)
-
-                page = self.view.pages[i]
                 for span in spans:
+
                     new_font_name = translate.get(span.font)
                     font = self.font_manager.filter(nickname=new_font_name, pos=0)
                     # redact = RedactAnnotation(page, brush=Qt.white, pen=Qt.transparent)
@@ -199,26 +199,9 @@ class ToolMimicPDF(Tool):
                     swik_text = SwikText(span.text, page, self.font_manager, font, span.size * 72.0 / 96.0)
                     self.texts.append(swik_text)
 
-                    '''
-                    fontw = swik_text.font()
-                    fontw.setStretch(100)
-                    swik_text.setFont(fontw)
-
-                    while swik_text.boundingRect().width() > span.rect.width() * 1.035 and fontw.stretch() > 0:
-                        fontw = swik_text.font()
-                        fontw.setStretch(fontw.stretch() - 1)
-                        swik_text.setFont(fontw)
-                        print("stretch", fontw.stretch())
-                    '''
-
-                    midpoint = self.rectangle_midpoint(span.rect)
-                    top_left = self.top_left_corner(midpoint, swik_text.boundingRect().width(),
-                                                    swik_text.boundingRect().height())
                     swik_text.setToolTip(font.full_name)
-                    ### swik_text.setPos(top_left)  # + QPointF(span.size*0.01, 0))
-                    swik_text.setPos(
-                        span.rect.topLeft())  # - QPointF(span.size * 0.19, (span.size + span.ascender - span.descender) * 0.19))
-                    # swik_text.setPos(swik_text.pos().x(), swik_text.pos().y() - span.ascender + 0.74)
+                    swik_text.setPos(span.rect.topLeft())
+
                     swik_text.setPos(swik_text.pos().x(),
                                      swik_text.pos().y() - (span.ascender + span.descender) * 72.0 / 96.0)
                     swik_text.setDefaultTextColor(color)
@@ -229,7 +212,6 @@ class ToolMimicPDF(Tool):
 
                 self.view.pages[i].invalidate()
             self.progressing.setValue(self.view.get_page_count())
-            # self.emit_finished()
 
         self.progressing.start(process)
 
