@@ -8,11 +8,13 @@ from os.path import exists
 
 import pymupdf
 from PyQt5 import QtCore
-from PyQt5.QtCore import Qt, QRunnable, QThreadPool, pyqtSignal, QMutex, QRectF, QRect, QByteArray, QBuffer, QIODevice, QUrl, QTimer
+from PyQt5.QtCore import Qt, QRunnable, QThreadPool, pyqtSignal, QMutex, QRectF, QRect, QByteArray, QBuffer, QIODevice, \
+    QUrl, QTimer
 from PyQt5.QtGui import QPixmap, QImage, QBrush, QPen, QColor
 from PyQt5.QtWidgets import QLabel
 import fitz
-from pymupdf.mupdf import PDF_ENCRYPT_KEEP, PDF_WIDGET_TYPE_TEXT, PDF_WIDGET_TYPE_CHECKBOX, PDF_WIDGET_TYPE_COMBOBOX, PDF_ANNOT_IS_LOCKED, PDF_ANNOT_HIGHLIGHT, \
+from pymupdf.mupdf import PDF_ENCRYPT_KEEP, PDF_WIDGET_TYPE_TEXT, PDF_WIDGET_TYPE_CHECKBOX, PDF_WIDGET_TYPE_COMBOBOX, \
+    PDF_ANNOT_IS_LOCKED, PDF_ANNOT_HIGHLIGHT, \
     PDF_ANNOT_SQUARE, PDF_WIDGET_TYPE_RADIOBUTTON
 from pymupdf import TEXTFLAGS_DICT, TEXT_PRESERVE_IMAGES, TextWriter, Font, Point, Document, Rect, Quad, Annot
 from pymupdf import Widget
@@ -24,7 +26,8 @@ from annotations.squareannotation import SquareAnnotation
 from font_manager import Base14Font
 from swiktext import SwikText, SwikTextReplace
 from utils import fitz_rect_to_qrectf
-from widgets.pdf_widget import PdfTextWidget, MultiLinePdfTextWidget, PdfCheckboxWidget, PdfComboboxWidget, PdfWidget, PdfRadioButtonWidget
+from widgets.pdf_widget import PdfTextWidget, MultiLinePdfTextWidget, PdfCheckboxWidget, PdfComboboxWidget, PdfWidget, \
+    PdfRadioButtonWidget
 from word import Word, MetaWord
 
 
@@ -303,7 +306,8 @@ class MuPDFRenderer(QLabel):
             __slots__ = "rect", "text", "font", "size", "color"
 
         spans = []
-        boxes = self.document[page_id].get_text("dict", sort=True, flags=TEXTFLAGS_DICT & ~TEXT_PRESERVE_IMAGES)["blocks"]
+        boxes = self.document[page_id].get_text("dict", sort=True, flags=TEXTFLAGS_DICT & ~TEXT_PRESERVE_IMAGES)[
+            "blocks"]
 
         for box in boxes:
             for line in box.get("lines", []):
@@ -421,7 +425,6 @@ class MuPDFRenderer(QLabel):
 
     def set_cropbox(self, page, rect: QRect, absolute=False):
 
-
         x, y, w, h = int(rect.x()), int(rect.y()), int(rect.width()), int(rect.height())
 
         if not absolute:
@@ -434,9 +437,9 @@ class MuPDFRenderer(QLabel):
         print(self.document[page].mediabox)
 
         self.document[page].set_cropbox(Rect(x + cx,
-                                                  y + cy,
-                                                  x + cx + w,
-                                                  y + cy + h) * self.document[
+                                             y + cy,
+                                             x + cx + w,
+                                             y + cy + h) * self.document[
                                             page].derotation_matrix)
         print(self.document[page].mediabox, "mediabox")
         print(self.document[page].cropbox, "cropbox")
@@ -488,9 +491,9 @@ class MuPDFRenderer(QLabel):
         quads = []
         for r in swik_annot.get_quads():  # type: QRectF
             q = Quad((r.x(), r.y()),
-                          (r.x() + r.width(), r.y()),
-                          (r.x(), r.y() + r.height()),
-                          (r.x() + r.width(), r.y() + r.height()))
+                     (r.x() + r.width(), r.y()),
+                     (r.x(), r.y() + r.height()),
+                     (r.x() + r.width(), r.y() + r.height()))
             quads.append(q)
         fitz_annot: Annot = annoting.add_highlight_annot(quads=quads)
         color = swik_annot.get_color()
@@ -506,8 +509,10 @@ class MuPDFRenderer(QLabel):
         for annot in self.document[page.index].annots():  # type: Annot
             if annot.type[0] == PDF_ANNOT_SQUARE:
                 opacity = annot.opacity if 1 > annot.opacity > 0 else 0.999
-                stroke = utils.fitz_color_to_qcolor(annot.colors['stroke'], opacity) if annot.colors['stroke'] is not None else Qt.transparent
-                fill = utils.fitz_color_to_qcolor(annot.colors['fill'], opacity) if annot.colors['fill'] is not None else Qt.transparent
+                stroke = utils.fitz_color_to_qcolor(annot.colors['stroke'], opacity) if annot.colors[
+                                                                                            'stroke'] is not None else Qt.transparent
+                fill = utils.fitz_color_to_qcolor(annot.colors['fill'], opacity) if annot.colors[
+                                                                                        'fill'] is not None else Qt.transparent
                 border_width = annot.border['width']
                 pen = QPen(stroke, border_width)
 
@@ -588,7 +593,8 @@ class MuPDFRenderer(QLabel):
             brush: QBrush = annot.brush()
             fitz_annot = page.add_rect_annot(fitz_rect)  # 'Square'
             fitz_annot.set_border(width=pen.width())
-            fitz_annot.set_colors(stroke=utils.qcolor_to_fitz_color(pen.color()), fill=utils.qcolor_to_fitz_color(brush.color()))
+            fitz_annot.set_colors(stroke=utils.qcolor_to_fitz_color(pen.color()),
+                                  fill=utils.qcolor_to_fitz_color(brush.color()))
             opacity = min(brush.color().alpha() / 255, 0.999)
             fitz_annot.set_opacity(opacity)
             fitz_annot.set_info(None, annot.get_content(), "", "", "", "")
@@ -607,13 +613,33 @@ class MuPDFRenderer(QLabel):
 
         # tw.append((x,y + h), item.get_text(), font=font, fontsize=item.font().pointSizeF()*1.32)
         rect = utils.qrectf_and_pos_to_fitz_rect(item.get_rect_on_parent(), item.pos())
-        rect.x1 = rect.x1 + 100
+        rect.x1 = rect.x1  # + 100
         rect.y0 += item.font().pointSizeF() / 3.5
         rect.y1 += item.font().pointSizeF() / 3.5
 
+        font.flags["stretch"] = 150
         # align=pymupdf.TEXT_ALIGN_JUSTIFY
-        tw.fill_textbox(rect, item.get_text(), font=font, fontsize=item.font().pointSizeF() * 1.34)  ## TODO: 1.325
+        # tw.fill_textbox(rect, item.get_text(), font=font, fontsize=item.font().pointSizeF() * 1.34,
+        #                align=pymupdf.TEXT_ALIGN_JUSTIFY)  ## TODO: 1.325
+
+        spaces = 0
+        for c in item.get_text():
+            spaces += 1 if c == " " else 0
+
+        sentence_len = font.text_length(item.get_text(), item.font().pointSizeF() * 1.34)
+        rectangle_len = rect.x1 - rect.x0
+        diff = rectangle_len - sentence_len
+        padding = diff / (spaces + 1)
+
+        rect.x1 = rect.x0 + 100
+        for c in item.get_text():
+            tw.fill_textbox(rect, c, font=font, fontsize=item.font().pointSizeF() * 1.34)
+            rect.x0 += font.text_length(c, item.font().pointSizeF() * 1.34) + (padding if c == " " else 0)
+            rect.x1 = rect.x0 + 100
+
         tw.write_text(self.document[index])
+        # page: pymupdf.Page = self.document[index]
+        # page.draw_rect(rect, color=(1, 0, 0), width=1)
 
     def replace_word(self, index, text: SwikTextReplace):
         self.document[index].clean_contents()
@@ -659,13 +685,15 @@ class MuPDFRenderer(QLabel):
             elif field.field_type == PDF_WIDGET_TYPE_CHECKBOX:
                 rect = QRectF(field.rect[0], field.rect[1], field.rect[2] - field.rect[0],
                               field.rect[3] - field.rect[1])
-                swik_widget = PdfCheckboxWidget(page, field.field_value == field.on_state().replace("#20", " "), rect, field.text_fontsize)
+                swik_widget = PdfCheckboxWidget(page, field.field_value == field.on_state().replace("#20", " "), rect,
+                                                field.text_fontsize)
 
             elif field.field_type == PDF_WIDGET_TYPE_RADIOBUTTON:
                 print("Radio button", field.field_value, field.rect, field.text_fontsize, field.field_label, "8888")
                 rect = QRectF(field.rect[0], field.rect[1], field.rect[2] - field.rect[0],
                               field.rect[3] - field.rect[1])
-                swik_widget = PdfRadioButtonWidget(page, field.field_value == field.on_state().replace("#20", " "), rect, field.text_fontsize)
+                swik_widget = PdfRadioButtonWidget(page, field.field_value == field.on_state().replace("#20", " "),
+                                                   rect, field.text_fontsize)
 
             if swik_widget is not None:
                 swik_widget.set_info(field.field_name, field.field_flags)
@@ -755,7 +783,6 @@ class MuPDFRenderer(QLabel):
 
         return self.FLATTEN_OK
 
-
     def save_fonts(self, out_dir):
         font_xrefs = set()
         font_names = set()
@@ -766,7 +793,7 @@ class MuPDFRenderer(QLabel):
                 if xref not in font_xrefs:
                     font_xrefs.add(xref)
                     fontname, ext, k, buffer = self.document.extract_font(xref)
-                    #print("Extracting", fontname, ext)
+                    # print("Extracting", fontname, ext)
                     font_names.add(fontname)
                     if ext == "n/a" or not buffer:
                         continue

@@ -2,7 +2,8 @@ import sys
 
 from PyQt5.QtCore import Qt, pyqtSignal, QPointF, QRectF
 from PyQt5.QtGui import QColor
-from PyQt5.QtWidgets import QGraphicsRectItem, QTreeWidget, QTreeWidgetItem, QComboBox, QHBoxLayout, QVBoxLayout, QPushButton, QWidget, QGraphicsLineItem
+from PyQt5.QtWidgets import QGraphicsRectItem, QTreeWidget, QTreeWidgetItem, QComboBox, QHBoxLayout, QVBoxLayout, \
+    QPushButton, QWidget, QGraphicsLineItem
 from pymupdf import Rect, Point
 
 import font_manager
@@ -75,11 +76,10 @@ class ToolMimicPDF(Tool):
                 #             pp.setPen(Qt.magenta)
                 #             pp.setLine(p1.x, p1.y, p2.x, p2.y)
 
-
                 page = self.view.pages[i]
                 for span in spans:
                     font = self.font_manager.filter(nickname=span.font, pos=0)
-                    #self.renderer.add_redact_annot(page.index, span.rect, minimize=True, apply=False)
+                    self.renderer.add_redact_annot(page.index, span.rect, minimize=True, apply=False)
                     if font is None or font.supported is False:
                         font = self.font_manager.filter(nickname='helv', pos=0)
                         color = QColor(255, 0, 0)
@@ -87,11 +87,18 @@ class ToolMimicPDF(Tool):
                         color = span.color
 
                     swik_text = SwikText(span.text, page, self.font_manager, font, span.size * 0.75)
+
+                    while swik_text.boundingRect().width() < span.rect.width():
+                        fontw = swik_text.font()
+                        fontw.setStretch(fontw.stretch() + 1)
+                        swik_text.setFont(fontw)
+
                     midpoint = self.rectangle_midpoint(span.rect)
-                    top_left = self.top_left_corner(midpoint, swik_text.boundingRect().width(), swik_text.boundingRect().height())
+                    top_left = self.top_left_corner(midpoint, swik_text.boundingRect().width(),
+                                                    swik_text.boundingRect().height())
                     swik_text.setToolTip(font.full_name)
                     ### swik_text.setPos(top_left)  # + QPointF(span.size*0.01, 0))
-                    swik_text.setPos(span.rect.topLeft() - QPointF(span.size*0.15, span.size*0.15))
+                    swik_text.setPos(span.rect.topLeft() - QPointF(span.size * 0.15, span.size * 0.15))
                     swik_text.setDefaultTextColor(color)
                 try:
                     self.renderer.apply_redactions(i)

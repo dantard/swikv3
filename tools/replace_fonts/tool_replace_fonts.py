@@ -16,7 +16,7 @@ class ToolReplaceFonts(Tool):
         super(ToolReplaceFonts, self).__init__(view, icon, parent, **kwargs)
         self.placeholder = None
         self.font_manager = kwargs.get('font_manager')
-        self.layout = kwargs.get('layout')
+        self.layout = kwargs.get('widget')
         self.squares = []
         self.treeWidget = None
 
@@ -33,13 +33,14 @@ class ToolReplaceFonts(Tool):
         v_layout.addWidget(pb)
         self.helper = QWidget()
         self.helper.setLayout(v_layout)
-        self.helper.setMaximumWidth(200)
-        self.layout.insertWidget(max(self.layout.count()-1,0), self.helper)
+        # self.helper.setMaximumWidth(200)
+        self.layout.set_app_widget(self.helper)
 
         colors = [Qt.red, Qt.green, Qt.blue, Qt.yellow, Qt.magenta, Qt.cyan, Qt.darkRed, Qt.darkGreen,
                   Qt.darkBlue, Qt.darkYellow, Qt.darkMagenta, Qt.darkCyan, Qt.gray, Qt.darkGray, Qt.lightGray]
         fonts = list()
         self.placeholder = Progressing(self.view, self.view.get_page_count(), "Analyzing PDF", cancel=True)
+
         def process():
             for i in range(0, self.view.get_page_count()):
                 if not self.placeholder.set_progress(i):
@@ -93,9 +94,7 @@ class ToolReplaceFonts(Tool):
 
             self.treeWidget.invisibleRootItem().addChild(item)
             self.treeWidget.setItemWidget(item3, 0, combobox)
-            self.treeWidget.setMaximumWidth(200)
-
-
+            # self.treeWidget.setMaximumWidth(200)
 
     def selected(self, text):
         combobox = self.sender()
@@ -138,6 +137,5 @@ class ToolReplaceFonts(Tool):
         for square in self.squares:
             self.view.scene().removeItem(square)
         self.squares.clear()
-        self.layout.removeWidget(self.helper)
+        self.layout.remove_app_widget(self.helper)
         self.helper.deleteLater()
-

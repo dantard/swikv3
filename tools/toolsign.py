@@ -2,7 +2,7 @@ import base64
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QImage, QColor
-from PyQt5.QtWidgets import QMenu, QDialog, QMessageBox, QVBoxLayout, QWidget, QPushButton, QTreeWidget, QTreeWidgetItem
+from PyQt5.QtWidgets import QMenu, QDialog, QMessageBox, QVBoxLayout, QWidget, QPushButton, QTreeWidget, QTreeWidgetItem, QHeaderView
 
 import signer
 from dialogs import PasswordDialog
@@ -34,12 +34,13 @@ class SignerRectItem(ResizableRectItem):
     def deleted(self):
         self.signals.action.emit(SignerRectItem.ACTION_DELETED, self)
 
+
 class ToolSign(Tool):
     (configured, cfg_p12, cfg_password, cfg_signed_suffix,
      cfg_signature_border, cfg_text_font_size, cfg_text,
      cfg_text_stretch, cfg_text_timestamp, cfg_image_file,
      cfg_image_stretch, signature) = (False, None, None, None,
-                           None, None, None, None, None, None, None, None)
+                                      None, None, None, None, None, None, None, None)
 
     @staticmethod
     def configure(config):
@@ -66,7 +67,7 @@ class ToolSign(Tool):
     def __init__(self, view, renderer, config, **kwargs):
         super().__init__(view, renderer, config)
         self.rubberband = None
-        self.layout = kwargs.get('layout', None)
+        self.widget = kwargs.get('widget', None)
         self.helper = None
         self.sign_btn = None
         self.draw_btn = None
@@ -82,21 +83,21 @@ class ToolSign(Tool):
 
         try:
             valid = signer.get_signature_info(self.renderer.get_filename(),
-                                               '/home/danilo/Desktop/AC_FNMT_Usuarios.cer')
-
-
+                                              '/home/danilo/Desktop/AC_FNMT_Usuarios.cer')
+            print(valid)
             for i, value in enumerate(valid):
-                item = QTreeWidgetItem(["Signer " + str(i+1)])
+                item = QTreeWidgetItem(["Signer " + str(i + 1)])
                 self.tree.addTopLevelItem(item)
-                for key, value in value:
-                    item.addChild(QTreeWidgetItem([key, value]))
+                print(i, value)
+                for k, v in value.items():
+                    item.addChild(QTreeWidgetItem([k, v]))
+            self.tree.header().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+            self.tree.header().setSectionResizeMode(1, QHeaderView.ResizeToContents)
         except Exception as e:
             print(e)
 
-        #= '/home/danilo/Downloads/20240510_Resolucion_240510_Expresion_de_Interes_bolsa_viajes_general_2024-signed.pdf'
-        #root_cert = load_cert_from_pemder('/home/danilo/Desktop/AC_FNMT_Usuarios.cer')
-
-
+        # = '/home/danilo/Downloads/20240510_Resolucion_240510_Expresion_de_Interes_bolsa_viajes_general_2024-signed.pdf'
+        # root_cert = load_cert_from_pemder('/home/danilo/Desktop/AC_FNMT_Usuarios.cer')
 
         self.draw_btn = QPushButton("Draw")
         self.draw_btn.clicked.connect(self.draw_signature)
@@ -110,9 +111,7 @@ class ToolSign(Tool):
         v_layout.addWidget(self.draw_btn)
         v_layout.addWidget(self.sign_btn)
         self.helper.setLayout(v_layout)
-        self.helper.setMaximumWidth(200)
-        self.helper.setMinimumWidth(200)
-        self.layout.insertWidget(max(self.layout.count()-1,0), self.helper)
+        self.widget.set_app_widget(self.helper)
 
     def usable(self):
         return self.cfg_p12.get_value() is not None
@@ -136,7 +135,7 @@ class ToolSign(Tool):
                 self.view.setCursor(Qt.ArrowCursor)
             else:
                 self.rubberband = None
-            #self.finished.emit()
+            # self.finished.emit()
 
     def mouse_moved(self, event):
         if self.rubberband is not None:
@@ -175,7 +174,7 @@ class ToolSign(Tool):
             # Save Password only if the signature was successful
             if password_to_save is not None:
                 self.cfg_password.set_value(password_to_save)
-            #self.renderer.open_pdf(output_filename)
+            # self.renderer.open_pdf(output_filename)
             return output_filename
         else:
             QMessageBox.warning(self.view, "Signature", "Error signing the document", QMessageBox.Ok)
@@ -198,7 +197,7 @@ class ToolSign(Tool):
 
     def sign_document(self):
         filename = self.sign(self.rubberband.get_parent().index,
-                  self.rubberband.get_rect_on_parent())
+                             self.rubberband.get_rect_on_parent())
         if filename:
             self.rubberband = None
             self.emit_finished(Manager.OPEN_REQUESTED, filename)
@@ -216,7 +215,6 @@ class ToolSign(Tool):
         self.view.setCursor(Qt.CrossCursor)
         self.rubberband.signals.action.connect(self.actions)
         # self.view.scene().addItem(self.rubberband)
-
 
     def actions(self, action, rubberband):
         if action == SignerRectItem.ACTION_SIGN:
@@ -239,8 +237,7 @@ class ToolSign(Tool):
             self.sign_btn.setEnabled(False)
             self.draw_btn.setEnabled(True)
 
-
     def finish(self):
         self.view.setCursor(Qt.ArrowCursor)
-        self.layout.removeWidget(self.helper)
+        self.widget.remove_app_widget(self.helper)
         self.helper.deleteLater()

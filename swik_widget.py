@@ -10,7 +10,8 @@ import pyclip
 from PyQt5 import QtGui
 from PyQt5.QtCore import QPointF, Qt, QTimer, pyqtSignal, QRectF, QEvent
 from PyQt5.QtGui import QPainter, QIcon, QKeySequence, QKeyEvent
-from PyQt5.QtWidgets import QApplication, QMainWindow, QShortcut, QFileDialog, QDialog, QMessageBox, QHBoxLayout, QWidget, QTabWidget, QVBoxLayout, QToolBar, \
+from PyQt5.QtWidgets import QApplication, QMainWindow, QShortcut, QFileDialog, QDialog, QMessageBox, QHBoxLayout, \
+    QWidget, QTabWidget, QVBoxLayout, QToolBar, \
     QPushButton, QSizePolicy, QTabBar, QProgressDialog, QSplitter, QGraphicsScene, QLabel, QProgressBar
 
 import utils
@@ -56,11 +57,11 @@ class Splitter(QSplitter):
 
     def mousePressEvent(self, a0: QtGui.QMouseEvent) -> None:
         super().mousePressEvent(a0)
-        #print("Moveevntnt")
+        # print("Moveevntnt")
 
     def releaseMouse(self) -> None:
         super().releaseMouse()
-        #print("splitter released")
+        # print("splitter released")
 
 
 class SwikWidget(QWidget):
@@ -100,48 +101,62 @@ class SwikWidget(QWidget):
         #        self.miniature_view.set_fit_width(True)
         self.view.page_clicked.connect(self.miniature_view.set_page)
         self.miniature_view.page_clicked.connect(self.view.set_page)
-
         self.manager.set_view(self.view)
-
         self.font_manager = FontManager(self.renderer)
-        # self.font_manager.update_system_fonts()
-        # self.font_manager.update_swik_fonts()
 
-        self.lateral_bar_layout = QHBoxLayout()
+        self.vlayout, self.hlayout, self.ilayout, self.app_layout = QVBoxLayout(), QHBoxLayout(), QHBoxLayout(), QVBoxLayout()
+        self.vlayout.addLayout(self.hlayout)
+        self.hlayout.addLayout(self.ilayout)
 
-        #tool_drag = self.manager.register_tool(ToolDrag(self.view, self.renderer, self.config))
-        tool_text = self.manager.register_tool(ToolTextSelection(self.view, self.renderer, self.font_manager, self.config), True)
-        self.tool_sign = self.manager.register_tool(ToolSign(self.view, self.renderer, self.config, layout=self.lateral_bar_layout))
-        tool_rear = self.manager.register_tool(ToolRearrange(self.view, [self.miniature_view], self.renderer, self.config))
+        helper, self.app_helper = QWidget(), QWidget()
+        helper.setLayout(self.vlayout)
+        self.app_helper.setLayout(self.app_layout)
+        self.app_helper.setMaximumWidth(0)
+
+        sp = QSplitter(Qt.Horizontal)
+        sp.addWidget(self.app_helper)
+        sp.addWidget(self.view)
+        sp.setSizes([20, 100])
+        self.ilayout.addWidget(sp)
+        self.app_handle = sp.handle(1)
+        self.app_handle.setDisabled(True)
+
+        tool_text = self.manager.register_tool(
+            ToolTextSelection(self.view, self.renderer, self.font_manager, self.config), True)
+        self.tool_sign = self.manager.register_tool(ToolSign(self.view, self.renderer, self.config, widget=self))
+        tool_rear = self.manager.register_tool(
+            ToolRearrange(self.view, [self.miniature_view], self.renderer, self.config))
         tool_reda = self.manager.register_tool(ToolRedactAnnotation(self.view, self.renderer, self.config))
         tool_sqan = self.manager.register_tool(ToolSquareAnnotation(self.view, self.renderer, self.config))
         tool_crop = self.manager.register_tool(ToolCrop(self.view, self.renderer, self.config))
         tool_imag = self.manager.register_tool(ToolInsertImage(self.view, self.renderer, self.config))
         tool_sigi = self.manager.register_tool(ToolInsertSignatureImage(self.view, self.renderer, self.config))
         tool_font = self.manager.register_tool(
-            ToolReplaceFonts(self.view, self.renderer, self.config, font_manager=self.font_manager, layout=self.lateral_bar_layout))
+            ToolReplaceFonts(self.view, self.renderer, self.config, font_manager=self.font_manager, widget=self))
         tool_font.file_generate.connect(self.open_requested.emit)
 
         tool_mimi = self.manager.register_tool(
-            ToolMimicPDF(self.view, self.renderer, self.config, font_manager=self.font_manager, layout=self.lateral_bar_layout))
+            ToolMimicPDF(self.view, self.renderer, self.config, font_manager=self.font_manager, widget=self))
 
-        tool_nume = self.manager.register_tool(ToolNumerate(self.view, self.renderer, self.config, font_manager=self.font_manager))
+        tool_nume = self.manager.register_tool(
+            ToolNumerate(self.view, self.renderer, self.config, font_manager=self.font_manager))
 
         self.key_manager = KeyboardManager(self)
 
-#        self.key_manager.register_action(Qt.Key_Shift, lambda: self.manager.use_tool(tool_drag), self.manager.finished)
+        #        self.key_manager.register_action(Qt.Key_Shift, lambda: self.manager.use_tool(tool_drag), self.manager.finished)
         self.key_manager.register_combination_action('Ctrl+R', lambda: self.open_file(self.renderer.get_filename()))
         self.key_manager.register_combination_action('Ctrl+i', self.view.toggle_page_info)
         self.key_manager.register_combination_action('Ctrl+C', lambda: self.manager.keyboard('Ctrl+C'))
         self.key_manager.register_combination_action('Ctrl+V', lambda: self.manager.keyboard('Ctrl+V'))
         self.key_manager.register_combination_action('Ctrl+A', lambda: self.manager.keyboard('Ctrl+A'))
-        self.key_manager.register_combination_action('Ctrl+T', self.manager.get_tool(ToolTextSelection).iterate_selection_mode)
+        self.key_manager.register_combination_action('Ctrl+T',
+                                                     self.manager.get_tool(ToolTextSelection).iterate_selection_mode)
         self.key_manager.register_combination_action('Ctrl+M', self.iterate_mode)
         self.key_manager.register_combination_action('Ctrl+Z', self.scene.tracker().undo)
         self.key_manager.register_combination_action('Ctrl+Shift+Z', self.scene.tracker().redo)
+        self.key_manager.register_combination_action('Ctrl+B', self.iterate_bar_position)
 
         self.toolbar = QToolBar()
-        # self.toolbar.addAction("cac", lambda: self.view.insert_blank_pages(2,4))
         self.toolbar.addAction("Open", self.open_button).setIcon(QIcon(":/icons/open.png"))
         self.save_btn = self.toolbar.addAction("Save", self.save_file)
         self.save_btn.setIcon(QIcon(":/icons/save.png"))
@@ -155,7 +170,8 @@ class SwikWidget(QWidget):
         self.mode_group.add(tool_sqan, icon=":/icons/annotate.png", text="Annotate")
         self.mode_group.add(tool_reda, icon=":/icons/white.png", text="Anonymize")
         self.mode_group.add(tool_imag, icon=":/icons/image.png", text="Insert Image")
-        self.image_sign_btn = self.mode_group.add(tool_sigi, icon=":/icons/signature.png", text="Insert Signature", separator=True)
+        self.image_sign_btn = self.mode_group.add(tool_sigi, icon=":/icons/signature.png", text="Insert Signature",
+                                                  separator=True)
         self.mode_group.add(tool_rear, icon=":/icons/shuffle.png", text="Shuffle Pages")
         self.mode_group.add(tool_font, icon=":/icons/replace_fonts.png", text="Replace Fonts")
         self.mode_group.add(tool_mimi, icon=":/icons/mimic.png", text="Mimic PDF")
@@ -176,25 +192,15 @@ class SwikWidget(QWidget):
         self.splitter = Splitter(Qt.Horizontal)
 
         self.setLayout(QVBoxLayout())
+        self.layout().addWidget(self.toolbar)
         self.layout().addWidget(self.splitter)
-
-        helper = QWidget()
-        self.helper_layout = QVBoxLayout()
-        helper.setLayout(self.helper_layout)
-        self.helper_layout.addWidget(self.toolbar)
-
-        self.helper_layout.addLayout(self.lateral_bar_layout)
 
         # Lateral Bar
         self.lateral_bar = QToolBar()
-        self.lateral_bar.setMaximumWidth(60)
-        self.lateral_bar.setMinimumWidth(60)
-
         self.lateral_bar.addSeparator()
         self.mode_group.append(self.lateral_bar)
-        self.update_lateral_bar_position()
 
-        for w in [self.helper_layout, self.lateral_bar_layout, self.splitter, helper, self.lateral_bar]:
+        for w in [self.vlayout, self.hlayout, self.ilayout, self.app_layout, self.splitter, helper, self.lateral_bar]:
             w.setContentsMargins(0, 0, 0, 0)
 
         self.splitter.addWidget(self.miniature_view)
@@ -202,6 +208,16 @@ class SwikWidget(QWidget):
         self.set_interactable(False)
         self.preferences_changed()
         QApplication.processEvents()
+
+    def set_app_widget(self, widget):
+        self.app_helper.setMaximumWidth(500)
+        self.app_layout.addWidget(widget)
+        self.app_handle.setDisabled(False)
+
+    def remove_app_widget(self, widget):
+        self.app_layout.removeWidget(widget)
+        self.app_helper.setMaximumWidth(0)
+        self.app_handle.setDisabled(True)
 
     def tool_finished(self, action, data):
         if action == Manager.OPEN_REQUESTED:
@@ -244,24 +260,26 @@ class SwikWidget(QWidget):
         self.image_sign_btn.setEnabled(self.manager.get_tool(ToolInsertSignatureImage).usable())
         self.update_lateral_bar_position()
 
+    def iterate_bar_position(self):
+        pos = self.config.general.get('lateral_bar_position', default=0)
+        pos = (pos + 1) % 4
+        self.config.general.set('lateral_bar_position', pos)
+        self.update_lateral_bar_position()
+
     def update_lateral_bar_position(self):
         pos = self.config.general.get('lateral_bar_position', default=0)
         if pos == 0:
             self.lateral_bar.setOrientation(Qt.Vertical)
-            self.lateral_bar_layout.addWidget(self.lateral_bar)
-            self.lateral_bar_layout.addWidget(self.view)
+            self.hlayout.insertWidget(0, self.lateral_bar)
         elif pos == 1:
             self.lateral_bar.setOrientation(Qt.Vertical)
-            self.lateral_bar_layout.addWidget(self.view)
-            self.lateral_bar_layout.addWidget(self.lateral_bar)
+            self.hlayout.insertWidget(self.hlayout.count(), self.lateral_bar)
         elif pos == 2:
             self.lateral_bar.setOrientation(Qt.Horizontal)
-            self.helper_layout.addWidget(self.view)
-            self.helper_layout.addWidget(self.lateral_bar)
+            self.vlayout.insertWidget(0, self.lateral_bar)
         else:
             self.lateral_bar.setOrientation(Qt.Horizontal)
-            self.helper_layout.addWidget(self.lateral_bar)
-            self.helper_layout.addWidget(self.view)
+            self.vlayout.insertWidget(self.vlayout.count(), self.lateral_bar)
 
     #
 
@@ -308,7 +326,9 @@ class SwikWidget(QWidget):
 
         else:
             if res == MuPDFRenderer.FLATTEN_WORKAROUND:
-                QMessageBox.warning(self, "Flatten", "Original PDF has problems, a workaround has been applied. Check result correctness.", QMessageBox.Ok)
+                QMessageBox.warning(self, "Flatten",
+                                    "Original PDF has problems, a workaround has been applied. Check result correctness.",
+                                    QMessageBox.Ok)
 
             if open:
                 self.open_requested.emit(filename, self.view.page, self.view.ratio)
@@ -371,7 +391,7 @@ class SwikWidget(QWidget):
         self.manager.use_tool(tool)
 
     def open_button(self):
-        #self.set_ratio(1)
+        # self.set_ratio(1)
         self.open_file()
 
     def open_file(self, filename=None):

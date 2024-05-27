@@ -1,6 +1,7 @@
 import contextlib
 from random import randint
 
+from cryptography.x509 import NameOID
 from pyhanko import stamp
 from pyhanko.pdf_utils import text, images
 from pyhanko.pdf_utils.incremental_writer import IncrementalPdfFileWriter
@@ -8,11 +9,12 @@ from pyhanko.pdf_utils.layout import InnerScaling, SimpleBoxLayoutRule, AxisAlig
 from pyhanko.pdf_utils.reader import PdfFileReader
 from pyhanko.sign import signers, fields
 from pyhanko.sign.fields import VisibleSigSettings
-from pyhanko.sign.validation import validate_pdf_signature
+from pyhanko.sign.validation import validate_pdf_signature, SignatureCoverageLevel
 from pyhanko.keys import load_cert_from_pemder
 from pyhanko_certvalidator import ValidationContext
 from pyhanko.pdf_utils.reader import PdfFileReader
 from pyhanko.sign.validation import validate_pdf_signature
+
 
 class P12Signer:
     OK = 0
@@ -104,15 +106,26 @@ class P12Signer:
 
         return self.ERROR_SIGNING_FAILED
 
+
 def get_signature_info(pdf_path, cert_path):
     with contextlib.redirect_stderr(None):
-
-        root_cert = load_cert_from_pemder(cert_path)
-        vc = ValidationContext(trust_roots=[root_cert])
+        # root_cert = load_cert_from_pemder(cert_path)
+        # vc = ValidationContext(trust_roots=[root_cert])
         result = []
         with open(pdf_path, 'rb') as doc:
             r = PdfFileReader(doc)
             for sig in r.embedded_signatures:
-                status = validate_pdf_signature(sig, vc)
-                result.append(status.pretty_print_sections())
+                status = validate_pdf_signature(sig)  # , vc)
+                data = status.signing_cert.subject.human_friendly.split(', ')
+                info = {}
+                for field in data:
+                    k, v = field.split(': ')
+                    info[k] = v
+                info.update({'Valid': 'Yes' if status.valid else 'No',
+                             'Intact': 'Yes' if status.intact else 'No',
+                             'Coverage': 'Whole file' if status.coverage == SignatureCoverageLevel.ENTIRE_FILE else 'Partial',
+                             'Date': status.signer_reported_dt.isoformat(),
+                             })
+                result.append(info)
+                status.coverage
     return result
