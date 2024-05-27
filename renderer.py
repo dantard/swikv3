@@ -303,7 +303,7 @@ class MuPDFRenderer(QLabel):
     def extract_spans(self, page_id):
 
         class Span:
-            __slots__ = "rect", "text", "font", "size", "color"
+            __slots__ = "rect", "text", "font", "size", "color", "ascender", "descender"
 
         spans = []
         boxes = self.document[page_id].get_text("dict", sort=True, flags=TEXTFLAGS_DICT & ~TEXT_PRESERVE_IMAGES)[
@@ -322,6 +322,9 @@ class MuPDFRenderer(QLabel):
                     sp.rect = QRectF(x1, y1, x2 - x1, y2 - y1)
                     sp.font = span["font"]
                     sp.size = span["size"]
+                    sp.ascender = span["ascender"]
+                    sp.descender = span["descender"]
+
                     h = span["color"]
                     b = h & 255
                     g = (h >> 8) & 255
@@ -617,27 +620,39 @@ class MuPDFRenderer(QLabel):
         rect.y0 += item.font().pointSizeF() / 3.5
         rect.y1 += item.font().pointSizeF() / 3.5
 
-        font.flags["stretch"] = 150
+        page: pymupdf.Page = self.document[index]
+
         # align=pymupdf.TEXT_ALIGN_JUSTIFY
-        # tw.fill_textbox(rect, item.get_text(), font=font, fontsize=item.font().pointSizeF() * 96 / 72,
-        #                align=pymupdf.TEXT_ALIGN_JUSTIFY)  ## TODO: 1.325
+        if True:
+            css = """
+            @font-face {font-family: comic; src: url(""" + item.get_font_info().path + """);}            
+            * {font-family: comic; font-size: """ + str(item.font().pointSizeF() * 1.34) + """px; color: rgb(0,255,0);}
+            """
+            # tw.fill_textbox(rect, item.get_text(), font=font, fontsize=item.font().pointSizeF() * 96 / 72)
+            # align=pymupdf.TEXT_ALIGN_JUSTIFY)  ## TODO: 1.325
+            #            text = "<div>Some text</div>"
 
-        spaces = 0
-        for c in item.get_text():
-            spaces += 1 if c == " " else 0
+            page.insert_htmlbox(rect, item.get_text(), css=css)
+            #                                css="* {font-family:" + item.font().family() + ";font-size:" + str(item.font().pointSizeF() * 96 / 72) + "px;}")
+            # css=)
 
-        sentence_len = font.text_length(item.get_text(), item.font().pointSizeF() * 1.34)
-        rectangle_len = rect.x1 - rect.x0
-        diff = rectangle_len - sentence_len
-        padding = diff / (spaces + 1)
+        else:
+            spaces = 0
+            for c in item.get_text():
+                spaces += 1 if c == " " else 0
 
-        rect.x1 = rect.x0 + 100
-        for c in item.get_text():
-            tw.fill_textbox(rect, c, font=font, fontsize=item.font().pointSizeF() * 1.34)
-            rect.x0 += font.text_length(c, item.font().pointSizeF() * 1.34) + (padding if c == " " else 0)
+            sentence_len = font.text_length(item.get_text(), item.font().pointSizeF() * 1.34)
+            rectangle_len = rect.x1 - rect.x0
+            diff = rectangle_len - sentence_len
+            padding = diff / (spaces + 1)
+
             rect.x1 = rect.x0 + 100
+            for c in item.get_text():
+                tw.fill_textbox(rect, c, font=font, fontsize=item.font().pointSizeF() * 1.34)
+                rect.x0 += font.text_length(c, item.font().pointSizeF() * 1.34) + (padding if c == " " else 0)
+                rect.x1 = rect.x0 + 100
 
-        tw.write_text(self.document[index])
+        # tw.write_text(self.document[index])
         # page: pymupdf.Page = self.document[index]
         # page.draw_rect(rect, color=(1, 0, 0), width=1)
 
@@ -782,6 +797,13 @@ class MuPDFRenderer(QLabel):
         self.set_document(no_widgets_file, False)
 
         return self.FLATTEN_OK
+
+    def save_elsewhere(self, filename):
+        current_doc_data = self.document.tobytes(encryption=PDF_ENCRYPT_KEEP, deflate=True, garbage=3)
+        self.sync_requested.emit()
+        self.document.save(filename, encryption=PDF_ENCRYPT_KEEP, deflate=True, garbage=3)
+        current_doc = pymupdf.open("pdf", current_doc_data)
+        self.set_document(current_doc, False)
 
     def save_fonts(self, out_dir):
         font_xrefs = set()

@@ -210,7 +210,7 @@ class FontManager(QObject):
 
     @staticmethod
     def update_system_fonts(force=False):
-        if len(FontManager.system_fonts) == 0 or force:
+        if len(FontManager.system_fonts) == 0:
             FontManager.system_fonts = FontManager.gather_system_fonts()
 
     def update_fonts(self):

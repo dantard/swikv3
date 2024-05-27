@@ -157,7 +157,9 @@ class SwikText(QGraphicsTextItem, Undoable):
         # TODO: This is a magic number, it should be calculated based on the font size
         document.setDocumentMargin(9 / 34 * size)
         self.setDocument(document)
-        self.setFont(self.font_info.get_qfont(size))
+        qfont = self.font_info.get_qfont(size)
+        # qfont.setStretch(98)
+        self.setFont(qfont)
 
     def set_font_info(self, font_info, size=11):
         self.font_info = font_info

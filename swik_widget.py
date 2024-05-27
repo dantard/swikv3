@@ -131,9 +131,9 @@ class SwikWidget(QWidget):
         tool_crop = self.manager.register_tool(ToolCrop(self.view, self.renderer, self.config))
         tool_imag = self.manager.register_tool(ToolInsertImage(self.view, self.renderer, self.config))
         tool_sigi = self.manager.register_tool(ToolInsertSignatureImage(self.view, self.renderer, self.config))
-        tool_font = self.manager.register_tool(
-            ToolReplaceFonts(self.view, self.renderer, self.config, font_manager=self.font_manager, widget=self))
-        tool_font.file_generate.connect(self.open_requested.emit)
+        # tool_font = self.manager.register_tool(
+        #    ToolReplaceFonts(self.view, self.renderer, self.config, font_manager=self.font_manager, widget=self))
+        # tool_font.file_generate.connect(self.open_requested.emit)
 
         tool_mimi = self.manager.register_tool(
             ToolMimicPDF(self.view, self.renderer, self.config, font_manager=self.font_manager, widget=self))
@@ -173,7 +173,7 @@ class SwikWidget(QWidget):
         self.image_sign_btn = self.mode_group.add(tool_sigi, icon=":/icons/signature.png", text="Insert Signature",
                                                   separator=True)
         self.mode_group.add(tool_rear, icon=":/icons/shuffle.png", text="Shuffle Pages")
-        self.mode_group.add(tool_font, icon=":/icons/replace_fonts.png", text="Replace Fonts")
+        #        self.mode_group.add(tool_font, icon=":/icons/replace_fonts.png", text="Replace Fonts")
         self.mode_group.add(tool_mimi, icon=":/icons/mimic.png", text="Mimic PDF")
         self.mode_group.add(tool_nume, icon=":/icons/numerate.png", text="Replace Fonts")
         # self.mode_group.append(self.toolbar)
@@ -209,8 +209,8 @@ class SwikWidget(QWidget):
         self.preferences_changed()
         QApplication.processEvents()
 
-    def set_app_widget(self, widget):
-        self.app_helper.setMaximumWidth(500)
+    def set_app_widget(self, widget, max_width=500):
+        self.app_helper.setMaximumWidth(max_width)
         self.app_layout.addWidget(widget)
         self.app_handle.setDisabled(False)
 

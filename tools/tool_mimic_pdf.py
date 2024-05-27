@@ -7,6 +7,8 @@ from PyQt5.QtWidgets import QGraphicsRectItem, QTreeWidget, QTreeWidgetItem, QCo
 from pymupdf import Rect, Point
 
 import font_manager
+from annotations.redactannotation import RedactAnnotation
+from dialogs import FontAndColorDialog, ComposableDialog
 from progressing import Progressing
 from swiktext import SwikText
 from tools.replace_fonts.repl_font import repl_font
@@ -22,8 +24,12 @@ class ToolMimicPDF(Tool):
         super(ToolMimicPDF, self).__init__(view, icon, parent, **kwargs)
         self.placeholder = None
         self.font_manager = kwargs.get('font_manager')
-        self.layout = kwargs.get('layout')
+        self.widget = kwargs.get('widget')
         self.squares = []
+        self.app = None
+        self.texts = []
+        self.helper = None
+        self.tree = None
 
     def top_left_corner(self, midpoint, width, height):
         # Calculate the x-coordinate of the top-left corner
@@ -48,6 +54,102 @@ class ToolMimicPDF(Tool):
         return midpoint
 
     def init(self):
+        self.texts.clear()
+        self.squares.clear()
+
+        self.helper = QWidget()
+        self.helper.setLayout(QVBoxLayout())
+        self.helper.layout().setAlignment(Qt.AlignTop)
+        generate_btn = QPushButton("Generate")
+        apply_btn = QPushButton("Apply")
+        colorize_btn = QPushButton("Colorize")
+        colorize_btn.clicked.connect(self.colorize)
+        colorize_btn.setCheckable(True)
+
+        self.tree = QTreeWidget()
+        self.tree.setColumnCount(2)
+        self.helper.layout().addWidget(self.tree)
+        self.helper.layout().addWidget(colorize_btn)
+        self.helper.layout().addWidget(generate_btn)
+        self.helper.layout().addWidget(apply_btn)
+
+        generate_btn.clicked.connect(self.generate)
+        apply_btn.clicked.connect(self.apply)
+        self.widget.set_app_widget(self.helper)
+        fonts = set()
+        for i in range(0, self.view.get_page_count()):
+            spans = self.renderer.extract_spans(i)
+            for span in spans:
+                fonts.add(span.font)
+
+        for font_name in fonts:
+            item = QTreeWidgetItem(self.tree)
+            item.setText(0, font_name)
+            child1 = QTreeWidgetItem(item)
+            child1.setText(0, "Replace")
+            q = QPushButton(font_name)
+
+            def chose_font(font, button):
+                font_dialog = FontAndColorDialog(self.font_manager, font, 10, Qt.black)
+                if font_dialog.exec() == ComposableDialog.Accepted:
+                    button.setText(font_dialog.get_font().nickname)
+
+            q.clicked.connect(lambda x=font_name, y=font_name, z=q: chose_font(y, z))
+            self.tree.setItemWidget(child1, 1, q)
+
+    def apply(self):
+        filename = self.renderer.get_filename().replace(".pdf", "-mimic.pdf")
+        self.renderer.save_elsewhere(filename)
+        self.widget.open_requested.emit(filename, self.view.page, self.view.get_ratio())
+
+    def colorize(self):
+        colors = [Qt.red, Qt.green, Qt.blue, Qt.yellow, Qt.magenta, Qt.cyan, Qt.darkRed, Qt.darkGreen,
+                  Qt.darkBlue, Qt.darkYellow, Qt.darkMagenta, Qt.darkCyan, Qt.gray, Qt.darkGray, Qt.lightGray]
+
+        if self.sender().isChecked():
+
+            fonts = list()
+            self.placeholder = Progressing(self.view, self.view.get_page_count(), "Analyzing PDF", cancel=True)
+
+            def process():
+                for i in range(0, self.view.get_page_count()):
+                    if not self.placeholder.set_progress(i):
+                        break
+                    spans = self.renderer.extract_spans(i)
+                    page = self.view.pages[i]
+                    for span in spans:
+                        a = QGraphicsRectItem(span.rect, page)
+                        a.setToolTip(span.font)
+                        self.squares.append(a)
+                        if not span.font in fonts:
+                            fonts.append(span.font)
+                        index = fonts.index(span.font)
+                        color = QColor(colors[index % len(colors)])
+                        color.setAlphaF(0.5)
+                        a.setBrush(color)
+                self.placeholder.set_progress(self.view.get_page_count())
+
+            self.placeholder.start(process)
+        else:
+            for i in self.squares:
+                self.view.scene().removeItem(i)
+            self.squares.clear()
+
+    def generate(self):
+        translate = {}
+
+        for i in range(self.tree.topLevelItemCount()):
+            item = self.tree.topLevelItem(i)
+            orig_font_name = item.text(0)
+            new_font_name = self.tree.itemWidget(item.child(0), 1).text()
+            translate[orig_font_name] = new_font_name
+
+        print(translate)
+
+        for i in self.texts:
+            self.view.scene().removeItem(i)
+        self.texts.clear()
+
         self.progressing = Progressing(self.view, self.view.get_page_count(), "Generating PDF", cancel=True)
 
         def process():
@@ -78,27 +180,40 @@ class ToolMimicPDF(Tool):
 
                 page = self.view.pages[i]
                 for span in spans:
-                    font = self.font_manager.filter(nickname=span.font, pos=0)
-                    self.renderer.add_redact_annot(page.index, span.rect, minimize=True, apply=False)
+                    new_font_name = translate.get(span.font)
+                    font = self.font_manager.filter(nickname=new_font_name, pos=0)
+                    # redact = RedactAnnotation(page, brush=Qt.white, pen=Qt.transparent)
+                    # redact.setRect(span.rect)
+
+                    # self.renderer.add_redact_annot(page.index, span.rect, minimize=True, apply=False)
                     if font is None or font.supported is False:
                         font = self.font_manager.filter(nickname='helv', pos=0)
                         color = QColor(255, 0, 0)
                     else:
                         color = span.color
+                        # color = QColor(255, 0, 0)
 
-                    swik_text = SwikText(span.text, page, self.font_manager, font, span.size * 0.75)
+                    swik_text = SwikText(span.text, page, self.font_manager, font, span.size * 72.0 / 96.0)
+                    self.texts.append(swik_text)
 
-                    while swik_text.boundingRect().width() < span.rect.width():
+                    '''
+                    fontw = swik_text.font()
+                    fontw.setStretch(100)
+                    swik_text.setFont(fontw)
+
+                    while swik_text.boundingRect().width() > span.rect.width() * 1.035 and fontw.stretch() > 0:
                         fontw = swik_text.font()
-                        fontw.setStretch(fontw.stretch() + 1)
+                        fontw.setStretch(fontw.stretch() - 1)
                         swik_text.setFont(fontw)
+                        print("stretch", fontw.stretch())
+                    '''
 
                     midpoint = self.rectangle_midpoint(span.rect)
                     top_left = self.top_left_corner(midpoint, swik_text.boundingRect().width(),
                                                     swik_text.boundingRect().height())
                     swik_text.setToolTip(font.full_name)
                     ### swik_text.setPos(top_left)  # + QPointF(span.size*0.01, 0))
-                    swik_text.setPos(span.rect.topLeft() - QPointF(span.size * 0.15, span.size * 0.15))
+                    swik_text.setPos(span.rect.topLeft() - QPointF(span.size * 0.19, (span.size + span.ascender - span.descender) * 0.19))
                     swik_text.setDefaultTextColor(color)
                 try:
                     self.renderer.apply_redactions(i)
@@ -106,7 +221,10 @@ class ToolMimicPDF(Tool):
                     pass
 
                 self.view.pages[i].invalidate()
-
-            self.emit_finished()
+            self.progressing.setValue(self.view.get_page_count())
+            # self.emit_finished()
 
         self.progressing.start(process)
+
+    def finish(self):
+        self.widget.remove_app_widget(self.helper)
