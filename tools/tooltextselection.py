@@ -67,9 +67,8 @@ class ToolTextSelection(Tool):
 
             for i in range(page1.index, page2.index + 1):
                 page = self.view.get_page_item(i)
-                if page.get_words() is None:
-                    page.set_words(self.renderer.extract_words(i))
-                for word in page.get_words():
+
+                for word in page.gather_words():
                     words.append(word)
 
             for i, word in enumerate(words):
@@ -172,7 +171,7 @@ class ToolTextSelection(Tool):
             pass
         elif res == paste:
             text = QGuiApplication.clipboard().text()
-            for i, word in enumerate(text.replace("\n"," " ).split(" ")):
+            for i, word in enumerate(text.replace("\n", " ").split(" ")):
                 st = SwikText(word, page, self.font_manager, Font("fonts/Arial.ttf"), 11)
                 on_scene = self.view.mapToScene(event.pos())
                 st.setPos(st.mapFromScene(on_scene) + QPointF(15 * i, 15 * i))
@@ -221,7 +220,8 @@ class ToolTextSelection(Tool):
                 for word in self.selected:
                     print("AAAAAAAAAAAAAPPPPPPPPPPPPPPP", dialog.get_font())
 
-                    SwikTextReplace(word, self.font_manager, dialog.get_font(), dialog.get_font_size() / 1.34, dialog.get_text_color())
+                    SwikTextReplace(word, self.font_manager, dialog.get_font(), dialog.get_font_size() / 1.34,
+                                    dialog.get_text_color())
                     self.clear_selection()
 
     def mouse_double_clicked(self, event):
@@ -257,8 +257,7 @@ class ToolTextSelection(Tool):
     def select_all(self):
         self.clear_selection()
         page = self.view.get_current_page()
-        if page.get_words() is None:
-            page.set_words(self.renderer.extract_words(i))
+        page.gather_words()
         for word in page.get_words():
             word.set_selected(True)
             self.selected.append(word)

@@ -26,9 +26,14 @@ class Page(SimplePage):
 
     def set_words(self, words, join=True):
         self.words = words
-        for word in self.words:
-            word.join(self)
         # self.renderer.fill_font_info(self.index, self.words)
+
+    def gather_words(self, force=False):
+        if self.words is None or force:
+            self.words = self.renderer.extract_words(self.index)
+            for word in self.words:
+                word.join(self)
+        return self.words
 
     def has_words(self):
         return self.words is not None

@@ -59,8 +59,8 @@ class Word(SwikRect):
         else:
             self.setBrush(Qt.transparent)
 
-    def set_highlighted(self, selected):
+    def set_highlighted(self, selected, color=QColor(255, 255, 60, 80)):
         if selected:
-            self.setBrush(QBrush(QColor(255, 0, 0, 80)))
+            self.setBrush(QBrush(color))
         else:
             self.setBrush(Qt.transparent)

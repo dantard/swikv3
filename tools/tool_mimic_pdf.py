@@ -164,9 +164,7 @@ class ToolMimicPDF(Tool):
                     break
                 page: Page = self.view.pages[i]
 
-                if not page.has_words():
-                    words = self.renderer.extract_words(page.index)
-                    page.set_words(words)
+                page.gather_words()
                 '''
                 for word in page.get_words():
                     font, size, color = self.renderer.get_word_font_info(word)

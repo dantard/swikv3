@@ -11,8 +11,8 @@ class Finder(QObject):
     MODE_W = 2
     MODE_Cc_W = 3
 
-    found = pyqtSignal(int)
-    join = pyqtSignal(QGraphicsRectItem)
+    found = pyqtSignal(int, list)
+    words_needed = pyqtSignal(QGraphicsRectItem)
     progress = pyqtSignal(float)
 
     def __init__(self, view, renderer):
@@ -22,15 +22,16 @@ class Finder(QObject):
         self.confirmed = []
         self.confirmed_index = 0
         self.mode = Finder.MODE_NORMAL
-        self.join.connect(self.set_page_words)
+        self.words_needed.connect(self.page_gather_words)
         self.thread = None
         self.keep_running = True
-
 
     def finish(self):
         self.keep_running = False
         if self.thread is not None:
             self.thread.join()
+        self.confirmed.clear()
+        self.confirmed_index = 0
 
     def set_mode(self, mode):
         self.set_mode(mode)
@@ -38,18 +39,21 @@ class Finder(QObject):
     def get_mode(self):
         return self.mode
 
-    def find(self, text, mode):
+    def find(self, text, mode, first_page=0):
         self.mode = mode
 
         # Joining hypothetical other thread
         if self.thread is not None:
             self.keep_running = False
+            print("Joining thread")
             self.thread.join()
 
-        self.thread = threading.Thread(target=self.find_thread, args=(text,))
+        print("Thread joined")
+
+        self.thread = threading.Thread(target=self.find_thread, args=(text, first_page,))
         self.thread.start()
 
-    def check_words(self, w1, w2):
+    def check_words_case(self, w1, w2):
         if self.mode == Finder.MODE_NORMAL:
             return w1.lower() in w2.lower()
         elif self.mode == Finder.MODE_Cc:
@@ -59,7 +63,7 @@ class Finder(QObject):
         elif self.mode == Finder.MODE_Cc_W:
             return w1 == w2
 
-    def find_thread(self, text):
+    def find_thread(self, text, first_page):
         if len(text) == 0:
             return
 
@@ -70,23 +74,30 @@ class Finder(QObject):
         candidates, words = [], []
         self.keep_running = True
 
-        for i in range(self.view.get_num_of_pages()):
+        for jk in range(self.view.get_num_of_pages()):
 
             if not self.keep_running:
                 return
 
+            i = (first_page + jk) % self.view.get_num_of_pages()
+
             page = self.view.get_page_item(i)
-            self.progress.emit(i + 1 / (self.view.get_num_of_pages()))
+            self.progress.emit((jk + 1) / (self.view.get_num_of_pages()))
+
+            # This must be done with a signal
+            # because the words must be created
+            # in the main thread
+            if not page.has_words():
+                self.words_needed.emit(page)
 
             # Wait until the page is ready
             while not page.has_words():
-                self.join.emit(page)
                 time.sleep(0.1)
 
             # Check if the word is in the page
             for word in page.get_words():
                 words.append(word)
-                if self.check_words(text, word.get_text()):
+                if self.check_words_case(text, word.get_text()):
                     candidates.append((word, len(words) - 1))
                     print(word.get_text(), len(words) - 1)
 
@@ -98,32 +109,25 @@ class Finder(QObject):
                 print(word.get_text(), index, "*")
                 sentence = [word]
                 for j, needle in enumerate(needles[1:]):
-                    if index + j + 1 >= len(words) or not self.check_words(needle, words[index + j + 1].get_text()):
+                    if index + j + 1 >= len(words) or not self.check_words_case(needle,
+                                                                                words[index + j + 1].get_text()):
                         print("break", needle, words[index + j + 1].get_text(), word.get_text())
                         break
                     sentence.append(words[index + j + 1])
                 else:
                     candidates.remove((word, index))
                     self.confirmed.append(sentence)
-                    self.found.emit(len(self.confirmed))
+                    self.found.emit(len(self.confirmed), sentence)
 
-    def set_page_words(self, page):
-        words = self.renderer.extract_words(page.index)
-        page.set_words(words)
+    def page_gather_words(self, page):
+        page.gather_words()
 
     def next(self, direction):
-        for sentence in self.confirmed:
-            for word in sentence:
-                word.set_highlighted(False)
-
         if len(self.confirmed) > 0:
             sentence = self.confirmed[self.confirmed_index]
             self.confirmed_index = self.confirmed_index + direction
             self.confirmed_index = self.confirmed_index if self.confirmed_index < len(self.confirmed) else 0
             self.confirmed_index = self.confirmed_index if self.confirmed_index >= 0 else len(self.confirmed) - 1
-            for word in sentence:
-                word.set_highlighted(True)
-                self.view.ensureVisible(word)
             return sentence
         return []
 
