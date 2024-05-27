@@ -619,7 +619,7 @@ class MuPDFRenderer(QLabel):
 
         font.flags["stretch"] = 150
         # align=pymupdf.TEXT_ALIGN_JUSTIFY
-        # tw.fill_textbox(rect, item.get_text(), font=font, fontsize=item.font().pointSizeF() * 1.34,
+        # tw.fill_textbox(rect, item.get_text(), font=font, fontsize=item.font().pointSizeF() * 96 / 72,
         #                align=pymupdf.TEXT_ALIGN_JUSTIFY)  ## TODO: 1.325
 
         spaces = 0
