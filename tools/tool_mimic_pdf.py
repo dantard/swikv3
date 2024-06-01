@@ -61,8 +61,10 @@ class ToolMimicPDF(Tool):
         self.squares.clear()
 
         self.helper = QWidget()
+        self.helper.setContentsMargins(0, 0, 0, 0)
         self.helper.setLayout(QVBoxLayout())
         self.helper.layout().setAlignment(Qt.AlignTop)
+        self.helper.layout().setContentsMargins(0, 0, 0, 0)
         generate_btn = QPushButton("Generate")
         apply_btn = QPushButton("Apply")
         colorize_btn = QPushButton("Colorize")
@@ -71,6 +73,7 @@ class ToolMimicPDF(Tool):
 
         self.tree = QTreeWidget()
         self.tree.setColumnCount(2)
+        self.tree.setHeaderLabels(["Font", "Replace"])
         self.helper.layout().addWidget(self.tree)
         self.helper.layout().addWidget(colorize_btn)
         self.helper.layout().addWidget(generate_btn)
@@ -78,7 +81,7 @@ class ToolMimicPDF(Tool):
 
         generate_btn.clicked.connect(self.generate)
         apply_btn.clicked.connect(self.apply)
-        self.widget.set_app_widget(self.helper)
+        self.widget.set_app_widget(self.helper, title="Mimic PDF")
         fonts = set()
         for i in range(0, self.view.get_page_count()):
             spans = self.renderer.extract_spans(i)
@@ -89,7 +92,7 @@ class ToolMimicPDF(Tool):
             item = QTreeWidgetItem(self.tree)
             item.setText(0, font_name)
             child1 = QTreeWidgetItem(item)
-            child1.setText(0, "Replace")
+            child1.setText(0, "New font")
             q = QPushButton(font_name)
 
             def chose_font(font, button):
@@ -103,7 +106,6 @@ class ToolMimicPDF(Tool):
     def apply(self):
         self.renderer.sync_requested.emit()
         self.view.pages[0].invalidate()
-        return
         filename = self.renderer.get_filename().replace(".pdf", "-mimic.pdf")
         self.renderer.save_elsewhere(filename)
         self.widget.open_requested.emit(filename, self.view.page, self.view.get_ratio())
@@ -214,4 +216,6 @@ class ToolMimicPDF(Tool):
         self.progressing.start(process)
 
     def finish(self):
+
         self.widget.remove_app_widget(self.helper)
+        self.helper.deleteLater()

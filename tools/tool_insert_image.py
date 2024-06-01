@@ -28,7 +28,6 @@ class InsertImageRectItem(ResizableRectItem):
         menu.addSeparator()
         delete = menu.addAction("Delete")
 
-
         res = menu.exec(event.screenPos())
         if res == stretch:
             self.set_image_mode(self.IMAGE_MODE_STRETCH)
@@ -87,7 +86,7 @@ class ToolInsertImage(Tool):
         if self.rubberband is not None:
             self.rubberband.view_mouse_release_event(self.view, event)
             self.rubberband = None
-            self.finished.emit()
+            self.emit_finished()
 
     def finish(self):
         self.view.setCursor(Qt.ArrowCursor)

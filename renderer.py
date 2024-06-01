@@ -164,12 +164,12 @@ class MuPDFRenderer(QLabel):
 
         if filename != self.get_filename():
             self.document.save(filename, encryption=PDF_ENCRYPT_KEEP, deflate=True, garbage=3)
-            self.remove_dynamic_elements()
+            # self.remove_dynamic_elements()
             return 0
-        elif self.document.can_save_incrementally():
-            self.document.save(filename, encryption=PDF_ENCRYPT_KEEP, incremental=True, deflate=True)
-            self.remove_dynamic_elements()
-            return 1
+        # elif self.document.can_save_incrementally():
+        #    self.document.save(filename, encryption=PDF_ENCRYPT_KEEP, incremental=True, deflate=True)
+        #    self.remove_dynamic_elements()
+        #    return 1
         else:
             tmp_dir = tempfile.gettempdir() + os.sep
             temp_filename = tmp_dir + "swik_{}.tmp".format(int(time.time()))
@@ -185,17 +185,9 @@ class MuPDFRenderer(QLabel):
             # We need to reopen the file
             # because it has actually changed
             self.document = pymupdf.open(filename)
-            self.remove_dynamic_elements()
+            self.set_document(self.document, True)
+            # self.remove_dynamic_elements()
             return 2
-
-    def remove_dynamic_elements(self):
-        for page in self.document:
-            widgets = page.widgets()
-            for annot in page.annots():  # type: Annot
-                page.delete_annot(annot)
-            for field in widgets:
-                print("Deleting widget", field.field_name)
-                page.delete_widget(field)
 
     def get_page_size(self, index):
         return self.document[index].rect[2], self.document[index].rect[3]
@@ -665,54 +657,38 @@ class MuPDFRenderer(QLabel):
         self.add_redact_annot(index, patch)
         self.add_text(index, text)
 
-    to_remove = []
-
-    def del_widgets(self, page):
-        for i in range(len(self.document)):
-            page2 = self.document[page]
-            widgets = page2.widgets()
-            for field in widgets:
-                self.document[page].delete_widget(field)
-            for annot in page2.annots():
-                self.document[page].delete_annot(annot)
-
     def get_widgets(self, page):
-        page2 = self.document[page.index]
+        doc_page = self.document[page.index]
         pdf_widgets = list()
-        widgets = page2.widgets()
-        for field in widgets:
+        widgets = doc_page.widgets()
 
-            field: Widget
+        for field in widgets:  # type: pymupdf.Widget
 
             swik_widget = None
             rect = QRectF(field.rect[0], field.rect[1], field.rect[2] - field.rect[0],
                           field.rect[3] - field.rect[1])
 
             if field.field_type == PDF_WIDGET_TYPE_TEXT:
-
                 if field.field_flags & 4096:
                     swik_widget = MultiLinePdfTextWidget(page, field.field_value, rect, field.text_fontsize)
                 else:
                     swik_widget = PdfTextWidget(page, field.field_value, rect, field.text_fontsize)
 
             elif field.field_type == PDF_WIDGET_TYPE_CHECKBOX:
-                rect = QRectF(field.rect[0], field.rect[1], field.rect[2] - field.rect[0],
-                              field.rect[3] - field.rect[1])
                 swik_widget = PdfCheckboxWidget(page, field.field_value == field.on_state().replace("#20", " "), rect,
                                                 field.text_fontsize)
 
             elif field.field_type == PDF_WIDGET_TYPE_RADIOBUTTON:
-                print("Radio button", field.field_value, field.rect, field.text_fontsize, field.field_label, "8888")
-                rect = QRectF(field.rect[0], field.rect[1], field.rect[2] - field.rect[0],
-                              field.rect[3] - field.rect[1])
                 swik_widget = PdfRadioButtonWidget(page, field.field_value == field.on_state().replace("#20", " "),
                                                    rect, field.text_fontsize)
 
             if swik_widget is not None:
-                swik_widget.set_info(field.field_name, field.field_flags)
-                swik_widget.user_data = field.__dict__.copy()
-                pdf_widgets.append(swik_widget)
+                '''swik_widget.set_info(field.field_name, field.field_flags)
+                swik_widget.user_data = field.__dict__.copy()                
                 self.document[page.index].delete_widget(field)
+                '''
+                swik_widget.xref = str(field.field_type) + "_" + str(field.field_name) + "_" + str(field.rect[0]) + "_" + str(field.rect[1])
+                pdf_widgets.append(swik_widget)
 
             '''
             elif field.field_type == PDF_WIDGET_TYPE_COMBOBOX:
@@ -728,7 +704,19 @@ class MuPDFRenderer(QLabel):
         return pdf_widgets
 
     def add_widget(self, index, swik_widget: PdfWidget):
+        # print("AAAAAAAAAAAAA Adding widget", index, swik_widget.xref)
         page = self.document[index]
+        widgets = page.widgets()
+        for field in widgets:
+            xref = str(field.field_type) + "_" + str(field.field_name) + "_" + str(field.rect[0]) + "_" + str(field.rect[1])
+            if xref == swik_widget.xref:
+                if "7_Título tesis" in xref:
+                    print("AAAAAAAAAAAAAA Updated widget", index, swik_widget.xref, swik_widget.get_value())
+                # TODO: WARNING: This is a hack to avoid the widget to be updated with an empty value which fails
+                field.field_value = swik_widget.get_value() if swik_widget.get_value() != "" else " "
+                field.update()
+                return
+        '''        
         name, flags = swik_widget.get_info()
 
         widget = Widget()
@@ -765,6 +753,7 @@ class MuPDFRenderer(QLabel):
                 elif "-N-" in field.field_label:
                     field.field_label = None
                 field.update()
+        '''
 
     def remove_all_widgets(self):
         for i in range(len(self.document)):
@@ -780,19 +769,32 @@ class MuPDFRenderer(QLabel):
         doc = pymupdf.open("pdf", data)
         self.set_document(doc, False)
 
+    def sanitize(self):
+        clean_doc_data = self.document.tobytes(encryption=PDF_ENCRYPT_KEEP, deflate=True, garbage=3)
+        clean_doc = pymupdf.open("pdf", clean_doc_data)
+        return clean_doc
+
     def flatten(self, filename):
-        # Save document as it is
-        no_widgets_file_data = self.document.tobytes(encryption=PDF_ENCRYPT_KEEP, deflate=True, garbage=3)
+
+        # Save the old document, to be restored later
+        original = self.document
+
+        # Sanitize the document that is gonna be
+        # flattened, establish it as the current
+        # document (necessary for sync_request)
+        self.set_document(self.sanitize(), False)
 
         # Prepare for baking
         self.sync_requested.emit()
+
+        # Bake document
         self.document.bake()
         self.document.save(filename, encryption=PDF_ENCRYPT_KEEP, deflate=True, garbage=3)
         self.document.close()
 
-        # Restore original document
-        no_widgets_file = pymupdf.open("pdf", no_widgets_file_data)
-        self.set_document(no_widgets_file, False)
+        # Restore original document and
+        # set it as the current document
+        self.set_document(original, False)
 
         return self.FLATTEN_OK
 

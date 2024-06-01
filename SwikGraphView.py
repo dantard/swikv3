@@ -37,12 +37,13 @@ class Shower(QGraphicsView):
 
         self.pos1 = None
         self.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
-        #self.link_shower.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        # self.link_shower.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setWindowFlags(Qt.Window | Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
-        #self.setTransform(QTransform().scale(0.5, 0.5))
+        # self.setTransform(QTransform().scale(0.5, 0.5))
         self.setRenderHint(QPainter.Antialiasing)
         self.setRenderHint(QPainter.SmoothPixmapTransform)
+
     def setPoseSize(self, x, y, w, h):
         if self.pin.isChecked():
             self.setGeometry(self.geometry().x(), self.geometry().y(), w, h)
@@ -56,21 +57,24 @@ class Shower(QGraphicsView):
     def mouseMoveEvent(self, event):
         super().mouseMoveEvent(event)
         if self.pos1 is not None:
-            self.move(event.globalPos()-self.pos1)
+            self.move(event.globalPos() - self.pos1)
 
     def mouseReleaseEvent(self, event):
         self.pos1 = None
+
     def show(self):
         super().show()
         self.timer.start(1500)
+
     def event(self, event):
         if event.type() == QHoverEvent.HoverEnter:
             self.timer.stop()
         if event.type() == QHoverEvent.HoverLeave:
             self.bury()
         return super().event(event)
+
     def resizeEvent(self, event):
-        self.close.setGeometry(self.width()-40, 10, 20, 20)
+        self.close.setGeometry(self.width() - 40, 10, 20, 20)
         self.pin.setGeometry(self.width() - 65, 10, 20, 20)
         super().resizeEvent(event)
 
@@ -99,15 +103,11 @@ class Shower(QGraphicsView):
 class SwikGraphView(GraphView):
     drop_event = pyqtSignal(list)
 
-
-
-
     def __init__(self, manager, renderer, scene, page=SimplePage, mode=LayoutManager.MODE_VERTICAL_MULTIPAGE):
         super(SwikGraphView, self).__init__(manager, renderer, scene, page, mode)
         self.renderer.sync_requested.connect(self.sync_requested)
         self.setAcceptDrops(True)
         self.link_shower = Shower(self.scene())
-
 
     def dropEvent(self, event) -> None:
         event.accept()
@@ -210,7 +210,6 @@ class SwikGraphView(GraphView):
         self.centerOn(ellipse)
         utils.delayed(2000, self.scene().removeItem, ellipse)
 
-
     def link_hovered(self, kind, page, pos):
 
         dest_page = self.pages[page]
@@ -221,13 +220,6 @@ class SwikGraphView(GraphView):
 
         elif kind == InternalLink.LEAVE:
             self.link_shower.leave(dest_page, pos)
-
-
-
-
-
-
-
 
     def toggle_page_info(self):
         for page in self.pages.values():

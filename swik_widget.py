@@ -12,7 +12,7 @@ from PyQt5.QtCore import QPointF, Qt, QTimer, pyqtSignal, QRectF, QEvent
 from PyQt5.QtGui import QPainter, QIcon, QKeySequence, QKeyEvent
 from PyQt5.QtWidgets import QApplication, QMainWindow, QShortcut, QFileDialog, QDialog, QMessageBox, QHBoxLayout, \
     QWidget, QTabWidget, QVBoxLayout, QToolBar, \
-    QPushButton, QSizePolicy, QTabBar, QProgressDialog, QSplitter, QGraphicsScene, QLabel, QProgressBar
+    QPushButton, QSizePolicy, QTabBar, QProgressDialog, QSplitter, QGraphicsScene, QLabel, QProgressBar, QGroupBox
 
 import utils
 from GraphView import GraphView
@@ -30,6 +30,7 @@ from progressing import Progressing
 from scene import Scene
 from toolbars.zoom_toolbar import ZoomToolbar
 from tools.replace_fonts.tool_replace_fonts import ToolReplaceFonts
+from tools.tool_form import ToolForm
 from tools.tool_insert_image import ToolInsertImage, ToolInsertSignatureImage
 from tools.tool_mimic_pdf import ToolMimicPDF
 from tools.tool_numerate import ToolNumerate
@@ -43,7 +44,7 @@ from toolbars.navigationtoolbar import NavigationToolbar
 from page import Page
 from renderer import MuPDFRenderer
 from toolbars.searchtoolbar import TextSearchToolbar
-from widgets.pdf_widget import PdfCheckboxWidget
+from widgets.pdf_widget import PdfCheckboxWidget, PdfWidget
 
 
 class Splitter(QSplitter):
@@ -108,7 +109,7 @@ class SwikWidget(QWidget):
         self.vlayout.addLayout(self.hlayout)
         self.hlayout.addLayout(self.ilayout)
 
-        helper, self.app_helper = QWidget(), QWidget()
+        helper, self.app_helper = QWidget(), QGroupBox("kakka")
         helper.setLayout(self.vlayout)
         self.app_helper.setLayout(self.app_layout)
         self.app_helper.setMaximumWidth(0)
@@ -131,6 +132,7 @@ class SwikWidget(QWidget):
         tool_crop = self.manager.register_tool(ToolCrop(self.view, self.renderer, self.config))
         tool_imag = self.manager.register_tool(ToolInsertImage(self.view, self.renderer, self.config))
         tool_sigi = self.manager.register_tool(ToolInsertSignatureImage(self.view, self.renderer, self.config))
+        tool_form = self.manager.register_tool(ToolForm(self.view, self.renderer, self.config, widget=self))
         # tool_font = self.manager.register_tool(
         #    ToolReplaceFonts(self.view, self.renderer, self.config, font_manager=self.font_manager, widget=self))
         # tool_font.file_generate.connect(self.open_requested.emit)
@@ -175,7 +177,9 @@ class SwikWidget(QWidget):
         self.mode_group.add(tool_rear, icon=":/icons/shuffle.png", text="Shuffle Pages")
         #        self.mode_group.add(tool_font, icon=":/icons/replace_fonts.png", text="Replace Fonts")
         self.mode_group.add(tool_mimi, icon=":/icons/mimic.png", text="Mimic PDF")
-        self.mode_group.add(tool_nume, icon=":/icons/numerate.png", text="Replace Fonts")
+        self.tool_form_btn = self.mode_group.add(tool_form, icon=":/icons/form.png", text="Mimic PDF")
+        self.mode_group.add(tool_nume, icon=":/icons/number.png", text="Number pages")
+
         # self.mode_group.append(self.toolbar)
 
         self.manager.tool_finished.connect(self.tool_finished)
@@ -209,7 +213,8 @@ class SwikWidget(QWidget):
         self.preferences_changed()
         QApplication.processEvents()
 
-    def set_app_widget(self, widget, max_width=500):
+    def set_app_widget(self, widget, max_width=500, title=""):
+        self.app_helper.setTitle(title)
         self.app_helper.setMaximumWidth(max_width)
         self.app_layout.addWidget(widget)
         self.app_handle.setDisabled(False)
@@ -320,18 +325,8 @@ class SwikWidget(QWidget):
 
         res = self.renderer.flatten(filename)
 
-        if res == MuPDFRenderer.FLATTEN_ERROR:
-            QMessageBox.critical(self, "Flatten", "Error while flattening the document", QMessageBox.Ok)
-            return
-
-        else:
-            if res == MuPDFRenderer.FLATTEN_WORKAROUND:
-                QMessageBox.warning(self, "Flatten",
-                                    "Original PDF has problems, a workaround has been applied. Check result correctness.",
-                                    QMessageBox.Ok)
-
-            if open:
-                self.open_requested.emit(filename, self.view.page, self.view.ratio)
+        if open:
+            self.open_requested.emit(filename, self.view.page, self.view.ratio)
 
     def extract_fonts(self):
         fonts = self.renderer.save_fonts(".")
@@ -373,6 +368,10 @@ class SwikWidget(QWidget):
 
         self.load_progress_action.setVisible(False)
         self.update_tab_text()
+
+        pdf_widgets = [item for item in self.view.scene().items() if isinstance(item, PdfWidget)]
+        if len(pdf_widgets) > 0:
+            self.tool_form_btn.click()
 
     def update_tab_text(self):
         # Update the tab name

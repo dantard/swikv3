@@ -220,7 +220,6 @@ class ResizableRectItem(PaintableSelectorRectItem, Undoable):
         self.update_handles_position()
         return res
 
-
     def set_handle_visibility(self, visible: bool):
         for handle in self.handles:
             handle.setVisible(visible and self.handles_enabled)

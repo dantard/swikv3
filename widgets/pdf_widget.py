@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import QGraphicsTextItem, QGraphicsRectItem, QApplication, 
 
 class PdfWidget(QGraphicsProxyWidget):
     count = 0
+
     def __init__(self, parent, content, rect, font_size):
         super(QGraphicsProxyWidget, self).__init__(parent)
         self.content = content
@@ -22,8 +23,8 @@ class PdfWidget(QGraphicsProxyWidget):
         self.flags = 0
         self.unique_id = PdfWidget.count
         self.user_data = None
+        self.xref = -1
         PdfWidget.count += 1
-
 
     def set_info(self, name, flags):
         self.name = name
@@ -47,12 +48,14 @@ class PdfWidget(QGraphicsProxyWidget):
     def get_value(self):
         raise NotImplementedError("Subclasses must implement this method")
 
+    def clear(self):
+        raise NotImplementedError("Subclasses must implement this method")
+
 
 class PdfTextWidget(PdfWidget):
     def __init__(self, parent, content, rect, font_size):
         super(PdfTextWidget, self).__init__(parent, content, rect, font_size)
         self.widget.setStyleSheet("background-color: lightblue;")
-
 
     def set_widget(self, content):
         le = QLineEdit()
@@ -61,6 +64,9 @@ class PdfTextWidget(PdfWidget):
 
     def get_value(self):
         return self.widget.text()
+
+    def clear(self):
+        self.widget.setText("")
 
 
 class MultiLinePdfTextWidget(PdfTextWidget):
@@ -72,17 +78,23 @@ class MultiLinePdfTextWidget(PdfTextWidget):
     def get_value(self):
         return self.widget.document().toPlainText()
 
+    def clear(self):
+        self.widget.document().setPlainText(" ")
+
 
 class PdfCheckboxWidget(PdfWidget):
     def set_widget(self, content):
         print("Content: ", content)
         cb = QCheckBox()
-        cb.setChecked(content == "On" or content == "Yes" or content == "True" or content == "1")
+        cb.setChecked(content == "On" or content == "Yes" or content == "True" or content == "1" or content == True)
         return cb
 
     def get_value(self):
-        return self.widget.isChecked()
-        # return "Yes" if self.widget.isChecked() else "Off"
+        # return self.widget.isChecked()
+        return "Yes" if self.widget.isChecked() else "Off"
+
+    def clear(self):
+        self.widget.setChecked(False)
 
 
 class PdfComboboxWidget(PdfTextWidget):
@@ -106,6 +118,10 @@ class PdfComboboxWidget(PdfTextWidget):
     def get_value(self):
         return self.widget.currentText()
 
+    def clear(self):
+        self.widget.setCurrentIndex(0)
+
+
 class PdfRadioButtonWidget(PdfWidget):
     def set_widget(self, content):
         print("Content: ", content)
@@ -116,3 +132,6 @@ class PdfRadioButtonWidget(PdfWidget):
 
     def get_value(self):
         return self.widget.isChecked()
+
+    def clear(self):
+        self.widget.setChecked(False)

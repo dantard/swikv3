@@ -139,7 +139,6 @@ class MainWindow(QMainWindow):
             self.open_new_tab(widget, values[0])
             widget.view.set_scroll_value(values[3])
 
-
         self.tab_widget.setCurrentIndex(0)
         self.update_title()
 
@@ -241,7 +240,7 @@ class MainWindow(QMainWindow):
 
         if filename:
             if self.current() is not None:
-                #self.current().set_ratio(1)
+                # self.current().set_ratio(1)
                 self.current().open_file(filename)
             else:
                 self.open_new_tab(self.create_widget(), filename)
@@ -308,7 +307,7 @@ def main():
         while socket.hasPendingDatagrams():
             datagram, host, port = socket.readDatagram(socket.pendingDatagramSize())
             window.hide()
-            #window.activateWindow()
+            # window.activateWindow()
             widget = window.create_widget()
             window.open_new_tab(widget, datagram.decode())
             window.show()
@@ -316,7 +315,7 @@ def main():
     socket.readyRead.connect(received)
 
     if len(sys.argv) > 1:
-        #window.open_file(sys.argv[1])
+        # window.open_file(sys.argv[1])
         widget = window.create_widget()
         window.open_new_tab(widget, sys.argv[1])
     else:

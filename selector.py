@@ -163,11 +163,11 @@ class PaintableSelectorRectItem(SelectorRectItem):
             image_rect, img = self.rect(), self.image
             # painter.drawImage(self.rect(), self.image)
         elif self.image_mode == self.IMAGE_MODE_MAINTAIN_SIZE:
-            w = self.image.width()#min(self.rect().width(), self.image.width())
-            h =  self.image.height() #min(self.rect().height(), self.image.height())
+            w = self.image.width()  # min(self.rect().width(), self.image.width())
+            h = self.image.height()  # min(self.rect().height(), self.image.height())
             img = self.image.copy(0, 0, int(w), int(h))
             image_rect = QRectF(self.rect().x(), self.rect().y(), w, h)
-            self.setRect(QRectF(0,0, w, h))
+            self.setRect(QRectF(0, 0, w, h))
 
         return image_rect, img
 
@@ -223,4 +223,3 @@ class PaintableSelectorRectItem(SelectorRectItem):
             return rect
         else:
             return self.parentItem().mapRectFromItem(self, rect)
-
