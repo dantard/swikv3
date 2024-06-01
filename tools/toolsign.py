@@ -79,6 +79,7 @@ class ToolSign(Tool):
 
         self.tree = QTreeWidget()
         self.tree.setColumnCount(2)
+        self.tree.header().setVisible(False)
         v_layout.addWidget(self.tree)
 
         try:
@@ -111,7 +112,7 @@ class ToolSign(Tool):
         v_layout.addWidget(self.draw_btn)
         v_layout.addWidget(self.sign_btn)
         self.helper.setLayout(v_layout)
-        self.widget.set_app_widget(self.helper)
+        self.widget.set_app_widget(self.helper, title="Sign")
 
     def usable(self):
         return self.cfg_p12.get_value() is not None

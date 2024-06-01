@@ -64,7 +64,7 @@ class ToolInsertImage(Tool):
             self.image = QImage(filename)
             self.image_filename = filename
         else:
-            self.finished.emit()
+            self.emit_finished()
 
     def mouse_pressed(self, event):
         page = self.view.get_page_at_pos(event.pos())

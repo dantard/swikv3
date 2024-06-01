@@ -147,7 +147,7 @@ class ToolRearrange(Tool, Undoable):
 
                 self.renderer.rearrange_pages(ids, False)
 
-                #self.notify_change(Action.PAGE_ORDER_CHANGED, list(range(len(self.view.pages))), ids, self.view.scene())
+                # self.notify_change(Action.PAGE_ORDER_CHANGED, list(range(len(self.view.pages))), ids, self.view.scene())
                 self.operation_done()
         elif self.state == self.STATE_RECT_SELECTION:
             self.view.scene().removeItem(self.rb)
@@ -215,7 +215,7 @@ class ToolRearrange(Tool, Undoable):
                                                       "PDF Files (*.pdf)")
             if filename:
                 if self.renderer.export_pages([page.index for page in self.selected], filename):
-                    self.finished.emit()
+                    self.emit_finished()
                     self.renderer.open_pdf(filename)
                 else:
                     QMessageBox.critical(self.view, "Export", "Error exporting pages")
