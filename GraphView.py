@@ -32,7 +32,8 @@ class GraphView(QGraphicsView):
     page_created = pyqtSignal(SimplePage)
     page_clicked = pyqtSignal(int)
 
-    def __init__(self, manager, renderer, scene, page=SimplePage, mode=LayoutManager.MODE_VERTICAL_MULTIPAGE, align=Qt.AlignVCenter | Qt.AlignHCenter, page_sep=27):
+    def __init__(self, manager, renderer, scene, page=SimplePage, mode=LayoutManager.MODE_VERTICAL_MULTIPAGE, align=Qt.AlignVCenter | Qt.AlignHCenter,
+                 page_sep=27):
         super().__init__()
         self.on_document_ready = []
         self.previous_state = 0, 0, None
@@ -50,6 +51,7 @@ class GraphView(QGraphicsView):
         self.pages = SyncDict()
         self.futures = list()
         self.pool = ThreadPool(processes=100)
+        self.immediate_resize = False
 
         self.setScene(scene)
         self.scene().setBackgroundBrush(Qt.gray)
@@ -93,11 +95,18 @@ class GraphView(QGraphicsView):
     def get_mode(self):
         return self.layout_manager.get_mode()
 
+    def set_one_shot_immediate_resize(self):
+        self.immediate_resize = True
+
     # ## EVENTS
     def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
         self.timer.stop()
         if event.oldSize().width() != event.size().width():
-            self.timer.start(50)
+            if self.immediate_resize:
+                self.delayed_resize()
+                self.immediate_resize = False
+            else:
+                self.timer.start(50)
 
     def delayed_resize(self):
         scrollbar = self.horizontalScrollBar() if self.mode == LayoutManager.MODE_HORIZONTAL else self.verticalScrollBar()
@@ -116,7 +125,6 @@ class GraphView(QGraphicsView):
 
     def get_page_width(self, index):
         return self.pages[index].get_orig_width()
-
 
     def get_ratio(self):
         return self.ratio
@@ -139,7 +147,7 @@ class GraphView(QGraphicsView):
 
         if self.layout_manager.is_vertical():
             self.verticalScrollBar().setValue(int(self.scene().height() * percent))
-            self.horizontalScrollBar().setValue(int(self.horizontalScrollBar().maximum()/2))
+            self.horizontalScrollBar().setValue(int(self.horizontalScrollBar().maximum() / 2))
         else:
             self.horizontalScrollBar().setValue(int(self.scene().width() * percent))
 
@@ -150,7 +158,6 @@ class GraphView(QGraphicsView):
         if inform:
             self.ratio_changed.emit(self.get_ratio())
         self.scene().setBackgroundBrush(Qt.gray)
-
 
     def set_natural_hscroll(self, value):
         self.natural_hscroll = value
@@ -313,7 +320,6 @@ class GraphView(QGraphicsView):
             return None
         else:
             return self.get_page_at_pos(event.pos())
-
 
     # ## REIMPLEMENTED METHODS
     def scrollContentsBy(self, dx: int, dy: int) -> None:

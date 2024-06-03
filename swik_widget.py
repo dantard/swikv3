@@ -28,6 +28,7 @@ from manager import Manager
 from miniature_view import MiniatureView
 from progressing import Progressing
 from scene import Scene
+from title_widget import AppBar
 from toolbars.zoom_toolbar import ZoomToolbar
 from tools.replace_fonts.tool_replace_fonts import ToolReplaceFonts
 from tools.tool_form import ToolForm
@@ -109,13 +110,15 @@ class SwikWidget(QWidget):
         self.vlayout.addLayout(self.hlayout)
         self.hlayout.addLayout(self.ilayout)
 
-        helper, self.app_helper = QWidget(), QGroupBox("kakka")
+        helper = QWidget()
         helper.setLayout(self.vlayout)
-        self.app_helper.setLayout(self.app_layout)
-        self.app_helper.setMaximumWidth(0)
+
+        self.app_bar = AppBar()
+        self.app_bar.close.connect(self.app_closed)
 
         sp = QSplitter(Qt.Horizontal)
-        sp.addWidget(self.app_helper)
+        sp.addWidget(self.app_bar)
+
         sp.addWidget(self.view)
         sp.setSizes([20, 100])
         self.ilayout.addWidget(sp)
@@ -141,7 +144,7 @@ class SwikWidget(QWidget):
             ToolMimicPDF(self.view, self.renderer, self.config, font_manager=self.font_manager, widget=self))
 
         tool_nume = self.manager.register_tool(
-            ToolNumerate(self.view, self.renderer, self.config, font_manager=self.font_manager))
+            ToolNumerate(self.view, self.renderer, self.config, font_manager=self.font_manager, widget=self))
 
         self.key_manager = KeyboardManager(self)
 
@@ -182,7 +185,7 @@ class SwikWidget(QWidget):
 
         # self.mode_group.append(self.toolbar)
 
-        self.manager.tool_finished.connect(self.tool_finished)
+        self.manager.tool_done.connect(self.tool_done)
 
         self.zoom_toolbar = ZoomToolbar(self.view, self.toolbar)
         self.nav_toolbar = NavigationToolbar(self.view, self.toolbar)
@@ -213,18 +216,22 @@ class SwikWidget(QWidget):
         self.preferences_changed()
         QApplication.processEvents()
 
-    def set_app_widget(self, widget, max_width=500, title=""):
-        self.app_helper.setTitle(title)
-        self.app_helper.setMaximumWidth(max_width)
-        self.app_layout.addWidget(widget)
+    def app_closed(self):
+        self.view.set_one_shot_immediate_resize()
+        self.mode_group.reset()
+
+    def set_app_widget(self, widget, width=500, title=""):
+        self.view.set_one_shot_immediate_resize()
+        self.app_bar.set_widget(widget, title)
+        self.app_bar.set_suggested_width(width)
         self.app_handle.setDisabled(False)
 
     def remove_app_widget(self, widget):
-        self.app_layout.removeWidget(widget)
-        self.app_helper.setMaximumWidth(0)
+        self.app_bar.remove_widget(widget)
+        self.app_bar.setMaximumWidth(0)
         self.app_handle.setDisabled(True)
 
-    def tool_finished(self, action, data):
+    def tool_done(self, action, data):
         if action == Manager.OPEN_REQUESTED:
             self.open_file(data)
             self.manager.use_tool(self.tool_sign)

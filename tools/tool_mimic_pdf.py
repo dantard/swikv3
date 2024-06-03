@@ -81,7 +81,7 @@ class ToolMimicPDF(Tool):
 
         generate_btn.clicked.connect(self.generate)
         apply_btn.clicked.connect(self.apply)
-        self.widget.set_app_widget(self.helper, title="Mimic PDF")
+        self.widget.set_app_widget(self.helper, 300, title="Mimic PDF")
         fonts = set()
         for i in range(0, self.view.get_page_count()):
             spans = self.renderer.extract_spans(i)
@@ -216,6 +216,4 @@ class ToolMimicPDF(Tool):
         self.progressing.start(process)
 
     def finish(self):
-
         self.widget.remove_app_widget(self.helper)
-        self.helper.deleteLater()

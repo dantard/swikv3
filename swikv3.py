@@ -274,11 +274,13 @@ class MainWindow(QMainWindow):
     def eventFilter(self, a0, a1) -> bool:
         if a1.type() == QEvent.KeyPress:
             a = self.current().key_manager.key_pressed(a1)
-
+            if not a:
+                a = self.current().manager.key_released(a1)
             return a
         elif a1.type() == QEvent.KeyRelease:
             a = self.current().key_manager.key_released(a1)
-
+            if not a:
+                a = self.current().manager.key_released(a1)
             return a
         return False
 

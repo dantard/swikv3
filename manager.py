@@ -6,12 +6,11 @@ from simplepage import SimplePage
 from word import Word
 
 
-
 class Manager(QObject):
     FINISHED = 0
     OPEN_REQUESTED = 1
 
-    tool_finished = pyqtSignal(int, object)
+    tool_done = pyqtSignal(int, object)
 
     def __init__(self, renderer, config):
         super(Manager, self).__init__()
@@ -51,7 +50,10 @@ class Manager(QObject):
 
     def register_tool(self, tool, default=False):
         self.tools[type(tool)] = tool
-        tool.finished.connect(self.finished)
+
+        # Propagate signals to outside the manager
+        tool.finished.connect(self.tool_done.emit)
+
         if default:
             self.default = tool
             self.use_tool(tool)
@@ -98,9 +100,9 @@ class Manager(QObject):
         print("released", event.key(), Qt.Key_Escape, Qt.Key_Escape == event.key())
 
         if event.key() == Qt.Key_Escape:
-            self.finished()
+            self.tool_done.emit(Manager.FINISHED, None)
             return True
         return False
 
-    def finished(self, a, b):
-        self.tool_finished.emit(a, b)
+    def reset(self):
+        self.tool_done.emit(Manager.FINISHED, None)

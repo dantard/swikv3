@@ -1,18 +1,7 @@
-import base64
-
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QImage, QColor
-from PyQt5.QtWidgets import QMenu, QDialog, QMessageBox, QVBoxLayout, QWidget, QPushButton, QTreeWidget, QTreeWidgetItem, QHeaderView, QApplication
+from PyQt5.QtWidgets import QVBoxLayout, QWidget, QPushButton, QApplication
 
-import signer
-from dialogs import PasswordDialog
-from manager import Manager
-from renderer import convert_box_to_upside_down
-from resizeable import ResizableRectItem
-from signer import P12Signer
 from tools.tool import Tool
-import contextlib
-
 from widgets.pdf_widget import PdfWidget
 
 
@@ -87,4 +76,3 @@ class ToolForm(Tool):
             widget.setVisible(True)
         self.view.setCursor(Qt.ArrowCursor)
         self.widget.remove_app_widget(self.helper)
-        self.helper.deleteLater()
