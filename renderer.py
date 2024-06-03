@@ -15,7 +15,7 @@ from PyQt5.QtWidgets import QLabel
 import fitz
 from pymupdf.mupdf import PDF_ENCRYPT_KEEP, PDF_WIDGET_TYPE_TEXT, PDF_WIDGET_TYPE_CHECKBOX, PDF_WIDGET_TYPE_COMBOBOX, \
     PDF_ANNOT_IS_LOCKED, PDF_ANNOT_HIGHLIGHT, \
-    PDF_ANNOT_SQUARE, PDF_WIDGET_TYPE_RADIOBUTTON
+    PDF_ANNOT_SQUARE, PDF_WIDGET_TYPE_RADIOBUTTON, PDF_FIELD_IS_READ_ONLY
 from pymupdf import TEXTFLAGS_DICT, TEXT_PRESERVE_IMAGES, TextWriter, Font, Point, Document, Rect, Quad, Annot
 from pymupdf import Widget
 
@@ -669,6 +669,7 @@ class MuPDFRenderer(QLabel):
                           field.rect[3] - field.rect[1])
 
             if field.field_type == PDF_WIDGET_TYPE_TEXT:
+                print("aoooooooooooo", field.field_value, type(field.field_value))
                 if field.field_flags & 4096:
                     swik_widget = MultiLinePdfTextWidget(page, field.field_value, rect, field.text_fontsize)
                 else:
@@ -688,6 +689,7 @@ class MuPDFRenderer(QLabel):
                 self.document[page.index].delete_widget(field)
                 '''
                 swik_widget.xref = str(field.field_type) + "_" + str(field.field_name) + "_" + str(field.rect[0]) + "_" + str(field.rect[1])
+                swik_widget.on_state = field.on_state()
                 pdf_widgets.append(swik_widget)
 
             '''
@@ -704,56 +706,26 @@ class MuPDFRenderer(QLabel):
         return pdf_widgets
 
     def add_widget(self, index, swik_widget: PdfWidget):
-        # print("AAAAAAAAAAAAA Adding widget", index, swik_widget.xref)
         page = self.document[index]
         widgets = page.widgets()
         for field in widgets:
             xref = str(field.field_type) + "_" + str(field.field_name) + "_" + str(field.rect[0]) + "_" + str(field.rect[1])
             if xref == swik_widget.xref:
-                if "7_Título tesis" in xref:
-                    print("AAAAAAAAAAAAAA Updated widget", index, swik_widget.xref, swik_widget.get_value())
-                # TODO: WARNING: This is a hack to avoid the widget to be updated with an empty value which fails
-                field.field_value = swik_widget.get_value() if swik_widget.get_value() != "" else " "
-                field.update()
+
+                value = swik_widget.get_value()
+                if isinstance(swik_widget, PdfCheckboxWidget) and value:
+                    print(self.document.xref_object(field.xref))
+
+                    try:
+                        field.field_value = field.on_state()
+                        field.update()
+                    except TypeError:
+                        self.document.xref_set_key(field.xref, "AS", "/Yes")
+                else:
+                    field.field_value = value
+                    field.update()
+
                 return
-        '''        
-        name, flags = swik_widget.get_info()
-
-        widget = Widget()
-        widget.field_name = swik_widget.user_data['field_name']
-        widget.field_flags = swik_widget.user_data['field_flags']
-        widget.border_color = swik_widget.user_data['border_color']
-        widget.border_width = swik_widget.user_data['border_width']
-        widget.text_fontsize = max(swik_widget.user_data['text_fontsize'], 11)
-        widget.field_label = swik_widget.user_data['field_label']
-        widget.field_type_string = swik_widget.user_data['field_type_string']
-        widget.text_font = swik_widget.user_data['text_font']
-        widget.rect = swik_widget.user_data['rect']
-        widget.field_type = swik_widget.user_data['field_type']
-        widget.field_value = swik_widget.get_value()
-
-        # WORKAROUND: MuPDF does not allow creation of checked radio buttons
-        if widget.field_type != PDF_WIDGET_TYPE_RADIOBUTTON:
-            page.add_widget(widget)
-        else:
-            widget.field_value = False
-            if widget.field_label is None:
-                widget.field_label = "-N-" + str(swik_widget.unique_id)
-            else:
-                widget.field_label += "-V-" + str(swik_widget.unique_id)
-
-            page.add_widget(widget)
-
-            field = next((f for f in page.widgets() if f.field_label == widget.field_label), None)
-            if field is not None:
-                field.field_value = swik_widget.get_value()
-                if "-V-" in field.field_label:
-                    index = field.field_label.find("-V-")
-                    field.field_label = field.field_label[:index]
-                elif "-N-" in field.field_label:
-                    field.field_label = None
-                field.update()
-        '''
 
     def remove_all_widgets(self):
         for i in range(len(self.document)):

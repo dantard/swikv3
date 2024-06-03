@@ -24,6 +24,7 @@ class PdfWidget(QGraphicsProxyWidget):
         self.unique_id = PdfWidget.count
         self.user_data = None
         self.xref = -1
+        self.on_state = "Yes"
         PdfWidget.count += 1
 
     def set_info(self, name, flags):
@@ -54,7 +55,7 @@ class PdfWidget(QGraphicsProxyWidget):
 
 class PdfTextWidget(PdfWidget):
     def __init__(self, parent, content, rect, font_size):
-        super(PdfTextWidget, self).__init__(parent, content, rect, font_size)
+        super(PdfTextWidget, self).__init__(parent, content.strip(" "), rect, font_size)
         self.widget.setStyleSheet("background-color: lightblue;")
 
     def set_widget(self, content):
@@ -63,7 +64,7 @@ class PdfTextWidget(PdfWidget):
         return le
 
     def get_value(self):
-        return self.widget.text()
+        return self.widget.text() if self.widget.text() != "" else " "
 
     def clear(self):
         self.widget.setText("")
@@ -91,7 +92,7 @@ class PdfCheckboxWidget(PdfWidget):
 
     def get_value(self):
         # return self.widget.isChecked()
-        return "Yes" if self.widget.isChecked() else "Off"
+        return self.widget.isChecked()
 
     def clear(self):
         self.widget.setChecked(False)
