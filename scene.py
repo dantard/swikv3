@@ -31,6 +31,7 @@ class Scene(QGraphicsScene):
                 old = elem.get_full_state()
                 elem.set_common_state(full_state)
                 action.push(elem, kind, old, elem.get_full_state())
+
     def notify_any_change(self, kind, item, old, new):
         action = Action(item, kind, old, new)
 
@@ -94,7 +95,7 @@ class Scene(QGraphicsScene):
 
             for item in items:
                 pre = item.pos()
-                item.setPos(item.pos().x() + x * val,item.pos().y() +  y * val)
+                item.setPos(item.pos().x() + x * val, item.pos().y() + y * val)
                 self.notify_position_change(item, pre, item.pos())
         elif event.key() == QtCore.Qt.Key_Delete:
             self.delete_objects()

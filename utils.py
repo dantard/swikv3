@@ -57,7 +57,8 @@ def qcolor_to_fitz_color(color: QColor):
 
 
 def fitz_color_to_qcolor(color, opacity=1):
-    color = QColor(int(color[0] * 255), int(color[1] * 255), int(color[2] * 255), int(opacity * 255)) if color else Qt.transparent
+    color = QColor(int(color[0] * 255), int(color[1] * 255), int(color[2] * 255),
+                   int(opacity * 255)) if color else Qt.transparent
     return color
 
 
@@ -113,5 +114,24 @@ def are_other_instances_running():
 def update_value(method, dictionary, key):
     method(dictionary[key] if key in dictionary else None)
 
+
 def delayed(delay, func, *args):
     QTimer.singleShot(delay, lambda: func(*args))
+
+
+def int_to_roman(number):
+    num = [1, 4, 5, 9, 10, 40, 50, 90,
+           100, 400, 500, 900, 1000]
+    sym = ["I", "IV", "V", "IX", "X", "XL",
+           "L", "XC", "C", "CD", "D", "CM", "M"]
+    i = 12
+    res = str()
+    while number:
+        div = number // num[i]
+        number %= num[i]
+
+        while div:
+            res += sym[i]
+            div -= 1
+        i -= 1
+    return res

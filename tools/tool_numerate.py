@@ -2,6 +2,7 @@ from PyQt5.QtCore import QMimeData, QUrl, Qt, QPointF
 from PyQt5.QtGui import QDrag
 from PyQt5.QtWidgets import QPushButton, QHBoxLayout, QFormLayout, QComboBox, QVBoxLayout, QLineEdit
 
+import utils
 from bunch import Bunch, AnchoredBunch, NumerateBunch
 from dialogs import FontAndColorDialog
 from font_manager import Font
@@ -17,6 +18,7 @@ class ToolNumerate(BasicTool):
         self.widget = kwargs.get('widget')
 
     def init(self):
+        self.view.scene().selectionChanged.connect(self.selection_changed)
         self.layout = QVBoxLayout()
         f_layout = QFormLayout()
         self.layout.addLayout(f_layout)
@@ -64,6 +66,9 @@ class ToolNumerate(BasicTool):
 
         self.widget.set_app_widget(self.layout, 200, "Numerate")
 
+    def selection_changed(self):
+        print("Selection changed")
+
     def font_clicked(self):
         font_dialog = FontAndColorDialog(self.font_manager, Font("fonts/Arial.ttf"), 11, Qt.black)
         if font_dialog.exec() == FontAndColorDialog.Accepted:
@@ -76,19 +81,35 @@ class ToolNumerate(BasicTool):
         self.to_cb.addItems(str(i) for i in range(index + 1, len(self.view.pages) + 1))
 
     def create(self):
+        first = int(self.from_cb.currentText()) - 1
+        last = int(self.to_cb.currentText())
+        start = int(self.first_page.currentText())
+        text = self.text_te.text()
+        style = self.style_cb.currentText()
+
         bunch = NumerateBunch(self.view.scene())
-        for i in range(0, self.view.get_page_count()):
-            number = SwikTextNumerate(str(i + 1), self.view.pages[i], self.font_manager, Font("fonts/Arial.ttf"), 12)
+        for j, i in enumerate(range(first, last)):
+            if style == "56":
+                num = str(start + j)
+            elif style == "LVI":
+                num = utils.int_to_roman(start + j)
+            else:
+                num = utils.int_to_roman(start + j).lower()
+
+            number = SwikTextNumerate(text.replace("$i", num), self.view.pages[i], self.font_manager,
+                                      Font("fonts/Arial.ttf"), 12)
             bunch.add(number)
 
     def mouse_pressed(self, event):
         pass
 
     def mouse_released(self, event):
+        print("clicked")
         pass
 
     def mouse_moved(self, event):
         pass
 
     def finish(self):
-        self.widget.remove_app_widget(self.layout)
+        self.view.scene().selectionChanged.disconnect(self.selection_changed)
+        self.widget.remove_app_widget()

@@ -222,12 +222,12 @@ class SwikWidget(QWidget):
 
     def set_app_widget(self, widget, width=500, title=""):
         self.view.set_one_shot_immediate_resize()
-        self.app_bar.set_widget(widget, title)
+        self.app_bar.set_item(widget, title)
         self.app_bar.set_suggested_width(width)
         self.app_handle.setDisabled(False)
 
-    def remove_app_widget(self, widget):
-        self.app_bar.remove_widget(widget)
+    def remove_app_widget(self):
+        self.app_bar.remove_item()
         self.app_bar.setMaximumWidth(0)
         self.app_handle.setDisabled(True)
 

@@ -216,4 +216,4 @@ class ToolMimicPDF(Tool):
         self.progressing.start(process)
 
     def finish(self):
-        self.widget.remove_app_widget(self.helper)
+        self.widget.remove_app_widget()

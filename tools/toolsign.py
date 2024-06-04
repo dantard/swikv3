@@ -2,7 +2,8 @@ import base64
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QImage, QColor
-from PyQt5.QtWidgets import QMenu, QDialog, QMessageBox, QVBoxLayout, QWidget, QPushButton, QTreeWidget, QTreeWidgetItem, QHeaderView
+from PyQt5.QtWidgets import QMenu, QDialog, QMessageBox, QVBoxLayout, QWidget, QPushButton, QTreeWidget, \
+    QTreeWidgetItem, QHeaderView
 
 import signer
 from dialogs import PasswordDialog
@@ -46,9 +47,11 @@ class ToolSign(Tool):
     def configure(config):
         if not ToolSign.configured:
             ToolSign.signature = config.root().addSubSection("Digital Signature")
-            ToolSign.cfg_p12 = ToolSign.signature.addFile("p12", pretty="Signature File", extension=["p12", "pfx"], extension_name="PKCS#12")
+            ToolSign.cfg_p12 = ToolSign.signature.addFile("p12", pretty="Signature File", extension=["p12", "pfx"],
+                                                          extension_name="PKCS#12")
             ToolSign.cfg_password = ToolSign.signature.addPassword("password", pretty='Password')
-            ToolSign.cfg_signed_suffix = ToolSign.signature.addString("signed_suffix", pretty="Signed File Suffix", default="-signed")
+            ToolSign.cfg_signed_suffix = ToolSign.signature.addString("signed_suffix", pretty="Signed File Suffix",
+                                                                      default="-signed")
             appearance = ToolSign.signature.addSubSection("Appearance")
 
             ToolSign.cfg_signature_border = appearance.addInt("signature_border", pretty="Border width", default=0)
@@ -210,7 +213,8 @@ class ToolSign(Tool):
 
         text_mode = SignerRectItem.TEXT_MODE_STRETCH if self.cfg_text_stretch.get_value() else SignerRectItem.TEXT_MODE_KEEP
         image_mode = SignerRectItem.IMAGE_MODE_STRETCH if self.cfg_image_stretch.get_value() else SignerRectItem.IMAGE_MODE_MAINTAIN_RATIO
-        self.rubberband = SignerRectItem(None, text=text, image_filename=image_filename, max_font_size=max_font_size, text_mode=text_mode,
+        self.rubberband = SignerRectItem(None, text=text, image_filename=image_filename, max_font_size=max_font_size,
+                                         text_mode=text_mode,
                                          image_mode=image_mode, pen=Qt.transparent, brush=QColor(255, 0, 0, 80))
 
         self.view.setCursor(Qt.CrossCursor)
@@ -240,5 +244,5 @@ class ToolSign(Tool):
 
     def finish(self):
         self.view.setCursor(Qt.ArrowCursor)
-        self.widget.remove_app_widget(self.helper)
+        self.widget.remove_app_widget()
         self.helper.deleteLater()

@@ -75,4 +75,4 @@ class ToolForm(Tool):
         for widget in widgets:
             widget.setVisible(True)
         self.view.setCursor(Qt.ArrowCursor)
-        self.widget.remove_app_widget(self.helper)
+        self.widget.remove_app_widget()

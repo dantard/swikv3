@@ -31,23 +31,24 @@ class AppBar(QWidget):
 
         self.setLayout(self.v_layout)
         self.widget = None
+        self.setMaximumWidth(0)
 
     def set_suggested_width(self, width):
         self.setMaximumWidth(width)
 
-    def set_widget(self, widget, title):
-        if isinstance(widget, QWidget):
-            self.v_layout.addWidget(widget)
+    def set_item(self, item, title):
+        if isinstance(item, QWidget):
+            self.v_layout.addWidget(item)
         else:
-            self.v_layout.addLayout(widget)
+            helper = QWidget()
+            helper.setLayout(item)
+            self.v_layout.addWidget(helper)
+
         self.set_title(title)
 
-    def remove_widget(self, widget):
-        if isinstance(widget, QWidget):
-            self.v_layout.removeWidget(widget)
-        else:
-            self.v_layout.removeItem(widget)
-        widget.deleteLater()
+    def remove_item(self):
+        widget = self.v_layout.takeAt(self.v_layout.count() - 1)
+        widget.widget().deleteLater()
 
     def set_title(self, title):
         self.label.setText(title)

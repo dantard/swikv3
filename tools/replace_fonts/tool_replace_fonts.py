@@ -1,6 +1,7 @@
 from PyQt5.QtCore import Qt, pyqtSignal, QPointF
 from PyQt5.QtGui import QColor
-from PyQt5.QtWidgets import QGraphicsRectItem, QTreeWidget, QTreeWidgetItem, QComboBox, QHBoxLayout, QVBoxLayout, QPushButton, QWidget
+from PyQt5.QtWidgets import QGraphicsRectItem, QTreeWidget, QTreeWidgetItem, QComboBox, QHBoxLayout, QVBoxLayout, \
+    QPushButton, QWidget
 
 from progressing import Progressing
 from swiktext import SwikText
@@ -137,5 +138,5 @@ class ToolReplaceFonts(Tool):
         for square in self.squares:
             self.view.scene().removeItem(square)
         self.squares.clear()
-        self.layout.remove_app_widget(self.helper)
+        self.layout.remove_app_widget()
         self.helper.deleteLater()
