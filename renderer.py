@@ -644,7 +644,7 @@ class MuPDFRenderer(QLabel):
 
         tw.write_text(self.document[index])
         # page: pymupdf.Page = self.document[index]
-        page.draw_rect(rect, color=(1, 0, 0), width=1)
+        # page.draw_rect(rect, color=(1, 0, 0), width=1)
 
     def replace_word(self, index, text: SwikTextReplace):
         self.document[index].clean_contents()

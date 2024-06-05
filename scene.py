@@ -22,6 +22,9 @@ class Scene(QGraphicsScene):
         self.group = None
         self.poses = {}
 
+    def get_bunches_count(self):
+        return len(self.bunches)
+
     def notify_change(self, item, kind, old, new):
         action = Action(item, kind, old, new)
         self.tracker().item_changed(action)

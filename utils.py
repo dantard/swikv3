@@ -135,3 +135,10 @@ def int_to_roman(number):
             div -= 1
         i -= 1
     return res
+
+
+colors = [Qt.black, Qt.red, Qt.green, Qt.blue, Qt.magenta, Qt.cyan, Qt.darkRed, Qt.darkGreen, Qt.darkBlue, ]
+
+
+def get_color(index):
+    return colors[index % len(colors)]

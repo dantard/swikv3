@@ -235,6 +235,19 @@ class SwikTextNumerate(SwikText):
         super(SwikTextNumerate, self).__init__(text, parent, font_manager, path, size)
         self.emit_block = False
         self.anchor = SwikTextNumerate.ANCHOR_TOP_LEFT
+        self.document().contentsChange.connect(self.text_changed)
+        self.box = QGraphicsRectItem(self)
+        self.text_changed(0, 0, 0)
+        self.setTextInteractionFlags(Qt.NoTextInteraction)
+
+    def mouseDoubleClickEvent(self, event: 'QGraphicsSceneMouseEvent') -> None:
+        pass
+
+    def set_box_color(self, color):
+        self.box.setPen(QColor(color))
+
+    def text_changed(self, position, removed, added):
+        self.box.setRect(self.boundingRect())
 
     def block_emit(self, value):
         self.emit_block = value
@@ -242,6 +255,7 @@ class SwikTextNumerate(SwikText):
     def itemChange(self, change: 'QGraphicsItem.GraphicsItemChange', value: typing.Any) -> typing.Any:
         res = super().itemChange(change, value)
         if change == QGraphicsItem.ItemPositionChange:
+
             if not self.emit_block:
                 self.signals.moved.emit(self, self.pos())
         return res
