@@ -12,7 +12,7 @@ from PyQt5.QtCore import QPointF, Qt, QTimer, pyqtSignal, QRectF, QEvent
 from PyQt5.QtGui import QPainter, QIcon, QKeySequence, QKeyEvent
 from PyQt5.QtWidgets import QApplication, QMainWindow, QShortcut, QFileDialog, QDialog, QMessageBox, QHBoxLayout, \
     QWidget, QTabWidget, QVBoxLayout, QToolBar, \
-    QPushButton, QSizePolicy, QTabBar, QProgressDialog, QSplitter, QGraphicsScene, QLabel, QProgressBar, QGroupBox
+    QPushButton, QSizePolicy, QTabBar, QProgressDialog, QSplitter, QGraphicsScene, QLabel, QProgressBar, QGroupBox, QTreeWidget, QTreeWidgetItem
 
 import utils
 from GraphView import GraphView
@@ -210,11 +210,32 @@ class SwikWidget(QWidget):
         for w in [self.vlayout, self.hlayout, self.ilayout, self.app_layout, self.splitter, helper, self.lateral_bar]:
             w.setContentsMargins(0, 0, 0, 0)
 
-        self.splitter.addWidget(self.miniature_view)
+        self.outline = QTreeWidget()
+        self.outline.setHeaderHidden(True)
+        self.outline.itemSelectionChanged.connect(self.toc_selected)
+
+        tab = QTabWidget()
+        tab.addTab(self.miniature_view, "Miniature")
+        tab.addTab(self.outline, "ToC")
+        tab.setMaximumWidth(self.miniature_view.maximumWidth())
+        self.splitter.addWidget(tab)
         self.splitter.addWidget(helper)
         self.set_interactable(False)
         self.preferences_changed()
         QApplication.processEvents()
+
+    def toc_selected(self):
+        item = self.outline.selectedItems()[0]
+        # self.view.set_page(item.item.page - 1)
+        # self.view.page_scrolled()
+        page = self.view.pages[item.item.page - 1]
+        print(item.item.to, "1 page", page.index)
+        point = page.mapToScene(item.item.to)
+        print(point, "2page", page.index)
+        # point = self.view.mapFromScene(point)
+        # print(point, "3page", page.index)
+        self.view.centerOn(point)
+        print("----", self.renderer.get_page_size(0))
 
     def app_closed(self):
         self.view.set_one_shot_immediate_resize()
@@ -375,10 +396,29 @@ class SwikWidget(QWidget):
 
         self.load_progress_action.setVisible(False)
         self.update_tab_text()
+        self.update_toc()
 
         pdf_widgets = [item for item in self.view.scene().items() if isinstance(item, PdfWidget)]
         if len(pdf_widgets) > 0:
             self.tool_form_btn.click()
+
+    class TocWidgetItem(QTreeWidgetItem):
+        def __init__(self, item):
+            super().__init__([item.title, str(item.page)])
+            self.item = item
+
+    def update_toc(self):
+        self.outline.clear()
+        items = self.renderer.get_toc()
+        parents = {}
+        for item in items:
+            twi = self.TocWidgetItem(item)
+            if item.level == 1:
+                self.outline.addTopLevelItem(twi)
+                parents[2] = twi
+            else:
+                parents[item.level].addChild(twi)
+                parents[item.level + 1] = twi
 
     def update_tab_text(self):
         # Update the tab name

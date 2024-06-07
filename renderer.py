@@ -9,7 +9,7 @@ from os.path import exists
 import pymupdf
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt, QRunnable, QThreadPool, pyqtSignal, QMutex, QRectF, QRect, QByteArray, QBuffer, QIODevice, \
-    QUrl, QTimer
+    QUrl, QTimer, QPointF
 from PyQt5.QtGui import QPixmap, QImage, QBrush, QPen, QColor
 from PyQt5.QtWidgets import QLabel
 import fitz
@@ -862,3 +862,21 @@ class MuPDFRenderer(QLabel):
             pdf_link = pdf_link.next
 
         return links
+
+    def get_toc(self):
+        class TOC:
+            def __init__(self, level, title, page, to, kind):
+                self.level = level
+                self.title = title
+                self.page = page
+                self.to = to
+                self.kind = kind
+
+        doc_toc = self.document.get_toc(False)
+        toc_items = []
+        for item in doc_toc:
+            point = item[3]['to']
+            point = QPointF(point.x, 720 - point.y)
+            toc_item = TOC(item[0], item[1], item[2], point, item[3]['kind'])
+            toc_items.append(toc_item)
+        return toc_items
