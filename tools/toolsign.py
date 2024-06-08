@@ -40,6 +40,26 @@ class SignerRectItem(ResizableRectItem):
         self.signals.action.emit(SignerRectItem.ACTION_DELETED, self)
 
 
+class SignatureConf:
+    def __init__(self, header, section_name, file):
+        header.getSubSection(section_name)
+        self.signature = signature = header.getSubSection(section_name)
+        self.nickname = signature.getString("nickname", pretty="Nickname", default=section_name)
+        self.password = signature.getPassword("password", pretty='Password')
+        self.signed_suffix = signature.getString("signed_suffix", pretty="Signed File Suffix", default="-signed")
+        appearance = signature.getSubSection("Appearance")
+        self.border = appearance.getInt("signature_border", pretty="Border width", default=0)
+        text = appearance.getSubSection("Text")
+        self.text_font_size = text.getInt("text_font_size", pretty="Font Size", default=11, max=85)
+        self.text_signature = text.getEditBox("text_signature", pretty="Text", default='Signed by&&%(signer)s&&Time: %(ts)s'.replace('\n', '\\n'))
+        self.text_stretch = text.getCheckbox("text_stretch", pretty="Stretch")
+        self.text_timestamp = text.getString("text_timestamp", default="%d/%m/%Y")
+        image = appearance.getSubSection("Image")
+        self.image_file = image.getFile("image_file", pretty="File", extension="png")
+        self.image_stretch = image.getCheckbox("image_stretch", pretty="Stretch")
+        self.p12_file = file
+
+
 class ToolSign(Tool):
 
     def __init__(self, widget: Shell, **kwargs):
@@ -51,62 +71,36 @@ class ToolSign(Tool):
         self.tree = None
         self.signature_cb = None
         self.selected = 0
-        self.cfg_password, self.cfg_signed_suffix, self.cfg_signature_border, self.cfg_text_font_size, self.cfg_text = [], [], [], [], []
-        self.cfg_p12, self.cfg_text_stretch, self.cfg_text_timestamp, self.cfg_image_file, self.cfg_image_stretch, self.signatures = [], [], [], [], [], []
+        self.signatures: list[SignatureConf] = []
+        self.cfg_p12 = []
         self.configure()
 
     def configure(self):
-        self.cfg_password.clear()
-        self.cfg_signed_suffix.clear()
-        self.cfg_signature_border.clear()
-        self.cfg_text_font_size.clear()
-        self.cfg_text.clear()
-        self.cfg_p12.clear()
-        self.cfg_text_stretch.clear()
-        self.cfg_text_timestamp.clear()
-        self.cfg_image_file.clear()
-        self.cfg_image_stretch.clear()
+        self.signatures.clear()
 
         header = self.config.root().getSubSection("digital_signature", pretty="Digital Signatures")
 
         for file_path in glob.glob(os.path.join(self.config.base_dir + "signatures", '*.p12')):
             if os.path.isfile(file_path):
                 section_name = os.path.basename(file_path).replace(".p12", "")
-                signature = header.getSubSection(section_name)
-                self.signatures.append(signature)
-                # self.cfg_p12 = self.signature.getFile("p12", pretty="Signature File", extension=["p12", "pfx"], extension_name="PKCS#12")
-                self.cfg_p12.append(file_path)
-                signature.getString("nickname", pretty="Nickname", default=section_name)
-                self.cfg_password.append(signature.getPassword("password", pretty='Password'))
-                self.cfg_signed_suffix.append(signature.getString("signed_suffix", pretty="Signed File Suffix", default="-signed"))
-                appearance = signature.getSubSection("Appearance")
-                self.cfg_signature_border.append(appearance.getInt("signature_border", pretty="Border width", default=0))
-                text = appearance.getSubSection("Text")
-                self.cfg_text_font_size.append(text.getInt("text_font_size", pretty="Font Size", default=11, max=85))
-                self.cfg_text.append(text.getEditBox("text_signature", pretty="Text", default='Signed by&&%(signer)s&&Time: %(ts)s'.replace('\n', '\\n')))
-                self.cfg_text_stretch.append(text.getCheckbox("text_stretch", pretty="Stretch"))
-                self.cfg_text_timestamp.append(text.getString("text_timestamp", default="%d/%m/%Y"))
-                image = appearance.getSubSection("Image")
-                self.cfg_image_file.append(image.getFile("image_file", pretty="File", extension="png"))
-                self.cfg_image_stretch.append(image.getCheckbox("image_stretch", pretty="Stretch"))
+                sc = SignatureConf(header, section_name, file_path)
+                self.signatures.append(sc)
+
         self.config.read()
 
     def update_cb(self):
         self.signature_cb.clear()
-        self.signature_cb.addItems([self.signatures[i].get("nickname") for i in range(len(self.signatures))])
+        self.signature_cb.addItems([x.nickname.get_value() for x in self.signatures])
 
     def init(self):
         v_layout = QVBoxLayout()
         self.helper = QWidget()
 
-        # groupbox = QGroupBox("Sign with")
         self.signature_cb = QComboBox()
         self.signature_cb.currentIndexChanged.connect(self.on_signature_changed)
         self.update_cb()
         h_layout = QHBoxLayout()
-        # groupbox.setLayout()
-        # groupbox.layout().setContentsMargins(2, 2, 2, 2)
-        # groupbox.layout().addWidget(self.signature_cb)
+
         add_btn = QPushButton("+")
         add_btn.clicked.connect(self.import_signature)
         add_btn.setFixedSize(25, 25)
@@ -193,7 +187,7 @@ class ToolSign(Tool):
                 self.check_interaction()
 
     def show_config(self):
-        self.config.exec(self.signatures[self.selected])
+        self.config.exec(self.signatures[self.selected].signature)
         index = self.signature_cb.currentIndex()
         self.update_cb()
         self.signature_cb.setCurrentIndex(index)
@@ -233,7 +227,7 @@ class ToolSign(Tool):
         filename = self.renderer.get_filename()
 
         password_to_save = None
-        if (password := self.cfg_password[self.selected].get_value()) is None:
+        if (password := self.signatures[self.selected].password.get_value()) is None:
             dialog = PasswordDialog(parent=self.view)
             if dialog.exec() == QDialog.Accepted:
                 password = dialog.getText()
@@ -244,36 +238,34 @@ class ToolSign(Tool):
         else:
             password = base64.decodebytes(password.encode()).decode()
 
-        suffix = self.signatures[self.selected].get('signed_suffix')
+        suffix = self.signatures[self.selected].signed_suffix.get_value()
         output_filename = filename.replace(".pdf", suffix + ".pdf")
 
         print("hhhhhhhhhhhhhhhhhhhhh", filename)
 
         res = self.apply_signature(filename, index, rect,
                                    password, output_filename,
-                                   font_size=self.cfg_text_font_size[self.selected].get_value(),
-                                   border=self.cfg_signature_border[self.selected].get_value(),
-                                   text=self.cfg_text[self.selected].get_value().replace('&&', '\n'),
-                                   image=self.cfg_image_file[self.selected].get_value(),
-                                   timestamp=self.cfg_text_timestamp[self.selected].get_value(),
-                                   text_stretch=1 if self.cfg_text_stretch[self.selected].get_value() else 0,
-                                   image_stretch=0 if self.cfg_image_stretch[self.selected].get_value() else 1)
+                                   font_size=self.signatures[self.selected].text_font_size.get_value(),
+                                   border=self.signatures[self.selected].border.get_value(),
+                                   text=self.signatures[self.selected].text_signature.get_value().replace('&&', '\n'),
+                                   image=self.signatures[self.selected].image_file.get_value(),
+                                   timestamp=self.signatures[self.selected].text_timestamp.get_value(),
+                                   text_stretch=1 if self.signatures[self.selected].text_stretch.get_value() else 0,
+                                   image_stretch=0 if self.signatures[self.selected].image_stretch.get_value() else 1)
 
         if res == P12Signer.OK:
             QMessageBox.information(self.view, "Signature", "Document signed Successfully", QMessageBox.Ok)
             # Save Password only if the signature was successful
             if password_to_save is not None:
-                self.cfg_password[self.selected].set_value(password_to_save)
-            # self.renderer.open_pdf(output_filename)
+                self.signatures[self.selected].signature.set_value(password_to_save)
+                # self.renderer.open_pdf(output_filename)
             return output_filename
         else:
             QMessageBox.warning(self.view, "Signature", "Error signing the document", QMessageBox.Ok)
-            return None
+        return None
 
     def apply_signature(self, filename, index, rect, password, output_filename, **kwargs):
-
-        p12_file = self.cfg_p12[self.selected]
-        print("aaaaaaaaaaaaaaaaa", p12_file)
+        p12_file = self.signatures[self.selected].p12_file
 
         signer = P12Signer(filename,
                            output_filename,
@@ -292,12 +284,12 @@ class ToolSign(Tool):
             self.emit_finished(Manager.OPEN_REQUESTED, filename)
 
     def draw_signature(self):
-        text = self.cfg_text[self.selected].get_value().replace('&&', '\n')
-        image_filename = self.cfg_image_file[self.selected].get_value()
-        max_font_size = self.cfg_text_font_size[self.selected].get_value()
+        text = self.signatures[self.selected].text_signature.get_value().replace('&&', '\n')
+        image_filename = self.signatures[self.selected].image_file.get_value()
+        max_font_size = self.signatures[self.selected].text_font_size.get_value()
 
-        text_mode = SignerRectItem.TEXT_MODE_STRETCH if self.cfg_text_stretch[self.selected].get_value() else SignerRectItem.TEXT_MODE_KEEP
-        image_mode = SignerRectItem.IMAGE_MODE_STRETCH if self.cfg_image_stretch[self.selected].get_value() else SignerRectItem.IMAGE_MODE_MAINTAIN_RATIO
+        text_mode = SignerRectItem.TEXT_MODE_STRETCH if self.signatures[self.selected].text_stretch.get_value() else SignerRectItem.TEXT_MODE_KEEP
+        image_mode = SignerRectItem.IMAGE_MODE_STRETCH if self.signatures[self.selected].image_stretch.get_value() else SignerRectItem.IMAGE_MODE_MAINTAIN_RATIO
         self.rubberband = SignerRectItem(None, text=text, image_filename=image_filename, max_font_size=max_font_size,
                                          text_mode=text_mode,
                                          image_mode=image_mode, pen=Qt.transparent, brush=QColor(255, 0, 0, 80))
@@ -312,13 +304,13 @@ class ToolSign(Tool):
                       rubberband.get_rect_on_parent())
         elif action == SignerRectItem.ACTION_EDIT:
             if self.config.edit():
-                text = self.cfg_text[self.selected].get_value().replace('&&', '\n')
-                image = QImage(self.cfg_image_file[self.selected].get_value())
-                max_font_size = self.cfg_text_font_size[self.selected].get_value()
+                text = self.signatures[self.selected].text_signature.get_value().replace('&&', '\n')
+                image = QImage(self.signatures[self.selected].image_file)
+                max_font_size = self.signatures[self.selected].text_font_size
 
-                text_mode = SignerRectItem.TEXT_MODE_STRETCH if self.cfg_text_stretch[self.selected].get_value() else SignerRectItem.TEXT_MODE_KEEP
-                image_mode = SignerRectItem.IMAGE_MODE_STRETCH if self.cfg_image_stretch[
-                    self.selected].get_value() else SignerRectItem.IMAGE_MODE_MAINTAIN_RATIO
+                text_mode = SignerRectItem.TEXT_MODE_STRETCH if self.signatures[self.selected].text_stretch.get_value() else SignerRectItem.TEXT_MODE_KEEP
+                image_mode = SignerRectItem.IMAGE_MODE_STRETCH if self.signatures[
+                    self.selected].image_stretch.get_value() else SignerRectItem.IMAGE_MODE_MAINTAIN_RATIO
 
                 rubberband.apply_kwargs(text=text, image=image, max_font_size=max_font_size, text_mode=text_mode,
                                         image_mode=image_mode)

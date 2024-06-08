@@ -874,9 +874,20 @@ class MuPDFRenderer(QLabel):
 
         doc_toc = self.document.get_toc(False)
         toc_items = []
+
+        names = self.document.resolve_names()
+
         for item in doc_toc:
-            point = item[3]['to']
-            point = QPointF(point.x, 720 - point.y)
-            toc_item = TOC(item[0], item[1], item[2], point, item[3]['kind'])
+            page_no = item[2] - 1
+
+            point = item[3].get("to", Point(0, 0))
+
+            if item[3].get('kind', -1) == 4 and item[3].get("nameddest", None) is not None:
+                to = names.get(item[3]["nameddest"], None)
+                if to is not None:
+                    x, y = to.get("to", (0, 0))
+                    point = Point(x, y) * self.document[page_no].transformation_matrix
+
+            toc_item = TOC(item[0], item[1], page_no, QPointF(point.x, point.y), item[3]['kind'])
             toc_items.append(toc_item)
         return toc_items

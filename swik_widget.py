@@ -4,6 +4,7 @@ import sys
 import time
 
 from PyQt5.QtNetwork import QUdpSocket, QHostAddress
+from pymupdf import Document
 
 import resources
 import pyclip
@@ -238,17 +239,15 @@ class SwikWidget(Shell):
         return [self.miniature_view]
 
     def toc_selected(self):
-        item = self.outline.selectedItems()[0]
-        # self.view.set_page(item.item.page - 1)
-        # self.view.page_scrolled()
-        page = self.view.pages[item.item.page - 1]
-        print(item.item.to, "1 page", page.index)
-        point = page.mapToScene(item.item.to)
-        print(point, "2page", page.index)
-        # point = self.view.mapFromScene(point)
-        # print(point, "3page", page.index)
-        self.view.centerOn(point)
-        print("----", self.renderer.get_page_size(0))
+        s: Document = self.renderer.document
+        print(s[1].rotation, s[1].rotation_matrix, "lalala")
+        selected = self.outline.selectedItems()
+        if len(selected) == 0:
+            return
+        selected = selected[0]
+        page = self.view.pages[selected.item.page]
+        p = page.mapToScene(selected.item.to)
+        self.view.centerOn(p.x(), p.y() + self.view.viewport().height() / 2)
 
     def app_closed(self):
         self.view.set_one_shot_immediate_resize()
