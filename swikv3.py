@@ -31,10 +31,6 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         self.config = SwikConfig()
-
-        ToolSign.configure(self.config)
-        ToolInsertSignatureImage.configure(self.config)
-
         self.config.read()
         self.current_event_filter = None
         menu_bar = self.menuBar()
@@ -260,8 +256,6 @@ class MainWindow(QMainWindow):
     def preferences(self):
         self.config.exec()
         self.config.flush()
-        for widget in self.get_widgets():
-            widget.preferences_changed()
 
     def open_with_other(self, command):
         self.current().open_with_other(command)

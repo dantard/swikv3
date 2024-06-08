@@ -14,8 +14,8 @@ from tools.tool import Tool
 
 
 class ToolSquareAnnotation(Tool):
-    def __init__(self, view, renderer, config):
-        super().__init__(view, renderer, config)
+    def __init__(self, widget):
+        super().__init__(widget)
         self.rubberband = None
 
     def configure(self):

@@ -52,8 +52,8 @@ class ToolInsertImage(Tool):
             ToolInsertImage.signature = section.addFile("image_signature", pretty="Signature File", extension=["png", "jpg"], extension_name="Image")
             ToolInsertImage.configured = True
 
-    def __init__(self, view, renderer, config):
-        super().__init__(view, renderer, config)
+    def __init__(self, widget):
+        super().__init__(widget)
         self.rubberband = None
         self.image = None
         self.image_filename = None

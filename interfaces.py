@@ -1,4 +1,5 @@
 from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt5.QtWidgets import QWidget
 
 from action import Action
 from changestracker import ChangesTracker
@@ -49,4 +50,33 @@ class Serializable:
         pass
 
     def deserialize(self, info):
+        pass
+
+
+class Shell(QWidget):
+    def get_renderer(self):
+        pass
+
+    def get_view(self):
+        pass
+
+    def get_scene(self):
+        pass
+
+    def get_manager(self):
+        pass
+
+    def get_config(self):
+        pass
+
+    def get_font_manager(self):
+        pass
+
+    def get_other_views(self):
+        pass
+
+    def set_app_widget(self, widget, width=500, title=""):
+        pass
+
+    def remove_app_widget():
         pass

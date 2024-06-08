@@ -1,22 +1,21 @@
 from PyQt5.QtCore import QObject, pyqtSignal
 
+from interfaces import Shell
 from manager import Manager
 
 
 class BasicTool(QObject):
     finished = pyqtSignal(int, object)
 
-    def __init__(self, view, renderer, config, **kwargs):
+    def __init__(self, widget: Shell, **kwargs):
         super(BasicTool, self).__init__()
-        self.view = view
-        self.renderer = renderer
-        self.config = config
+        self.view = widget.get_view()
+        self.renderer = widget.get_renderer()
+        self.config = widget.get_config()
+        self.widget = widget
 
     @staticmethod
     def configure(self):
-        pass
-
-    def preference_changed(self):
         pass
 
     def init(self):

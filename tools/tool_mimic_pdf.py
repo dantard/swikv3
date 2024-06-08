@@ -10,6 +10,7 @@ from pymupdf import Rect, Point
 import font_manager
 from annotations.redactannotation import RedactAnnotation
 from dialogs import FontAndColorDialog, ComposableDialog
+from interfaces import Shell
 from page import Page
 from progressing import Progressing
 from span import Span
@@ -23,11 +24,10 @@ from utils import fitz_rect_to_qrectf
 class ToolMimicPDF(Tool):
     file_generate = pyqtSignal(str, int, float)
 
-    def __init__(self, view, icon, parent, **kwargs):
-        super(ToolMimicPDF, self).__init__(view, icon, parent, **kwargs)
+    def __init__(self, widget: Shell):
+        super(ToolMimicPDF, self).__init__(widget)
         self.placeholder = None
-        self.font_manager = kwargs.get('font_manager')
-        self.widget = kwargs.get('widget')
+        self.font_manager = widget.get_font_manager()
         self.squares = []
         self.app = None
         self.texts = []

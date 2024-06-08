@@ -32,8 +32,8 @@ class ToolRearrange(Tool, Undoable):
     STATE_PAGE_SELECTION = 1
     STATE_PAGE_MOVING = 2
 
-    def __init__(self, view, other_views, renderer, config):
-        super().__init__(view, renderer, config)
+    def __init__(self, widget):
+        super().__init__(widget)
         self.selected = []
         self.pickup_point = None
         self.leader_page = None
@@ -42,7 +42,7 @@ class ToolRearrange(Tool, Undoable):
         self.state = None
         self.orig_ratio = None
         self.rb = None
-        self.views = [view] + other_views
+        self.views = [self.view] + widget.get_other_views()
 
     def init(self):
         self.collider = QGraphicsRectItem()

@@ -22,6 +22,7 @@ from changestracker import ChangesTracker
 from dialogs import PasswordDialog
 from font_manager import FontManager
 from groupbox import GroupBox
+from interfaces import Shell
 from keyboard_manager import KeyboardManager
 from long_press_button import LongPressButton
 from manager import Manager
@@ -66,7 +67,7 @@ class Splitter(QSplitter):
         # print("splitter released")
 
 
-class SwikWidget(QWidget):
+class SwikWidget(Shell):
     interaction_changed = pyqtSignal(QWidget)
     open_requested = pyqtSignal(str, int, float)
     file_changed = pyqtSignal()
@@ -125,26 +126,17 @@ class SwikWidget(QWidget):
         self.app_handle = sp.handle(1)
         self.app_handle.setDisabled(True)
 
-        tool_text = self.manager.register_tool(
-            ToolTextSelection(self.view, self.renderer, self.font_manager, self.config), True)
-        self.tool_sign = self.manager.register_tool(ToolSign(self.view, self.renderer, self.config, widget=self))
-        tool_rear = self.manager.register_tool(
-            ToolRearrange(self.view, [self.miniature_view], self.renderer, self.config))
-        tool_reda = self.manager.register_tool(ToolRedactAnnotation(self.view, self.renderer, self.config))
-        tool_sqan = self.manager.register_tool(ToolSquareAnnotation(self.view, self.renderer, self.config))
-        tool_crop = self.manager.register_tool(ToolCrop(self.view, self.renderer, self.config))
-        tool_imag = self.manager.register_tool(ToolInsertImage(self.view, self.renderer, self.config))
-        tool_sigi = self.manager.register_tool(ToolInsertSignatureImage(self.view, self.renderer, self.config))
-        tool_form = self.manager.register_tool(ToolForm(self.view, self.renderer, self.config, widget=self))
-        # tool_font = self.manager.register_tool(
-        #    ToolReplaceFonts(self.view, self.renderer, self.config, font_manager=self.font_manager, widget=self))
-        # tool_font.file_generate.connect(self.open_requested.emit)
-
-        tool_mimi = self.manager.register_tool(
-            ToolMimicPDF(self.view, self.renderer, self.config, font_manager=self.font_manager, widget=self))
-
-        tool_nume = self.manager.register_tool(
-            ToolNumerate(self.view, self.renderer, self.config, font_manager=self.font_manager, widget=self))
+        tool_text = self.manager.register_tool(ToolTextSelection(self), True)
+        self.tool_sign = self.manager.register_tool(ToolSign(self))
+        tool_rear = self.manager.register_tool(ToolRearrange(self))
+        tool_reda = self.manager.register_tool(ToolRedactAnnotation(self))
+        tool_sqan = self.manager.register_tool(ToolSquareAnnotation(self))
+        tool_crop = self.manager.register_tool(ToolCrop(self))
+        tool_imag = self.manager.register_tool(ToolInsertImage(self))
+        tool_sigi = self.manager.register_tool(ToolInsertSignatureImage(self))
+        tool_form = self.manager.register_tool(ToolForm(self))
+        tool_mimi = self.manager.register_tool(ToolMimicPDF(self))
+        tool_nume = self.manager.register_tool(ToolNumerate(self))
 
         self.key_manager = KeyboardManager(self)
 
@@ -224,6 +216,27 @@ class SwikWidget(QWidget):
         self.preferences_changed()
         QApplication.processEvents()
 
+    def get_renderer(self):
+        return self.renderer
+
+    def get_view(self):
+        return self.view
+
+    def get_scene(self):
+        return self.scene
+
+    def get_manager(self):
+        return self.manager
+
+    def get_config(self):
+        return self.config
+
+    def get_font_manager(self):
+        return self.font_manager
+
+    def get_other_views(self):
+        return [self.miniature_view]
+
     def toc_selected(self):
         item = self.outline.selectedItems()[0]
         # self.view.set_page(item.item.page - 1)
@@ -289,8 +302,6 @@ class SwikWidget(QWidget):
         return self.interaction_enabled
 
     def preferences_changed(self):
-        self.sign_btn.setEnabled(self.manager.get_tool(ToolSign).usable())
-        self.image_sign_btn.setEnabled(self.manager.get_tool(ToolInsertSignatureImage).usable())
         self.update_lateral_bar_position()
 
     def iterate_bar_position(self):

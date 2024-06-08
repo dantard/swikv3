@@ -11,8 +11,8 @@ from word import Word
 
 class ToolCrop(Tool, Undoable):
 
-    def __init__(self, view, renderer, config):
-        super(ToolCrop, self).__init__(view, renderer, config)
+    def __init__(self, widget):
+        super(ToolCrop, self).__init__(widget)
         self.rubberband = None
 
     def mouse_pressed(self, event):

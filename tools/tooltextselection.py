@@ -9,6 +9,7 @@ from annotations.highlight_annotation import HighlightAnnotation
 from annotations.redactannotation import RedactAnnotation
 from dialogs import FontAndColorDialog
 from font_manager import Font
+from interfaces import Shell
 from selector import SelectorRectItem
 from simplepage import SimplePage
 from swiktext import SwikText, SwikTextReplace
@@ -20,20 +21,16 @@ class ToolTextSelection(Tool):
     SELECTION_MODE_NATURAL = 0
     SELECTION_MODE_RECT = 1
 
-    def __init__(self, view, renderer, font_manager, config):
-        super(ToolTextSelection, self).__init__(view, renderer, config)
-        print("Manager created")
+    def __init__(self, widget: Shell, **kwargs):
+        super(ToolTextSelection, self).__init__(widget, **kwargs)
         self.rubberband = None
-        self.font_manager = font_manager
+        self.font_manager = widget.get_font_manager()
         self.selection_mode = ToolTextSelection.SELECTION_MODE_RECT
         self.selected = []
         self.multiple_selection = []
 
     def iterate_selection_mode(self):
         self.selection_mode = (self.selection_mode + 1) % 2
-
-    def set_view(self, view):
-        self.view = view
 
     def clear_selection(self):
         zombies = []

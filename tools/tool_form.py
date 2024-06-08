@@ -7,10 +7,9 @@ from widgets.pdf_widget import PdfWidget
 
 class ToolForm(Tool):
 
-    def __init__(self, view, renderer, config, **kwargs):
-        super().__init__(view, renderer, config)
+    def __init__(self, widget):
+        super().__init__(widget)
         self.rubberband = None
-        self.widget = kwargs.get('widget', None)
         self.helper = None
         self.preview_btn = None
         self.clear_btn = None

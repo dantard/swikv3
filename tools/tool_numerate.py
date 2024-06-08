@@ -6,6 +6,7 @@ import utils
 from bunch import Bunch, AnchoredBunch, NumerateBunch
 from dialogs import FontAndColorDialog
 from font_manager import Font
+from interfaces import Shell
 from swiktext import SwikTextNumerate
 from tools.tool import BasicTool, Tool
 
@@ -79,11 +80,10 @@ class EnumerateDialog(QDialog):
 
 class ToolNumerate(BasicTool):
 
-    def __init__(self, name, icon, parent, **kwargs):
-        super(ToolNumerate, self).__init__(name, icon, parent)
-        self.font_manager = kwargs.get('font_manager')
+    def __init__(self, widget: Shell):
+        super(ToolNumerate, self).__init__(widget)
+        self.font_manager = widget.get_font_manager()
         self.numbers = []
-        self.widget = kwargs.get('widget')
 
     def init(self):
         self.view.scene().selectionChanged.connect(self.selection_changed)
