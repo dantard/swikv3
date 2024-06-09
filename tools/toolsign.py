@@ -42,7 +42,6 @@ class SignerRectItem(ResizableRectItem):
 
 class SignatureConf:
     def __init__(self, header, section_name, file):
-        header.getSubSection(section_name)
         self.signature = signature = header.getSubSection(section_name)
         self.nickname = signature.getString("nickname", pretty="Nickname", default=section_name)
         self.password = signature.getPassword("password", pretty='Password')
