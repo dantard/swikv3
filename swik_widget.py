@@ -350,8 +350,8 @@ class SwikWidget(Shell):
             return True
 
     def iterate_mode(self):
-        mode = (self.view.get_mode() + 1) % len(LayoutManager.modes)
-        self.view.set_mode(mode)
+        mode = (self.view.get_mode() + 1) % (len(LayoutManager.modes)-1)
+        self.view.set_mode(mode, True)
         self.statusBar().showMessage("Mode " + LayoutManager.modes[mode], 2000)
 
     def flatten(self, open=True):

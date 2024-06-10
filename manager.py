@@ -93,12 +93,9 @@ class Manager(QObject):
             self.current.context_menu(event)
 
     def key_pressed(self, event):
-        print("pressed", event.key())
         return False
 
     def key_released(self, event):
-        print("released", event.key(), Qt.Key_Escape, Qt.Key_Escape == event.key())
-
         if event.key() == Qt.Key_Escape:
             self.tool_done.emit(Manager.FINISHED, None)
             return True

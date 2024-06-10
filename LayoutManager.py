@@ -52,6 +52,7 @@ class LayoutManager:
         for i in range(self.renderer.get_num_of_pages()):
             if (p := self.view.pages.get(i)) is not None:
                 self.update_layout(p)
+        self.view.update()
         QApplication.processEvents()
 
     def init(self):
@@ -63,6 +64,7 @@ class LayoutManager:
         self.max_width, self.max_height = self.renderer.get_max_pages_size()
         rect = self.compute_scene_rect()
         self.view.scene().setSceneRect(rect)
+        print("diocane scenerect", rect)
         self.view.setAlignment(Qt.AlignBottom | Qt.AlignRight)
         self.view.setAlignment(self.align)
 
@@ -94,12 +96,15 @@ class LayoutManager:
         self.scene_height = max(self.scene_height, y_pos + page.get_scaled_height() + self.page_sep)
         # self.view.scene().setSceneRect(0, 0, page.get_scaled_width(), self.scene_height)
         page.setPos(0, y_pos)
+        page.setVisible(True)
+
 
     def single_column(self, page):
         y_pos = 20 if page.index == 0 else self.view.pages[page.index - 1].pos().y() + self.view.pages[page.index - 1].get_scaled_height() + self.page_sep
         self.scene_height = max(self.scene_height, y_pos + page.get_scaled_height() + self.page_sep)
         # self.view.scene().setSceneRect(0, 0, self.max_width * page.get_scaling_ratio(), self.scene_height)
-        page.setPos(self.max_width * page.get_scaling_ratio() / 2 - page.get_scaled_width() / 2, y_pos)
+        page.setPos(0, y_pos)
+        page.setVisible(True)
 
     def vertical_multipage(self, page):
         page.setVisible(True)
