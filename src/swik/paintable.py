@@ -20,8 +20,6 @@ class PaintableRectItem(SwikRect):
         self.font = kwargs.get("font", QFont("Arial", 12))
         self.dying = False
 
-
-
     def die(self):
         self.dying = True
         self.update()

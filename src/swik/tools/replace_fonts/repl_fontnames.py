@@ -63,8 +63,8 @@ def norm_name(name):
     """Replace hex parts of the fontname."""
     while "#" in name:  # any hexadecimals in the name?
         p = name.find("#")
-        c = int(name[p + 1 : p + 3], 16)
-        name = name.replace(name[p : p + 3], chr(c))
+        c = int(name[p + 1: p + 3], 16)
+        name = name.replace(name[p: p + 3], chr(c))
     if name.find("+") == 6:  # only if '+' at position 5
         return True, name[7:]
     return False, name
@@ -126,8 +126,8 @@ def make_msg(font):
     msg = ", ".join(msg)
     return msg
 
-def repl_fontnames(infilename):
 
+def repl_fontnames(infilename):
     font_list = set()
     doc = fitz.open(infilename)
     for i in range(len(doc)):

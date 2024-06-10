@@ -2,7 +2,7 @@ from PyQt5.QtCore import pyqtSignal, QRectF, Qt, QTimer
 from PyQt5.QtGui import QColor, QCursor, QHoverEvent, QPainter
 from PyQt5.QtWidgets import QGraphicsEllipseItem, QGraphicsView, QPushButton
 
-import utils
+import swik.utils as utils
 from swik.GraphView import GraphView
 from swik.LayoutManager import LayoutManager
 from swik.annotations.highlight_annotation import HighlightAnnotation

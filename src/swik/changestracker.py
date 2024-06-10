@@ -60,11 +60,11 @@ class ChangesTracker(QObject):
 
     def item_added(self, item):
         self.undo_stack.append(Action(item, Action.ACTION_CREATE, item.parentItem()))
-        #print("item added", item)
+        # print("item added", item)
 
     def item_removed(self, item):
         self.undo_stack.append(Action(item, Action.ACTION_REMOVE, item.parentItem()))
-        #print("item removed", item, item.parentItem())
+        # print("item removed", item, item.parentItem())
 
     def items_removed(self, items):
         action = Action()

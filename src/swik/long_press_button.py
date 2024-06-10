@@ -3,8 +3,8 @@ from PyQt5.QtWidgets import QPushButton
 
 
 class LongPressButton(QPushButton):
-
     long_press = pyqtSignal()
+
     def __init__(self, interval=500, parent=None):
         super().__init__(parent)
         self.setAutoRepeat(True)

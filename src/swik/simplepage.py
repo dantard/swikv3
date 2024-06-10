@@ -115,7 +115,7 @@ class SimplePage(QGraphicsRectItem):
         self.ratio = ratio
         self.setTransform(QTransform(ratio, 0, 0, 0, ratio, 0, 0, 0, 1))
         self.state = SimplePage.STATE_INVALID
-        #self.paint_accessories()
+        # self.paint_accessories()
 
     def fit_width(self):
         width = self.view.width() - 50
@@ -139,7 +139,6 @@ class SimplePage(QGraphicsRectItem):
         if self.isShown():
             image = self.renderer.render_page(self.index, self.requested_image_ratio)
             self.image_ready(image, self.requested_image_ratio)
-
 
     def paint(self, painter, option, widget: typing.Optional[QWidget] = ...) -> None:
         super().paint(painter, option, widget)

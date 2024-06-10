@@ -198,7 +198,7 @@ class FontPicker(QWidget):
                 qfont = font_info.get_qfont(12)
                 if not qfont:
                     continue
-                #print()
+                # print()
                 if qfont:
                     label.setFont(qfont)
             parent.addChild(item)

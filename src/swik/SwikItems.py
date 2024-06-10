@@ -29,7 +29,7 @@ class SwikRectItem(QGraphicsRectItem):
 
     def look_done(self):
         if self.current_look != self.get_look():
-            self.swik_signals.changed.emit(self, ChangesTracker.LOOK_CHANGED, {'look0':self.current_look, 'look1':self.get_look()})
+            self.swik_signals.changed.emit(self, ChangesTracker.LOOK_CHANGED, {'look0': self.current_look, 'look1': self.get_look()})
 
     def hoverEnterEvent(self, event: 'QGraphicsSceneHoverEvent') -> None:
         super().hoverEnterEvent(event)

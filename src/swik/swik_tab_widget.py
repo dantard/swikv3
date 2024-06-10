@@ -118,7 +118,7 @@ class SwikTabWidget(QTabWidget):
         widget.a = QWidget()
         widget.a.setLayout(QHBoxLayout())
         widget.a.layout().setContentsMargins(10, 0, 0, 0)
-        #widget.a.layout().addWidget(other_button)
+        # widget.a.layout().addWidget(other_button)
         widget.a.layout().addWidget(close_button)
         widget.a.layout().setSpacing(0)
 

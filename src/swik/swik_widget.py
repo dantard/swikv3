@@ -1,6 +1,6 @@
 import os
 import time
-import resources
+import swik.resources
 
 from PyQt5 import QtGui
 from PyQt5.QtCore import Qt, pyqtSignal
@@ -340,7 +340,7 @@ class SwikWidget(Shell):
             return True
 
     def iterate_mode(self):
-        mode = (self.view.get_mode() + 1) % (len(LayoutManager.modes)-1)
+        mode = (self.view.get_mode() + 1) % (len(LayoutManager.modes) - 1)
         self.view.set_mode(mode, True)
         self.statusBar().showMessage("Mode " + LayoutManager.modes[mode], 2000)
 

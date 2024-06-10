@@ -1,7 +1,7 @@
 from PyQt5.QtCore import QObject, pyqtSignal, Qt
 from PyQt5.QtWidgets import QGraphicsRectItem
 
-from interfaces import Copyable
+from swik.interfaces import Copyable
 
 
 class Manager(QObject):

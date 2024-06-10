@@ -6,10 +6,10 @@ from PyQt5.QtGui import QWheelEvent, QPainter, QColor
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsRectItem, QApplication, QScrollBar
 
 # import EnhancedPage
-from LayoutManager import LayoutManager
-from SyncDict import SyncDict
+from swik.LayoutManager import LayoutManager
+from swik.SyncDict import SyncDict
 from swik.simplepage import SimplePage
-from word import Word
+from swik.word import Word
 
 
 class SB(QScrollBar):
@@ -79,7 +79,7 @@ class GraphView(QGraphicsView):
         print("Setting mode", mode, force)
         self.mode = mode
         self.layout_manager.set_mode(mode, force)
-        #self.ratio_changed.emit(-1)
+        # self.ratio_changed.emit(-1)
 
     def finish(self):
         self.pages.clear()

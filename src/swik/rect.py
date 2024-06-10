@@ -1,7 +1,7 @@
 from PyQt5.QtCore import QPointF, QRectF
 from PyQt5.QtWidgets import QGraphicsRectItem
 
-from utils import Signals
+from swik.utils import Signals
 
 
 class SwikRect(QGraphicsRectItem):

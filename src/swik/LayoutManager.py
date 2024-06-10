@@ -13,7 +13,7 @@ class LayoutManager:
     MODE_FIT_WIDTH = 4
 
     modes = {MODE_VERTICAL: 'Vertical', MODE_VERTICAL_MULTIPAGE: 'Multi page',
-             MODE_HORIZONTAL: 'Horizontal' , MODE_SINGLE_PAGE: 'Single Page', MODE_FIT_WIDTH: 'Fit Width'}
+             MODE_HORIZONTAL: 'Horizontal', MODE_SINGLE_PAGE: 'Single Page', MODE_FIT_WIDTH: 'Fit Width'}
 
     Vertical = [MODE_VERTICAL, MODE_VERTICAL_MULTIPAGE, MODE_SINGLE_PAGE, MODE_FIT_WIDTH]
 
@@ -66,8 +66,8 @@ class LayoutManager:
         self.view.setAlignment(self.align)
 
     def compute_scene_rect(self):
-        #ri = QGraphicsRectItem()
-        #ri.setPos(0, 0)
+        # ri = QGraphicsRectItem()
+        # ri.setPos(0, 0)
         max_width, max_height = 0, 20
         for index in range(self.renderer.get_num_of_pages()):
             w, h = self.renderer.get_page_size(index)
@@ -76,8 +76,8 @@ class LayoutManager:
             h = h * ratio
             max_width = max(max_width, w)
             max_height = max_height + h + self.page_sep
-        #ri.setRect(0, 0, max_width, max_height)
-        #self.view.scene().addItem(ri)
+        # ri.setRect(0, 0, max_width, max_height)
+        # self.view.scene().addItem(ri)
         return QRectF(0, 0, max_width, max_height)
 
     def single_row(self, page):
@@ -94,7 +94,6 @@ class LayoutManager:
         # self.view.scene().setSceneRect(0, 0, page.get_scaled_width(), self.scene_height)
         page.setPos(0, y_pos)
         page.setVisible(True)
-
 
     def single_column(self, page):
         y_pos = 20 if page.index == 0 else self.view.pages[page.index - 1].pos().y() + self.view.pages[page.index - 1].get_scaled_height() + self.page_sep

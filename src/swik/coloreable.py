@@ -7,7 +7,7 @@ from swik.rect import SwikRect
 class ColoreableRectItem(SwikRect):
     def __init__(self, parent=None, **kwargs):
         super(ColoreableRectItem, self).__init__(parent, **kwargs)
-        #super(Undoable, self).__init__()
+        # super(Undoable, self).__init__()
 
     def apply_kwargs(self, **kwargs):
         super().apply_kwargs(**kwargs)

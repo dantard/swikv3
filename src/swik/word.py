@@ -1,7 +1,7 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QColor, QBrush
 
-from rect import SwikRect
+from swik.rect import SwikRect
 
 
 class MetaWord:

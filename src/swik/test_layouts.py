@@ -36,10 +36,10 @@ class MainWindow(QMainWindow):
 
     def clicked(self):
         if self.count == 0:
-            #self.vlayout.removeWidget(self.pb2)
+            # self.vlayout.removeWidget(self.pb2)
             self.vlayout.insertWidget(0, self.pb2)
         elif self.count == 1:
-            #self.vlayout.removeWidget(self.pb2)
+            # self.vlayout.removeWidget(self.pb2)
             self.vlayout.insertWidget(self.vlayout.count(), self.pb2)
         elif self.count == 2:
             self.hlayout.insertWidget(0, self.pb2)
@@ -47,6 +47,7 @@ class MainWindow(QMainWindow):
             self.hlayout.insertWidget(self.hlayout.count(), self.pb2)
         self.count = (self.count + 1) % 4
         print(self.count)
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

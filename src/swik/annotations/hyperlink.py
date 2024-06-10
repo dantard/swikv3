@@ -8,7 +8,7 @@ class Link(QGraphicsRectItem):
         clicked = pyqtSignal(int, QPointF)
         link_hovered = pyqtSignal(int, int, QPointF)
 
-    ENTER,  MOVE, LEAVE = 0, 1, 2
+    ENTER, MOVE, LEAVE = 0, 1, 2
 
     def __init__(self, rect: QRectF, page):
         super().__init__(rect, page)
@@ -18,7 +18,7 @@ class Link(QGraphicsRectItem):
 
 
 class ExternalLink(Link):
-    def __init__(self,  rect, page,  uri):
+    def __init__(self, rect, page, uri):
         super().__init__(rect, page)
         self.uri = uri
         self.setPen(Qt.red)
@@ -29,7 +29,7 @@ class ExternalLink(Link):
 
 
 class InternalLink(Link):
-    def __init__(self,  rect, page, dest):
+    def __init__(self, rect, page, dest):
         super().__init__(rect, page)
         self.dest_page = dest[0]
         self.x = dest[1]
