@@ -65,3 +65,6 @@ swik = "swik.swikv3:main"
 
 [tool.setuptools]
 #package-data = {"sample" = ["*.dat"]}
+
+[tool.setuptools.data-files]
+"share/applications" = ["swik0.3.desktop"]
