@@ -74,5 +74,5 @@ class Shell(QWidget):
     def set_app_widget(self, widget, width=500, title=""):
         pass
 
-    def remove_app_widget():
+    def remove_app_widget(self):
         pass

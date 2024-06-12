@@ -41,7 +41,7 @@ class SignerRectItem(ResizableRectItem):
 
 class SignatureConf:
     def __init__(self, config, section_name, p12_file=None):
-        header = config.root().getSubSection("digital_signature", pretty="Digital Signatures")
+        header = config.root().getSubSection("signatures", pretty="Digital Signatures")
         self.signature = signature = header.getSubSection(section_name)
         self.p12_file = signature.getFile("p12_file", pretty="File", extension="p12", default=p12_file)
         self.password = signature.getPassword("password", pretty='Password')
@@ -72,8 +72,7 @@ class ToolSign(Tool):
         self.signatures: dict = {}
         self.cfg_p12 = []
 
-        private = self.config.root().getSubSection("Private", create=False)
-        self.nicknames = private.getList("signatures_nicknames", default=[])
+        self.nicknames = self.config.root().getList("signature_list", default=[], hidden=True)
         self.config.read()
 
         self.configure()
@@ -95,23 +94,33 @@ class ToolSign(Tool):
     def init(self):
         v_layout = QVBoxLayout()
         self.helper = QWidget()
-
         self.signature_cb = QComboBox()
+        self.signature_cb.setMinimumWidth(100)
+
         h_layout = QHBoxLayout()
 
         add_btn = QPushButton("+")
         add_btn.clicked.connect(self.import_signature)
         add_btn.setFixedSize(25, 25)
+        add_btn.setToolTip("Add Signature")
 
         self.remove_btn = QPushButton("-")
         self.remove_btn.clicked.connect(self.remove_signature)
         self.remove_btn.setFixedSize(25, 25)
+        self.remove_btn.setToolTip("Remove")
 
         self.config_btn = QPushButton("⚙")
         self.config_btn.clicked.connect(self.show_config)
         self.config_btn.setFixedSize(25, 25)
+        self.config_btn.setToolTip("Configure")
+
+        self.make_default_btn = QPushButton("☑")
+        self.make_default_btn.clicked.connect(self.make_default)
+        self.make_default_btn.setFixedSize(25, 25)
+        self.make_default_btn.setToolTip("Make default")
 
         h_layout.addWidget(self.signature_cb)
+        h_layout.addWidget(self.make_default_btn)
         h_layout.addWidget(self.config_btn)
         h_layout.addWidget(self.remove_btn)
         h_layout.addWidget(add_btn)
@@ -158,6 +167,10 @@ class ToolSign(Tool):
         self.sign_btn.clicked.connect(self.sign_document)
         self.signature_cb.currentIndexChanged.connect(self.on_signature_changed)
 
+        for h in [self.draw_btn, self.sign_btn, self.signature_cb, self.tree, self.helper, add_btn,
+                  self.make_default_btn, self.config_btn, self.remove_btn, h_layout, v_layout]:
+            h.setContentsMargins(0, 0, 0, 0)
+
         self.update_cb()
         self.check_interaction()
 
@@ -168,6 +181,13 @@ class ToolSign(Tool):
             self.signatures[nickname] = SignatureConf(self.config, import_dialog.get_nickname(), import_dialog.get_file())
             self.nicknames.get_value().append(nickname)
             self.update_cb()
+
+    def make_default(self):
+        selected = self.signature_cb.currentText()
+        self.nicknames.get_value().remove(selected)
+        self.nicknames.get_value().insert(0, selected)
+        self.update_cb()
+        self.check_interaction()
 
     def remove_signature(self):
         if self.signature_cb.currentIndex() >= 0:
@@ -185,9 +205,10 @@ class ToolSign(Tool):
         self.draw_btn.setEnabled(self.signature_cb.count() > 0)
         self.config_btn.setEnabled(self.signature_cb.count() > 0)
         self.remove_btn.setEnabled(self.signature_cb.count() > 0)
+        self.make_default_btn.setEnabled(self.signature_cb.count() > 0 and self.signature_cb.currentIndex() > 0)
 
     def on_signature_changed(self, index):
-        self.selected = index
+        self.check_interaction()
 
     def mouse_pressed(self, event):
         page = self.view.get_page_at_pos(event.pos())

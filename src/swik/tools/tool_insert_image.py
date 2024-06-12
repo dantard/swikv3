@@ -7,6 +7,7 @@ from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtWidgets import QMenu, QMessageBox, QFileDialog, QVBoxLayout, QWidget, QComboBox, QHBoxLayout, QPushButton, QLabel
 
+from swik.dialogs import ImportDialog
 from swik.resizeable import ResizableRectItem
 from swik.tools.tool import Tool
 
@@ -99,12 +100,13 @@ class ResizeableWidget(QWidget):
         return super(ResizeableWidget, self).resizeEvent(event)
 
 
-class SignatureConf:
-    def __init__(self, header, section_name, file):
+class ImageConf:
+    def __init__(self, config, section_name, file=None):
+        header = config.root().getSubSection("images", "Images")
         self.image = header.getSubSection(section_name)
-        self.nickname = self.image.getString("nickname", pretty="Nickname", default=section_name)
         self.stretch = self.image.getCombobox("stretch", pretty="Stretch", default=0, items=["Stretch", "Maintain Ratio", "Maintain Size"])
-        self.image_file = file
+        self.image_file = self.image.getFile("file", pretty="Image File", extension=["png", "jpg", "jpeg", "bmp", "gif", "tiff", "tif"], extension_name="Image",
+                                             default=file)
 
 
 class ClickableLabel(QLabel):
@@ -125,9 +127,13 @@ class ToolInsertSignatureImage(Tool):
         self.signature_filename = None
         self.rubberband = None
         self.helper = None
-        self.images = []
+        self.images = {}
         self.image_filename = None
         self.image_mode = None
+
+        self.nicknames = self.config.root().getList("image_list", default=[], hidden=True)
+        self.config.read()
+
         self.configure()
 
     def init(self):
@@ -137,22 +143,32 @@ class ToolInsertSignatureImage(Tool):
         v_layout = QVBoxLayout()
 
         self.image_cb = QComboBox()
+        self.image_cb.setMinimumWidth(120)
         self.image_cb.currentIndexChanged.connect(self.on_image_changed)
         h_layout = QHBoxLayout()
+
+        self.make_default_btn = QPushButton("☑")
+        self.make_default_btn.clicked.connect(self.make_default)
+        self.make_default_btn.setFixedSize(25, 25)
+        self.make_default_btn.setToolTip("Make default")
 
         add_btn = QPushButton("+")
         add_btn.clicked.connect(self.import_image)
         add_btn.setFixedSize(25, 25)
+        add_btn.setToolTip("Add image")
 
         self.remove_btn = QPushButton("-")
         self.remove_btn.clicked.connect(self.remove_image)
         self.remove_btn.setFixedSize(25, 25)
+        self.remove_btn.setToolTip("Remove")
 
         self.config_btn = QPushButton("⚙")
         self.config_btn.clicked.connect(self.show_config)
         self.config_btn.setFixedSize(25, 25)
+        self.config_btn.setToolTip("Configure")
 
         h_layout.addWidget(self.image_cb)
+        # h_layout.addWidget(self.make_default_btn)
         h_layout.addWidget(self.config_btn)
         h_layout.addWidget(self.remove_btn)
         h_layout.addWidget(add_btn)
@@ -175,9 +191,16 @@ class ToolInsertSignatureImage(Tool):
         v_layout.addWidget(self.draw_btn)
         self.helper.setLayout(v_layout)
         self.widget.set_app_widget(self.helper, title="Sign")
-        self.update_cb()
 
+        self.update_cb()
         self.update_image()
+        self.check_interaction()
+
+    def make_default(self):
+        selected = self.image_cb.currentText()
+        self.nicknames.get_value().remove(selected)
+        self.nicknames.get_value().insert(0, selected)
+        self.update_cb()
         self.check_interaction()
 
     def on_resize_event(self):
@@ -185,60 +208,57 @@ class ToolInsertSignatureImage(Tool):
 
     def configure(self):
         self.images.clear()
-        header = self.config.root().getSubSection("signature_images", pretty="Image Signatures")
-        for file_path in glob.glob(os.path.join(self.config.base_dir + "images", '*.jpg')):
-            if os.path.isfile(file_path):
-                ic = SignatureConf(header, os.path.basename(file_path), file_path)
-                self.images.append(ic)
+
+        for nickname in self.nicknames.get_value():
+            sc = ImageConf(self.config, nickname)
+            self.images[nickname] = sc
 
         self.config.read()
 
-    def update_cb(self):
+    def update_cb(self, goto_last=False):
         self.image_cb.clear()
         self.image_cb.addItem("Not Selected")
-        self.image_cb.addItems([ic.nickname.get_value() for ic in self.images])
+        self.image_cb.addItems(self.nicknames.get_value())
+        self.check_interaction()
+        if goto_last:
+            self.image_cb.setCurrentIndex(self.image_cb.count() - 1)
 
     def import_image(self):
-        if not self.config.been_warned("image_import"):
-            if QMessageBox.warning(self.helper, "Import signature",
-                                   "The file will be copied to the signatures folder in the configuration directory.",
-                                   QMessageBox.Ok | QMessageBox.Cancel) == QMessageBox.Cancel:
-                return
-
-        file_path, _ = QFileDialog.getOpenFileName(None, "Select image", "", "Image files (*.png *.jpg *.jpeg *.bmp *.gif *.tiff *.tif)")
-        if file_path:
-            self.config.set_warned("image_import", True)
-            shutil.copy2(file_path, self.config.base_dir + "images")
-            self.configure()
-            self.update_cb()
-            self.check_interaction()
+        import_dialog = ImportDialog("Select image", "JPG (*.jpg)")
+        if import_dialog.exec_():
+            nickname = import_dialog.get_nickname()
+            self.images[nickname] = ImageConf(self.config, import_dialog.get_nickname(), import_dialog.get_file())
+            self.nicknames.get_value().append(nickname)
+            self.update_cb(True)
 
     def remove_image(self):
-        index = self.image_cb.currentIndex()
-        if index >= 0:
-            ask = QMessageBox.question(self.helper, "Remove signature", "Are you sure you want to remove this signature?", QMessageBox.Yes | QMessageBox.No)
+        if self.image_cb.currentIndex() > 1:
+            index = self.image_cb.currentText()
+            ask = QMessageBox.question(self.helper, "Remove Image", "Are you sure you want to remove this image?", QMessageBox.Yes | QMessageBox.No)
             if ask == QMessageBox.Yes:
-                # os.remove(self.cfg_p12[index])
-                self.configure()
-                self.image_cb.clear()
-                # self.signature_cb.addItems([os.path.basename(p12).rstrip(".p12") for p12 in self.cfg_p12])
-                self.check_interaction()
+                self.images.pop(index)
+                self.nicknames.get_value().remove(index)
+                self.update_cb()
+
+    def get_selected(self):
+        index = self.image_cb.currentText()
+        return self.images.get(index, None)
 
     def show_config(self):
-        selected = self.image_cb.currentIndex() - 1
-        self.config.exec(self.images[selected].image)
-        index = self.image_cb.currentIndex()
-        self.update_cb()
-        self.image_cb.setCurrentIndex(index)
+        self.config.exec(self.images[self.image_cb.currentText()].image)
+        self.on_image_changed()
 
     def check_interaction(self):
         self.remove_btn.setEnabled(self.image_cb.currentIndex() > 0)
         self.config_btn.setEnabled(self.image_cb.currentIndex() > 0)
+        self.make_default_btn.setEnabled(self.image_cb.currentIndex() > 1)
 
-    def on_image_changed(self, index):
-        if index > 0:
-            self.image_filename = self.images[index - 1].image_file
-            self.image_mode = self.images[index - 1].stretch.get_value()
+    def on_image_changed(self):
+
+        if self.image_cb.currentIndex() > 0:
+            image = self.images[self.image_cb.currentText()]
+            self.image_filename = image.image_file.get_value()
+            self.image_mode = image.stretch.get_value()
         else:
             self.image_filename = None
             self.image_mode = None
@@ -280,10 +300,12 @@ class ToolInsertSignatureImage(Tool):
             self.rubberband = None
 
     def draw_image(self):
+        index = self.image_cb.currentIndex()
+        image = self.images[self.image_cb.currentText()]
 
         if self.rubberband is None:
-            self.rubberband = InsertImageRectItem(None, pen=Qt.transparent, brush=Qt.transparent, image_filename=self.image_filename,
-                                                  image_mode=self.image_mode)
+            self.rubberband = InsertImageRectItem(None, pen=Qt.transparent, brush=Qt.transparent, image_filename=image.image_file.get_value(),
+                                                  image_mode=image.stretch.get_value())
             self.view.setCursor(Qt.CrossCursor)
 
     def on_image_clicked(self):
