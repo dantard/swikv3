@@ -1,10 +1,16 @@
+from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QDialogButtonBox, QDialog, QLabel, QVBoxLayout, QGroupBox, QLineEdit, QCheckBox, QTreeWidget, QTreeWidgetItem, \
-    QComboBox
+    QComboBox, QPushButton, QFileDialog, QHBoxLayout, QInputDialog, QMessageBox
+from cryptography.hazmat._oid import NameOID
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.serialization import pkcs12
 
 import swik.utils as utils
 from swik.colorwidget import FontPicker, Color
 from swik.font_manager import FontManager
 from swik.progressing import Progressing
+from OpenSSL import crypto
 
 
 class ComposableDialog(QDialog):
@@ -205,3 +211,102 @@ class ReplaceFontsDialog(QDialog):
 
     def get_data(self):
         return self.treeWidget.traverse_tree(self.treeWidget.invisibleRootItem().child(0))
+
+
+class ImportDialog(QDialog):
+
+    def __init__(self, text, filter, parent=None):
+        super().__init__()
+        self.setWindowTitle(text)
+        # self.setWindowIcon(QIcon(ICON_PATH))
+        self.setMinimumWidth(400)
+        self.filter = filter
+        self.setWindowFlags(Qt.Window)
+        self.setWindowModality(Qt.ApplicationModal)
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+
+        self.lb = QLabel("Select the file to import")
+        layout.addWidget(self.lb)
+        h_layout = QHBoxLayout()
+
+        self.le = QLineEdit()
+        self.le.setReadOnly(True)
+        self.pb = QPushButton("...")
+        self.pb.clicked.connect(self.browse)
+        self.pb.setFixedSize(25, 25)
+        self.clear_btn = QPushButton("✕")
+        self.clear_btn.setFixedSize(25, 25)
+        self.clear_btn.clicked.connect(self.cleared)
+        h_layout.addWidget(self.le)
+        h_layout.addWidget(self.pb)
+        h_layout.addWidget(self.clear_btn)
+        layout.addLayout(h_layout)
+        layout.addWidget(QLabel("Nickname"))
+        self.nickname = QLineEdit()
+        layout.addWidget(self.nickname)
+        self.nickname.textChanged.connect(self.check_interaction)
+
+        bb = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        layout.addWidget(bb)
+        bb.accepted.connect(self.accept)
+        bb.rejected.connect(self.reject)
+        self.ok_btn = bb.button(QDialogButtonBox.Ok)
+        self.check_interaction()
+
+    def cleared(self):
+        self.le.clear()
+        self.check_interaction()
+
+    def check_interaction(self):
+        ok = self.nickname.text() != "" and self.le.text() != ""
+        self.ok_btn.setEnabled(ok)
+
+    def browse(self):
+        file, _ = QFileDialog.getOpenFileName(self, "Select File", "", self.filter)
+        if file:
+            self.le.setText(file)
+            self.check_interaction()
+
+    def read_p12_file(self, file_path, password):
+        with open(file_path, 'rb') as file:
+            p12_data = file.read()
+
+        p12 = pkcs12.load_key_and_certificates(p12_data, password.encode(), backend=default_backend())
+        certificates = p12[1]
+        subject = certificates.subject
+        common_name = subject.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value
+        return common_name
+
+    def get_file(self):
+        return self.le.text()
+
+    def get_nickname(self):
+        return self.nickname.text()
+
+
+class ImportP12(ImportDialog):
+
+    def read_p12_file(self, file_path, password):
+        with open(file_path, 'rb') as file:
+            p12_data = file.read()
+
+        p12 = pkcs12.load_key_and_certificates(p12_data, password.encode(), backend=default_backend())
+        certificates = p12[1]
+        subject = certificates.subject
+        common_name = subject.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value
+        return common_name
+
+    def browse(self):
+        file, _ = QFileDialog.getOpenFileName(self, "Select File", "", self.filter)
+        if file:
+            password, ok = QInputDialog.getText(self, "Password", "Enter the password (it will NOT be stored)", QLineEdit.Password)
+            if ok:
+                try:
+                    common_name = self.read_p12_file(file, password)
+                    self.nickname.setText(common_name)
+                except Exception as e:
+                    QMessageBox.critical(self, "Error", str(e))
+                    return
+                self.le.setText(file)
+            self.check_interaction()
