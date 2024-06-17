@@ -3,9 +3,15 @@
 import os
 import subprocess
 import sys
+import dbus.mainloop.glib
+
+import dbus
+import dbus.service
+import dbus.mainloop.glib
+from gi.repository import GLib
 
 from PyQt5 import QtGui
-from PyQt5.QtCore import QEvent
+from PyQt5.QtCore import QEvent, QThread
 from PyQt5.QtGui import QGuiApplication
 from PyQt5.QtNetwork import QUdpSocket, QHostAddress
 from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog
@@ -276,36 +282,49 @@ class MainWindow(QMainWindow):
         return False
 
 
+class ExampleDbusService(dbus.service.Object):
+    def __init__(self, bus_name, object_path):
+        dbus.service.Object.__init__(self, bus_name, object_path)
+
+    @dbus.service.method("com.example.DBusService", in_signature='', out_signature='s')
+    def HelloWorld(self):
+        return "Hello, World!"
+
+
+class DBusServerThread(QThread):
+    def __init__(self):
+        super().__init__()
+
+    def run(self):
+        dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+
+        bus = dbus.SessionBus()
+        name = dbus.service.BusName("com.example.DBusService", bus)
+        object_path = "/com/example/DBusService"
+        service = ExampleDbusService(name, object_path)
+
+        loop = GLib.MainLoop()
+        loop.run()
+
+
 def main():
     app = QApplication(sys.argv)
 
-    socket = QUdpSocket()
-    socket.bind(QHostAddress.LocalHost, 0)
-    socket.open(QUdpSocket.ReadWrite)
-
     if len(sys.argv) > 1:
-        udp_port = utils.are_other_instances_running()
-        if udp_port > 0:
-            print("Another instance is running, sending filename to it")
-            filename = " ".join(sys.argv[1:])
-            filename = os.getcwd() + os.sep + filename if not os.path.isabs(filename) else filename
-            socket.writeDatagram(filename.encode(), QHostAddress.LocalHost, udp_port)
-            sys.exit(0)
+        bus = dbus.SessionBus()
+        try:
+            proxy = bus.get_object('com.swik.server', '/com/swik/server')
+            interface = dbus.Interface(proxy, 'com.swik.server_interface')
+            response = interface.open(sys.argv[1])
+        except dbus.exceptions.DBusException:
+            pass
+
+    dbus_loop = DBusServerThread()
+    dbus_loop.start()
 
     window = MainWindow()
 
     app.installEventFilter(window)
-
-    def received():
-        while socket.hasPendingDatagrams():
-            datagram, host, port = socket.readDatagram(socket.pendingDatagramSize())
-            window.hide()
-            # window.activateWindow()
-            widget = window.create_widget()
-            window.open_new_tab(widget, datagram.decode())
-            window.show()
-
-    socket.readyRead.connect(received)
 
     if len(sys.argv) > 1:
         # window.open_file(sys.argv[1])
