@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+import argparse
 import os
 import subprocess
 import sys
@@ -9,9 +9,10 @@ import dbus
 import dbus.service
 import dbus.mainloop.glib
 from gi.repository import GLib
+from dbus.mainloop.glib import DBusGMainLoop
 
 from PyQt5 import QtGui
-from PyQt5.QtCore import QEvent, QThread
+from PyQt5.QtCore import QEvent, QThread, pyqtSignal, QObject
 from PyQt5.QtGui import QGuiApplication
 from PyQt5.QtNetwork import QUdpSocket, QHostAddress
 from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog
@@ -19,6 +20,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog
 import swik.utils as utils
 from swik.LayoutManager import LayoutManager
 from swik.progressing import Progressing
+from swik.swik_dbus import DBusServerThread
 from swik.swik_tab_widget import SwikTabWidget
 from swik.swik_widget import SwikWidget
 from swik.swikconfig import SwikConfig
@@ -146,6 +148,11 @@ class MainWindow(QMainWindow):
         if filename:
             widget = self.create_widget()
             self.open_new_tab(widget, filename)
+
+    def open_requested_by_dbus(self, filename):
+        print("aiaiia")
+        widget = self.create_widget()
+        self.open_new_tab(widget, filename)
 
     def create_widget(self, mode=LayoutManager.MODE_VERTICAL):
         widget = SwikWidget(self, self.tab_widget, self.config)
@@ -282,56 +289,43 @@ class MainWindow(QMainWindow):
         return False
 
 
-class ExampleDbusService(dbus.service.Object):
-    def __init__(self, bus_name, object_path):
-        dbus.service.Object.__init__(self, bus_name, object_path)
-
-    @dbus.service.method("com.example.DBusService", in_signature='', out_signature='s')
-    def HelloWorld(self):
-        return "Hello, World!"
-
-
-class DBusServerThread(QThread):
-    def __init__(self):
-        super().__init__()
-
-    def run(self):
-        dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
-
-        bus = dbus.SessionBus()
-        name = dbus.service.BusName("com.example.DBusService", bus)
-        object_path = "/com/example/DBusService"
-        service = ExampleDbusService(name, object_path)
-
-        loop = GLib.MainLoop()
-        loop.run()
 
 
 def main():
     app = QApplication(sys.argv)
 
-    if len(sys.argv) > 1:
+    parser = argparse.ArgumentParser(description='ROS2 latency measurement tool')
+    parser.add_argument('-f', '--force-new-instance', action='store_true')
+    args, unknown = parser.parse_known_args()
+
+    if len(unknown) > 0 and not args.force_new_instance:
+        DBusGMainLoop(set_as_default=True)
+
         bus = dbus.SessionBus()
         try:
             proxy = bus.get_object('com.swik.server', '/com/swik/server')
             interface = dbus.Interface(proxy, 'com.swik.server_interface')
-            response = interface.open(sys.argv[1])
-        except dbus.exceptions.DBusException:
-            pass
-
-    dbus_loop = DBusServerThread()
-    dbus_loop.start()
+            response = interface.open(unknown[0])
+            if response == "OK":
+                sys.exit(0)
+        except dbus.exceptions.DBusException as err:
+            print("No other instance running")
 
     window = MainWindow()
 
+    dbus_loop = DBusServerThread()
+    dbus_loop.open_requested.connect(window.open_requested_by_dbus)
+    dbus_loop.start()
+
     app.installEventFilter(window)
 
-    if len(sys.argv) > 1:
+    if not args.force_new_instance:
+        window.restore()
+
+    if len(unknown) > 0:
         # window.open_file(sys.argv[1])
         widget = window.create_widget()
-        window.open_new_tab(widget, sys.argv[1])
-    else:
-        window.restore()
+        window.open_new_tab(widget, unknown[0])
 
     app.exec_()
 

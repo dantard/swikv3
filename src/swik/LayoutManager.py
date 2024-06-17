@@ -61,7 +61,6 @@ class LayoutManager:
         self.max_width, self.max_height = self.renderer.get_max_pages_size()
         rect = self.compute_scene_rect()
         self.view.scene().setSceneRect(rect)
-        print("diocane scenerect", rect)
         self.view.setAlignment(Qt.AlignBottom | Qt.AlignRight)
         self.view.setAlignment(self.align)
 
