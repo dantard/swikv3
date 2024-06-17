@@ -12,7 +12,7 @@ from gi.repository import GLib
 from dbus.mainloop.glib import DBusGMainLoop
 
 from PyQt5 import QtGui
-from PyQt5.QtCore import QEvent, QThread, pyqtSignal, QObject
+from PyQt5.QtCore import QEvent, QThread, pyqtSignal, QObject, Qt
 from PyQt5.QtGui import QGuiApplication
 from PyQt5.QtNetwork import QUdpSocket, QHostAddress
 from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog
@@ -23,7 +23,7 @@ from swik.progressing import Progressing
 from swik.swik_dbus import DBusServerThread
 from swik.swik_tab_widget import SwikTabWidget
 from swik.swik_widget import SwikWidget
-from swik.swikconfig import SwikConfig
+from swik.swik_config import SwikConfig
 
 
 class MainWindow(QMainWindow):
@@ -44,12 +44,16 @@ class MainWindow(QMainWindow):
         file_menu = menu_bar.addMenu('File')
         file_menu.addAction('Open', self.open_file)
         open_recent = file_menu.addMenu("Open Recent")
+        file_menu.addSeparator()
         open_recent.aboutToShow.connect(lambda: self.config.fill_recent(self, open_recent))
         save = file_menu.addAction('Save', self.save_file)
         save_as = file_menu.addAction('Save as', self.save_file_as)
+
+        rename = file_menu.addAction('Rename', self.rename)
+        file_menu.addSeparator()
         copy_path = file_menu.addAction('Copy path', self.copy_path)
         command = self.config.general.get("other_pdf")
-        self.file_menu_actions = [save, save_as, copy_path]
+        self.file_menu_actions = [save, save_as, copy_path, rename]
 
         if command is not None and command != "None":
             open_wo_odf = file_menu.addMenu('Open with other Viewer')
@@ -137,8 +141,13 @@ class MainWindow(QMainWindow):
             widget.view.set_mode(values[1])
             if values[1] != LayoutManager.MODE_FIT_WIDTH:
                 widget.view.set_ratio(values[2], True)
+
             self.open_new_tab(widget, values[0])
-            widget.view.set_scroll_value(values[3])
+
+            if values[1] != LayoutManager.MODE_SINGLE_PAGE:
+                widget.view.set_scroll_value(values[3])
+            else:
+                widget.view.move_to_page(values[3])
 
         self.tab_widget.setCurrentIndex(0)
         self.update_title()
@@ -231,7 +240,11 @@ class MainWindow(QMainWindow):
         for index in range(self.tab_widget.count()):
             swik_widget = self.tab_widget.widget(index)
             if (filename := swik_widget.get_filename()) is not None:
-                tabs[index] = [filename, swik_widget.view.get_mode(), swik_widget.view.get_ratio(), swik_widget.view.get_scroll_value()]
+                if swik_widget.view.get_mode() != LayoutManager.MODE_SINGLE_PAGE:
+                    value = swik_widget.view.get_scroll_value()
+                else:
+                    value = swik_widget.view.page
+                tabs[index] = [filename, swik_widget.view.get_mode(), swik_widget.view.get_ratio(), value]
 
         self.config.set_tabs(tabs)
         self.config.push_window_config(self)
@@ -256,6 +269,9 @@ class MainWindow(QMainWindow):
 
     def save_file_as(self):
         self.current().save_file_as()
+
+    def rename(self):
+        self.current().rename()
 
     def flatten(self, open):
         self.current().flatten(open)
@@ -286,9 +302,14 @@ class MainWindow(QMainWindow):
             if not a:
                 a = self.current().manager.key_released(a1)
             return a
+
         return False
 
-
+    def keyPressEvent(self, a0: QtGui.QKeyEvent) -> None:
+        print("aooooo")
+        if a0.key() == Qt.Key_Right:
+            self.current().set_page(self.current().view.page + 1)
+        super().keyPressEvent(a0)
 
 
 def main():

@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QGraphicsView, QGraphicsRectItem, QApplication, QScr
 
 # import EnhancedPage
 from swik.LayoutManager import LayoutManager
-from swik.SyncDict import SyncDict
+from swik.sync_dict import SyncDict
 from swik.simplepage import SimplePage
 from swik.word import Word
 
@@ -212,14 +212,12 @@ class GraphView(QGraphicsView):
         return -self.mapFromScene(page.scenePos()).y()
 
     def move_to_page(self, index, offset=None):
-        # print("move to page")
+        print("move to page", index, offset, self.pages.get(index))
         if (page := self.pages.get(index)) is not None:
             offset = -10 if offset is None else offset
 
             self.page = index
-
-            if self.mode == LayoutManager.MODE_SINGLE_PAGE:
-                self.layout_manager.fully_update_layout()
+            self.layout_manager.move_to_page(page)
 
             # Must be here because of the fit_width that changes the scrollbars
             if self.mode in [LayoutManager.MODE_VERTICAL_MULTIPAGE, LayoutManager.MODE_VERTICAL]:
@@ -229,7 +227,7 @@ class GraphView(QGraphicsView):
                 self.horizontalScrollBar().setValue(int((page.pos().x() + offset * self.get_ratio())))
 
             page.update()
-        # self.page_changed.emit(index, self.renderer.get_num_of_pages())
+            self.page_changed.emit(index, self.renderer.get_num_of_pages())
 
     def set_override_cursor(self, cursor):
         self.viewport().setCursor(cursor)
@@ -431,3 +429,4 @@ class GraphView(QGraphicsView):
         self.pages[last_page] = page
         self.scene().addItem(page)
         return last_page
+

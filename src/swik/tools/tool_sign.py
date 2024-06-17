@@ -6,7 +6,7 @@ import shutil
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QImage, QColor
 from PyQt5.QtWidgets import QMenu, QDialog, QMessageBox, QVBoxLayout, QWidget, QPushButton, QTreeWidget, \
-    QTreeWidgetItem, QHeaderView, QComboBox, QHBoxLayout, QLabel, QFileDialog
+    QTreeWidgetItem, QHeaderView, QComboBox, QHBoxLayout, QLabel, QFileDialog, QGraphicsTextItem
 
 from swik import signer
 from swik.dialogs import PasswordDialog, ImportDialog, ImportP12
@@ -19,29 +19,10 @@ from swik.tools.tool import Tool
 
 
 class SignerRectItem(ResizableRectItem):
-    ACTION_SIGN = 0
-    ACTION_EDIT = 1
-    ACTION_DELETED = 2
 
     def __init__(self, parent, signature, **kwargs):
         super().__init__(parent, **kwargs)
         self.signature = signature
-
-
-    def contextMenuEvent(self, event: 'QGraphicsSceneContextMenuEvent') -> None:
-        menu = QMenu()
-        menu.addAction("Sign", lambda: self.signals.action.emit(SignerRectItem.ACTION_SIGN, self))
-        menu.addAction("Edit", lambda: self.signals.action.emit(SignerRectItem.ACTION_EDIT, self))
-        menu.addAction("Delete", self.delete_item)
-        menu.addSeparator()
-        menu.exec(event.screenPos())
-
-    def delete_item(self):
-        self.scene().removeItem(self)
-        self.deleted()
-
-    def deleted(self):
-        self.signals.action.emit(SignerRectItem.ACTION_DELETED, self)
 
 
 class SignatureConf:
@@ -68,7 +49,7 @@ class ToolSign(Tool):
     @staticmethod
     def sign_document(rubberband, filename, parent=None):
         filename = ToolSign.sign(rubberband.get_parent().index,
-                             rubberband.get_rect_on_parent(), rubberband.signature, filename, parent=parent)
+                                 rubberband.get_rect_on_parent(), rubberband.signature, filename, parent=parent)
         return filename
 
     @staticmethod
@@ -83,6 +64,7 @@ class ToolSign(Tool):
                 password = dialog.getText()
                 if dialog.getCheckBox():
                     password_to_save = base64.encodebytes(password.encode()).decode().replace('\n', '')
+                    signature.password.set_value(password_to_save)
             else:
                 return
         else:
@@ -124,7 +106,6 @@ class ToolSign(Tool):
 
         # Actually Sign the file
         return signer.sign(index, box)
-
 
     def __init__(self, widget: Shell, **kwargs):
         super().__init__(widget, **kwargs)
@@ -221,11 +202,17 @@ class ToolSign(Tool):
         self.sign_btn = QPushButton("Sign")
         self.sign_btn.setEnabled(False)
 
+        self.cancel_btn = QPushButton("Cancel")
+        self.cancel_btn.setEnabled(False)
+        self.cancel_btn.clicked.connect(self.cancel_btn_clicked)
+
         v_layout.setAlignment(Qt.AlignTop)
         v_layout.addWidget(QLabel("Sign with"))
         v_layout.addLayout(h_layout)
         v_layout.addWidget(self.draw_btn)
         v_layout.addWidget(self.sign_btn)
+        v_layout.addWidget(self.cancel_btn)
+
         self.helper.setLayout(v_layout)
         self.widget.set_app_widget(self.helper, title="Sign")
 
@@ -241,17 +228,16 @@ class ToolSign(Tool):
         self.check_interaction()
 
     def sign_btn_clicked(self):
-        cont = QMessageBox.question(self.helper, "Sign Document", "File will be saved before signing", QMessageBox.Ok | QMessageBox.Cancel)
+        cont = QMessageBox.question(self.helper, "Sign Document", "Original file will be saved before signing", QMessageBox.Ok | QMessageBox.Cancel)
         if cont == QMessageBox.Cancel:
             return
 
-        #self.renderer.save_pdf(self.renderer.get_filename(), False)
+        # self.renderer.save_pdf(self.renderer.get_filename(), False)
 
         filename = self.sign_document(self.rubberband, self.renderer.get_filename(), self.view)
         if filename:
             self.rubberband = None
             self.emit_finished(Manager.OPEN_REQUESTED, filename)
-
 
     def import_signature(self):
         import_dialog = ImportP12("Select signature file", "PKCS#12 (*.p12)")
@@ -303,6 +289,8 @@ class ToolSign(Tool):
         if self.rubberband is not None:
             if self.rubberband.view_mouse_release_event(self.view, event):
                 self.sign_btn.setEnabled(True)
+                self.cancel_btn.setEnabled(True)
+                self.widget.set_protected_interaction(False)
                 self.draw_btn.setChecked(False)
                 self.draw_btn.setEnabled(False)
                 self.view.setCursor(Qt.ArrowCursor)
@@ -313,8 +301,6 @@ class ToolSign(Tool):
     def mouse_moved(self, event):
         if self.rubberband is not None:
             self.rubberband.view_mouse_move_event(self.view, event)
-
-
 
     def get_selected(self):
         index = self.signature_cb.currentText()
@@ -334,37 +320,19 @@ class ToolSign(Tool):
                                          image_mode=image_mode, pen=Qt.transparent, brush=QColor(255, 0, 0, 80))
 
         self.view.setCursor(Qt.CrossCursor)
-        self.rubberband.signals.action.connect(self.actions)
-        # self.view.scene().addItem(self.rubberband)
 
-    def actions(self, action, rubberband):
-
-        signature = self.get_selected()
-
-        if action == SignerRectItem.ACTION_SIGN:
-            self.sign(rubberband.get_parent().index,
-                      rubberband.get_rect_on_parent(), rubberband.signature)
-        elif action == SignerRectItem.ACTION_EDIT:
-            if self.config.edit():
-                text = signature.text_signature.get_value().replace('&&', '\n')
-                image = QImage(signature.image_file)
-                max_font_size = signature.text_font_size
-
-                text_mode = SignerRectItem.TEXT_MODE_STRETCH if signature.text_stretch.get_value() else SignerRectItem.TEXT_MODE_KEEP
-                image_mode = SignerRectItem.IMAGE_MODE_STRETCH if self.signatures[
-                    self.selected].image_stretch.get_value() else SignerRectItem.IMAGE_MODE_MAINTAIN_RATIO
-
-                rubberband.apply_kwargs(text=text, image=image, max_font_size=max_font_size, text_mode=text_mode,
-                                        image_mode=image_mode)
-                rubberband.update()
-        elif action == SignerRectItem.ACTION_DELETED:
-            self.rubberband = None
-            self.sign_btn.setEnabled(False)
-            self.draw_btn.setEnabled(True)
+    def cancel_btn_clicked(self):
+        if self.rubberband is not None:
+            self.view.scene().removeItem(self.rubberband)
+        self.rubberband = None
+        self.sign_btn.setEnabled(False)
+        self.cancel_btn.setEnabled(False)
+        self.widget.set_protected_interaction(True)
+        self.draw_btn.setEnabled(True)
 
     def finish(self):
         if self.rubberband is not None:
-            #self.view.scene().removeItem(self.rubberband)
+            # self.view.scene().removeItem(self.rubberband)
             self.view.setCursor(Qt.ArrowCursor)
             self.rubberband = None
         self.view.setCursor(Qt.ArrowCursor)

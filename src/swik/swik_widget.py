@@ -7,7 +7,7 @@ from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QPainter, QIcon
 from PyQt5.QtWidgets import QApplication, QFileDialog, QDialog, QMessageBox, QHBoxLayout, \
     QWidget, QTabWidget, QVBoxLayout, QToolBar, \
-    QSplitter, QGraphicsScene, QProgressBar, QTreeWidget, QTreeWidgetItem
+    QSplitter, QGraphicsScene, QProgressBar, QTreeWidget, QTreeWidgetItem, QPushButton, QLabel, QFrame, QSizePolicy
 from pymupdf import Document
 
 from swik.LayoutManager import LayoutManager
@@ -31,12 +31,12 @@ from swik.tools.tool_form import ToolForm
 from swik.tools.tool_insert_image import ToolInsertSignatureImage
 from swik.tools.tool_mimic_pdf import ToolMimicPDF
 from swik.tools.tool_numerate import ToolNumerate
-from swik.tools.toolcrop import ToolCrop
-from swik.tools.toolrearranger import ToolRearrange
-from swik.tools.toolredactannotation import ToolRedactAnnotation
-from swik.tools.toolsign import ToolSign, SignerRectItem
-from swik.tools.toolsquareannotation import ToolSquareAnnotation
-from swik.tools.tooltextselection import ToolTextSelection
+from swik.tools.tool_crop import ToolCrop
+from swik.tools.tool_rearranger import ToolRearrange
+from swik.tools.tool_redactannotation import ToolRedactAnnotation
+from swik.tools.tool_sign import ToolSign, SignerRectItem
+from swik.tools.tool_squareannotation import ToolSquareAnnotation
+from swik.tools.tool_textselection import ToolTextSelection
 from swik.widgets.pdf_widget import PdfWidget
 
 
@@ -72,6 +72,7 @@ class SwikWidget(Shell):
         self.config = config
         self.renderer = MuPDFRenderer()
         self.renderer.document_changed.connect(self.document_changed)
+        self.renderer.file_changed.connect(self.file_modified)
 
         self.scene = Scene()
         self.manager = Manager(self.renderer, self.config)
@@ -99,6 +100,24 @@ class SwikWidget(Shell):
         self.font_manager = FontManager(self.renderer)
 
         self.vlayout, self.hlayout, self.ilayout, self.app_layout = QVBoxLayout(), QHBoxLayout(), QHBoxLayout(), QVBoxLayout()
+
+        self.file_changed_frame = QToolBar()
+        self.file_changed_frame.setContentsMargins(0, 0, 0, 0)
+        self.file_changed_frame.addWidget(QLabel("File has changed on disk"))
+        stretch = QWidget()
+        stretch.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.file_changed_frame.addWidget(stretch)
+        file_changed_reload_btn = QPushButton("⟳")
+        file_changed_reload_btn.setFixedSize(25, 25)
+        file_changed_close_btn = QPushButton("✕")
+        file_changed_close_btn.setFixedSize(25, 25)
+        file_changed_close_btn.clicked.connect(self.file_changed_frame.hide)
+        file_changed_reload_btn.clicked.connect(self.reload_file)
+        self.file_changed_frame.addWidget(file_changed_reload_btn)
+        self.file_changed_frame.addWidget(file_changed_close_btn)
+        self.file_changed_frame.hide()
+
+        self.vlayout.addWidget(self.file_changed_frame)
         self.vlayout.addLayout(self.hlayout)
         self.hlayout.addLayout(self.ilayout)
 
@@ -203,6 +222,13 @@ class SwikWidget(Shell):
         self.preferences_changed()
         QApplication.processEvents()
 
+    def reload_file(self):
+        self.file_changed_frame.setVisible(False)
+        self.open_file(self.renderer.get_filename())
+
+    def file_modified(self):
+        self.file_changed_frame.setVisible(True)
+
     def get_renderer(self):
         return self.renderer
 
@@ -232,6 +258,8 @@ class SwikWidget(Shell):
             return
         selected = selected[0]
         page = self.view.pages[selected.item.page]
+        if self.view.layout_manager.mode == LayoutManager.MODE_SINGLE_PAGE:
+            self.view.move_to_page(page.index)
         p = page.mapToScene(selected.item.to)
         self.view.centerOn(p.x(), p.y() + self.view.viewport().height() / 2)
 
@@ -281,6 +309,10 @@ class SwikWidget(Shell):
         self.finder_toolbar.setEnabled(enable)
         self.save_btn.setEnabled(enable)
         self.interaction_enabled = enable
+        self.interaction_changed.emit(self)
+
+    def set_protected_interaction(self, status):
+        self.save_btn.setEnabled(status)
         self.interaction_changed.emit(self)
 
     def is_interaction_enabled(self):
@@ -469,6 +501,9 @@ class SwikWidget(Shell):
             result = self.renderer.save_pdf(name, False)
             self.saved(result, name)
 
+        self.file_changed.emit()
+        self.update_tab_text()
+
     def apply_post_save_artifacts(self, filename):
         # Signature
         signature = next((sig for sig in self.view.items() if isinstance(sig, SignerRectItem)), None)
@@ -489,6 +524,11 @@ class SwikWidget(Shell):
         if name:
             return self.save_file(name)
         return False
+
+    def rename(self):
+        filename = self.renderer.get_filename()
+        self.save_file_as()
+        os.remove(filename)
 
     def open_with_other(self, command):
         if command is not None:

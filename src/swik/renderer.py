@@ -8,7 +8,7 @@ from os.path import exists
 import pymupdf
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt, QRunnable, QThreadPool, pyqtSignal, QMutex, QRectF, QRect, QByteArray, QBuffer, QIODevice, \
-    QTimer, QPointF
+    QTimer, QPointF, QFileSystemWatcher
 from PyQt5.QtGui import QPixmap, QImage, QBrush, QPen, QColor
 from PyQt5.QtWidgets import QLabel
 from pymupdf import TEXTFLAGS_DICT, TEXT_PRESERVE_IMAGES, TextWriter, Font, Point, Document, Rect, Quad, Annot
@@ -104,8 +104,10 @@ class MuPDFRenderer(QLabel):
     document_about_to_change = pyqtSignal()
     image_ready = pyqtSignal(int, float, QImage)
     sync_requested = pyqtSignal()
+    sync_dynamic = pyqtSignal()
     page_updated = pyqtSignal(int)
     words_changed = pyqtSignal(int)
+    file_changed = pyqtSignal(str)
 
     # Constants
     OPEN_OK = 1
@@ -131,18 +133,30 @@ class MuPDFRenderer(QLabel):
         self.request_queue_timer.setSingleShot(True)
         self.request_queue_timer.timeout.connect(self.process_request_queue)
         self.request_queue = {}
+        self.watcher = QFileSystemWatcher()
+        self.password = None
+        self.watcher.fileChanged.connect(self.file_has_changed)
+
+    def file_has_changed(self, file):
+        self.file_changed.emit(file)
 
     def open_pdf(self, file, password=None):
         self.filename = file
+
+        if self.watcher.files():
+            self.watcher.removePaths(self.watcher.files())
+        self.watcher.addPath(self.filename)
+
         try:
             self.document = Document(file)
             if self.document.needs_pass:
+                self.password = password
+
                 if password is None:
                     return self.OPEN_REQUIRES_PASSWORD
                 else:
                     self.document.authenticate(password)
 
-            # self.document = fitz.open(file, password=password)
             self.set_document(self.document, True)
             return self.OPEN_OK
 
@@ -151,21 +165,18 @@ class MuPDFRenderer(QLabel):
             return self.OPEN_ERROR
 
     def save_pdf(self, filename, emit=True):
-        self.sync_requested.emit()
 
-        # Notice: the remove_dynamic_elements is
-        # necessary to avoid them to be
-        # visualized when the image is refreshed
-        # Anyway, the page has already been saved
+        if self.watcher.files():
+            self.watcher.removePaths(self.watcher.files())
+
+        self.sync_requested.emit()
+        orig_data = self.document.tobytes(encryption=PDF_ENCRYPT_KEEP, deflate=True, garbage=3)
+        orig_doc = pymupdf.open("pdf", orig_data)
+
+        self.sync_dynamic.emit()
 
         if filename != self.get_filename():
-            self.document.save(filename)
-            # self.remove_dynamic_elements()
-            return 0
-        # elif self.document.can_save_incrementally():
-        #    self.document.save(filename, encryption=PDF_ENCRYPT_KEEP, incremental=True, deflate=True)
-        #    self.remove_dynamic_elements()
-        #    return 1
+            self.document.save(filename, encryption=PDF_ENCRYPT_KEEP, deflate=True, garbage=3)
         else:
             tmp_dir = tempfile.gettempdir() + os.sep
             temp_filename = tmp_dir + "swik_{}.tmp".format(int(time.time()))
@@ -178,12 +189,10 @@ class MuPDFRenderer(QLabel):
             if exists(temp_filename):
                 os.remove(temp_filename)
 
-            # We need to reopen the file
-            # because it has actually changed
-            self.document = pymupdf.open(filename)
-            self.set_document(self.document, emit)
-            # self.remove_dynamic_elements()
-            return 2
+        self.filename = filename
+        self.watcher.addPath(self.filename)
+
+        self.set_document(orig_doc, False)
 
     def get_page_size(self, index):
         return self.document[index].rect[2], self.document[index].rect[3]
@@ -723,14 +732,6 @@ class MuPDFRenderer(QLabel):
 
                 return
 
-    def remove_all_widgets(self):
-        for i in range(len(self.document)):
-            page = self.document[i]
-            widget = page.first_widget
-            while widget:
-                widget = page.delete_widget(widget)
-        self.clear_document()
-
     def clear_document(self):
         data = self.document.tobytes(encryption=PDF_ENCRYPT_KEEP, deflate=True, garbage=3)
         self.document.close()
@@ -754,6 +755,7 @@ class MuPDFRenderer(QLabel):
 
         # Prepare for baking
         self.sync_requested.emit()
+        self.sync_dynamic.emit()
 
         # Bake document
         self.document.bake()

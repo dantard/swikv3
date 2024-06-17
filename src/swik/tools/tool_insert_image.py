@@ -174,6 +174,7 @@ class ToolInsertSignatureImage(Tool):
         h_layout.addWidget(add_btn)
 
         self.draw_btn = QPushButton("Draw")
+        self.draw_btn.setEnabled(False)
         self.draw_btn.clicked.connect(self.draw_image)
         self.draw_btn.setCheckable(True)
         self.image_lb = ClickableLabel()
@@ -190,7 +191,7 @@ class ToolInsertSignatureImage(Tool):
 
         v_layout.addWidget(self.draw_btn)
         self.helper.setLayout(v_layout)
-        self.widget.set_app_widget(self.helper, title="Sign")
+        self.widget.set_app_widget(self.helper, title="Insert Image")
 
         self.update_cb()
         self.update_image()
@@ -259,9 +260,11 @@ class ToolInsertSignatureImage(Tool):
             image = self.images[self.image_cb.currentText()]
             self.image_filename = image.image_file.get_value()
             self.image_mode = image.stretch.get_value()
+            self.draw_btn.setEnabled(True)
         else:
             self.image_filename = None
             self.image_mode = None
+            self.draw_btn.setEnabled(False)
 
         self.update_image()
         self.check_interaction()
@@ -300,12 +303,9 @@ class ToolInsertSignatureImage(Tool):
             self.rubberband = None
 
     def draw_image(self):
-        index = self.image_cb.currentIndex()
-        image = self.images[self.image_cb.currentText()]
-
         if self.rubberband is None:
-            self.rubberband = InsertImageRectItem(None, pen=Qt.transparent, brush=Qt.transparent, image_filename=image.image_file.get_value(),
-                                                  image_mode=image.stretch.get_value())
+            self.rubberband = InsertImageRectItem(None, pen=Qt.transparent, brush=Qt.transparent, image_filename=self.image_filename,
+                                                  image_mode=self.image_mode)
             self.view.setCursor(Qt.CrossCursor)
 
     def on_image_clicked(self):
@@ -314,6 +314,7 @@ class ToolInsertSignatureImage(Tool):
             if file_path:
                 self.image_filename = file_path
                 self.image_mode = 0
+                self.draw_btn.setEnabled(True)
                 self.update_image()
 
     def finish(self):

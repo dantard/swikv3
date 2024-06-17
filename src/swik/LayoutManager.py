@@ -57,6 +57,8 @@ class LayoutManager:
         self.max_width, self.max_height = self.renderer.get_max_pages_size()
 
     def reset(self):
+        if self.mode == self.MODE_SINGLE_PAGE:
+            return
         self.scene_width, self.scene_height = 0, 0
         self.max_width, self.max_height = self.renderer.get_max_pages_size()
         rect = self.compute_scene_rect()
@@ -65,19 +67,20 @@ class LayoutManager:
         self.view.setAlignment(self.align)
 
     def compute_scene_rect(self):
-        # ri = QGraphicsRectItem()
-        # ri.setPos(0, 0)
-        max_width, max_height = 0, 20
-        for index in range(self.renderer.get_num_of_pages()):
-            w, h = self.renderer.get_page_size(index)
-            ratio = self.view.get_ratio() if self.mode != self.MODE_FIT_WIDTH else 1 / (w / (self.view.viewport().width() - 20))
-            w = w * ratio
-            h = h * ratio
-            max_width = max(max_width, w)
-            max_height = max_height + h + self.page_sep
-        # ri.setRect(0, 0, max_width, max_height)
-        # self.view.scene().addItem(ri)
-        return QRectF(0, 0, max_width, max_height)
+        if self.mode == self.MODE_SINGLE_PAGE:
+            return QRectF(0, 0, 0, 0)
+        else:
+            max_width, max_height = 0, 20
+            for index in range(self.renderer.get_num_of_pages()):
+                w, h = self.renderer.get_page_size(index)
+                ratio = self.view.get_ratio() if self.mode != self.MODE_FIT_WIDTH else 1 / (w / (self.view.viewport().width() - 20))
+                w = w * ratio
+                h = h * ratio
+                max_width = max(max_width, w)
+                max_height = max_height + h + self.page_sep
+            # ri.setRect(0, 0, max_width, max_height)
+            # self.view.scene().addItem(ri)
+            return QRectF(0, 0, max_width, max_height)
 
     def single_row(self, page):
         x_pos = 20 if page.index == 0 else self.view.pages[page.index - 1].pos().x() + self.view.pages[page.index - 1].get_scaled_width() + self.page_sep
@@ -98,7 +101,11 @@ class LayoutManager:
         y_pos = 20 if page.index == 0 else self.view.pages[page.index - 1].pos().y() + self.view.pages[page.index - 1].get_scaled_height() + self.page_sep
         self.scene_height = max(self.scene_height, y_pos + page.get_scaled_height() + self.page_sep)
         # self.view.scene().setSceneRect(0, 0, self.max_width * page.get_scaling_ratio(), self.scene_height)
-        page.setPos(0, y_pos)
+
+        sw, sh = self.view.scene().sceneRect().width(), self.view.scene().sceneRect().height()
+        pw = page.get_scaled_width()
+
+        page.setPos(sw / 2 - pw / 2, y_pos)
         page.setVisible(True)
 
     def vertical_multipage(self, page):
@@ -123,13 +130,31 @@ class LayoutManager:
 
     def single_page(self, page):
         page.setPos(0, 0)
-        self.view.scene().setSceneRect(0, 0, page.get_scaled_width(), page.get_scaled_height())
         page.setVisible(page.index == self.view.get_page())
+
+    def move_to_page(self, page):
+        if self.mode == self.MODE_SINGLE_PAGE:
+            for p in self.view.pages.values():
+                p.setVisible(False)
+            self.update_layout(page)
 
     def update_layout(self, page):
 
         if self.mode == self.MODE_SINGLE_PAGE:
-            self.single_page(page)
+            if page.index == self.view.get_page():
+                self.reset()
+                w, h = self.renderer.get_page_size(page.index)
+                ratio = self.view.get_ratio()
+                w = w * ratio
+                h = h * ratio
+                self.view.scene().setSceneRect(QRectF(0, 0, w, h + 40))
+                page.setPos(0, 20)
+                page.setVisible(True)
+                self.view.setAlignment(Qt.AlignBottom | Qt.AlignRight)
+                self.view.setAlignment(self.align)
+            else:
+                page.setVisible(False)
+
         elif self.mode == self.MODE_FIT_WIDTH:
             self.single_column_fit_width(page)
         elif self.mode == self.MODE_VERTICAL_MULTIPAGE:

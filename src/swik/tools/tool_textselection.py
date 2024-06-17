@@ -90,6 +90,7 @@ class ToolTextSelection(Tool):
         self.multiple_selection.extend(self.selected)
 
     def mouse_pressed(self, event):
+
         if event.button() == Qt.RightButton:
             return
 
@@ -125,8 +126,11 @@ class ToolTextSelection(Tool):
 
     def mouse_released(self, event):
         if self.rubberband is not None:
-            self.rubberband.view_mouse_release_event(self.view, event)
-            self.selecting_done(self.rubberband)
+            if self.rubberband.view_mouse_release_event(self.view, event):
+                self.selecting_done(self.rubberband)
+            else:
+                self.clear_selection()
+            self.rubberband = None
 
     def mouse_moved(self, event):
         if self.rubberband is not None:

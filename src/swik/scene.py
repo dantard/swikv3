@@ -78,7 +78,16 @@ class Scene(QGraphicsScene):
     def keyPressEvent(self, event) -> None:
         items = self.selectedItems()
         if len(items) == 0:
+            print("eooo")
             super().keyPressEvent(event)
+            if event.key() in [QtCore.Qt.Key_Up, QtCore.Qt.Key_Down, QtCore.Qt.Key_Left, QtCore.Qt.Key_Right]:
+                if event.key() in [QtCore.Qt.Key_Right, QtCore.Qt.Key_Up]:
+                    view = self.views()[0]
+                    view.move_to_page(view.page + 1)
+                elif event.key() in [QtCore.Qt.Key_Down, QtCore.Qt.Key_Left]:
+                    view = self.views()[0]
+                    view.move_to_page(view.page - 1)
+
         elif event.key() in [QtCore.Qt.Key_Up, QtCore.Qt.Key_Down, QtCore.Qt.Key_Left, QtCore.Qt.Key_Right]:
             val = 1 if event.modifiers() == QtCore.Qt.ControlModifier else 10
             if event.key() == QtCore.Qt.Key_Up:
@@ -112,7 +121,7 @@ class Scene(QGraphicsScene):
             self.removeItem(item)
 
     def keyReleaseEvent(self, event) -> None:
-        return
+        super(Scene, self).keyReleaseEvent(event)
 
     # TODO: to be completed
     '''
