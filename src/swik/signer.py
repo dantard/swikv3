@@ -109,7 +109,7 @@ def get_signature_info(pdf_path, cert_path):
         # vc = ValidationContext(trust_roots=[root_cert])
         result = []
         with open(pdf_path, 'rb') as doc:
-            r = PdfFileReader(doc)
+            r = PdfFileReader(doc, False)
             for sig in r.embedded_signatures:
                 status = validate_pdf_signature(sig)  # , vc)
                 data = status.signing_cert.subject.human_friendly.split(', ')
@@ -119,7 +119,7 @@ def get_signature_info(pdf_path, cert_path):
                     info[k] = v
                 info.update({'Valid': 'Yes' if status.valid else 'No',
                              'Intact': 'Yes' if status.intact else 'No',
-                             'Coverage': 'Whole file' if status.coverage == SignatureCoverageLevel.ENTIRE_FILE else 'Partial',
+                             'Coverage': 'Whole file' if status.coverage == SignatureCoverageLevel.ENTIRE_FILE else 'Partial ' + status.coverage.name,
                              'Date': status.signer_reported_dt.isoformat(),
                              })
                 result.append(info)

@@ -23,6 +23,11 @@ class SignerRectItem(ResizableRectItem):
     ACTION_EDIT = 1
     ACTION_DELETED = 2
 
+    def __init__(self, parent, signature, **kwargs):
+        super().__init__(parent, **kwargs)
+        self.signature = signature
+
+
     def contextMenuEvent(self, event: 'QGraphicsSceneContextMenuEvent') -> None:
         menu = QMenu()
         menu.addAction("Sign", lambda: self.signals.action.emit(SignerRectItem.ACTION_SIGN, self))
@@ -59,6 +64,67 @@ class SignatureConf:
 
 
 class ToolSign(Tool):
+
+    @staticmethod
+    def sign_document(rubberband, filename, parent=None):
+        filename = ToolSign.sign(rubberband.get_parent().index,
+                             rubberband.get_rect_on_parent(), rubberband.signature, filename, parent=parent)
+        return filename
+
+    @staticmethod
+    def sign(index, rect, signature, filename, parent=None):
+        # signature = self.get_selected()
+
+        password_to_save = None
+
+        if (password := signature.password.get_value()) is None:
+            dialog = PasswordDialog(parent=parent)
+            if dialog.exec() == QDialog.Accepted:
+                password = dialog.getText()
+                if dialog.getCheckBox():
+                    password_to_save = base64.encodebytes(password.encode()).decode().replace('\n', '')
+            else:
+                return
+        else:
+            password = base64.decodebytes(password.encode()).decode()
+
+        suffix = signature.signed_suffix.get_value()
+        output_filename = filename.replace(".pdf", suffix + ".pdf")
+        p12_file = signature.p12_file.get_value()
+
+        res = ToolSign.apply_signature(filename, index, rect, p12_file,
+                                       password, output_filename,
+                                       font_size=signature.text_font_size.get_value(),
+                                       border=signature.border.get_value(),
+                                       text=signature.text_signature.get_value().replace('&&', '\n'),
+                                       image=signature.image_file.get_value(),
+                                       timestamp=signature.text_timestamp.get_value(),
+                                       text_stretch=1 if signature.text_stretch.get_value() else 0,
+                                       image_stretch=0 if signature.image_stretch.get_value() else 1)
+
+        if res == P12Signer.OK:
+            QMessageBox.information(parent, "Signature", "Document signed Successfully", QMessageBox.Ok)
+            # Save Password only if the signature was successful
+            if password_to_save is not None:
+                signature.signature.set_value(password_to_save)
+                # self.renderer.open_pdf(output_filename)
+            return output_filename
+        else:
+            QMessageBox.warning(parent, "Signature", "Error signing the document", QMessageBox.Ok)
+        return None
+
+    @staticmethod
+    def apply_signature(filename, index, rect, p12_file, password, output_filename, **kwargs):
+
+        signer = P12Signer(filename,
+                           output_filename,
+                           p12_file, password, **kwargs)
+
+        box = convert_box_to_upside_down(filename, index, rect)
+
+        # Actually Sign the file
+        return signer.sign(index, box)
+
 
     def __init__(self, widget: Shell, **kwargs):
         super().__init__(widget, **kwargs)
@@ -164,7 +230,7 @@ class ToolSign(Tool):
         self.widget.set_app_widget(self.helper, title="Sign")
 
         self.draw_btn.clicked.connect(self.draw_signature)
-        self.sign_btn.clicked.connect(self.sign_document)
+        self.sign_btn.clicked.connect(self.sign_btn_clicked)
         self.signature_cb.currentIndexChanged.connect(self.on_signature_changed)
 
         for h in [self.draw_btn, self.sign_btn, self.signature_cb, self.tree, self.helper, add_btn,
@@ -173,6 +239,19 @@ class ToolSign(Tool):
 
         self.update_cb()
         self.check_interaction()
+
+    def sign_btn_clicked(self):
+        cont = QMessageBox.question(self.helper, "Sign Document", "File will be saved before signing", QMessageBox.Ok | QMessageBox.Cancel)
+        if cont == QMessageBox.Cancel:
+            return
+
+        #self.renderer.save_pdf(self.renderer.get_filename(), False)
+
+        filename = self.sign_document(self.rubberband, self.renderer.get_filename(), self.view)
+        if filename:
+            self.rubberband = None
+            self.emit_finished(Manager.OPEN_REQUESTED, filename)
+
 
     def import_signature(self):
         import_dialog = ImportP12("Select signature file", "PKCS#12 (*.p12)")
@@ -235,73 +314,11 @@ class ToolSign(Tool):
         if self.rubberband is not None:
             self.rubberband.view_mouse_move_event(self.view, event)
 
-    def sign(self, index, rect):
-        signature = self.get_selected()
 
-        filename = self.renderer.get_filename()
-
-        password_to_save = None
-
-        if (password := signature.password.get_value()) is None:
-            dialog = PasswordDialog(parent=self.view)
-            if dialog.exec() == QDialog.Accepted:
-                password = dialog.getText()
-                if dialog.getCheckBox():
-                    password_to_save = base64.encodebytes(password.encode()).decode().replace('\n', '')
-            else:
-                return
-        else:
-            password = base64.decodebytes(password.encode()).decode()
-
-        suffix = signature.signed_suffix.get_value()
-        output_filename = filename.replace(".pdf", suffix + ".pdf")
-
-        res = self.apply_signature(filename, index, rect,
-                                   password, output_filename,
-                                   font_size=signature.text_font_size.get_value(),
-                                   border=signature.border.get_value(),
-                                   text=signature.text_signature.get_value().replace('&&', '\n'),
-                                   image=signature.image_file.get_value(),
-                                   timestamp=signature.text_timestamp.get_value(),
-                                   text_stretch=1 if signature.text_stretch.get_value() else 0,
-                                   image_stretch=0 if signature.image_stretch.get_value() else 1)
-
-        if res == P12Signer.OK:
-            QMessageBox.information(self.view, "Signature", "Document signed Successfully", QMessageBox.Ok)
-            # Save Password only if the signature was successful
-            if password_to_save is not None:
-                signature.signature.set_value(password_to_save)
-                # self.renderer.open_pdf(output_filename)
-            return output_filename
-        else:
-            QMessageBox.warning(self.view, "Signature", "Error signing the document", QMessageBox.Ok)
-        return None
 
     def get_selected(self):
         index = self.signature_cb.currentText()
         return self.signatures[index]
-
-    def apply_signature(self, filename, index, rect, password, output_filename, **kwargs):
-
-        signature = self.get_selected()
-
-        p12_file = signature.p12_file.get_value()
-
-        signer = P12Signer(filename,
-                           output_filename,
-                           p12_file, password, **kwargs)
-
-        box = convert_box_to_upside_down(filename, index, rect)
-
-        # Actually Sign the file
-        return signer.sign(index, box)
-
-    def sign_document(self):
-        filename = self.sign(self.rubberband.get_parent().index,
-                             self.rubberband.get_rect_on_parent())
-        if filename:
-            self.rubberband = None
-            self.emit_finished(Manager.OPEN_REQUESTED, filename)
 
     def draw_signature(self):
         signature = self.get_selected()
@@ -312,7 +329,7 @@ class ToolSign(Tool):
 
         text_mode = SignerRectItem.TEXT_MODE_STRETCH if signature.text_stretch.get_value() else SignerRectItem.TEXT_MODE_KEEP
         image_mode = SignerRectItem.IMAGE_MODE_STRETCH if signature.image_stretch.get_value() else SignerRectItem.IMAGE_MODE_MAINTAIN_RATIO
-        self.rubberband = SignerRectItem(None, text=text, image_filename=image_filename, max_font_size=max_font_size,
+        self.rubberband = SignerRectItem(None, self.get_selected(), text=text, image_filename=image_filename, max_font_size=max_font_size,
                                          text_mode=text_mode,
                                          image_mode=image_mode, pen=Qt.transparent, brush=QColor(255, 0, 0, 80))
 
@@ -326,7 +343,7 @@ class ToolSign(Tool):
 
         if action == SignerRectItem.ACTION_SIGN:
             self.sign(rubberband.get_parent().index,
-                      rubberband.get_rect_on_parent())
+                      rubberband.get_rect_on_parent(), rubberband.signature)
         elif action == SignerRectItem.ACTION_EDIT:
             if self.config.edit():
                 text = signature.text_signature.get_value().replace('&&', '\n')
@@ -347,7 +364,7 @@ class ToolSign(Tool):
 
     def finish(self):
         if self.rubberband is not None:
-            self.view.scene().removeItem(self.rubberband)
+            #self.view.scene().removeItem(self.rubberband)
             self.view.setCursor(Qt.ArrowCursor)
             self.rubberband = None
         self.view.setCursor(Qt.ArrowCursor)

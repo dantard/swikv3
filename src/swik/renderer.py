@@ -150,7 +150,7 @@ class MuPDFRenderer(QLabel):
             traceback.print_exc()
             return self.OPEN_ERROR
 
-    def save_pdf(self, filename):
+    def save_pdf(self, filename, emit=True):
         self.sync_requested.emit()
 
         # Notice: the remove_dynamic_elements is
@@ -159,7 +159,7 @@ class MuPDFRenderer(QLabel):
         # Anyway, the page has already been saved
 
         if filename != self.get_filename():
-            self.document.save(filename, encryption=PDF_ENCRYPT_KEEP, deflate=True, garbage=3)
+            self.document.save(filename)
             # self.remove_dynamic_elements()
             return 0
         # elif self.document.can_save_incrementally():
@@ -181,7 +181,7 @@ class MuPDFRenderer(QLabel):
             # We need to reopen the file
             # because it has actually changed
             self.document = pymupdf.open(filename)
-            self.set_document(self.document, True)
+            self.set_document(self.document, emit)
             # self.remove_dynamic_elements()
             return 2
 

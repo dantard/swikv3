@@ -34,7 +34,7 @@ from swik.tools.tool_numerate import ToolNumerate
 from swik.tools.toolcrop import ToolCrop
 from swik.tools.toolrearranger import ToolRearrange
 from swik.tools.toolredactannotation import ToolRedactAnnotation
-from swik.tools.toolsign import ToolSign
+from swik.tools.toolsign import ToolSign, SignerRectItem
 from swik.tools.toolsquareannotation import ToolSquareAnnotation
 from swik.tools.tooltextselection import ToolTextSelection
 from swik.widgets.pdf_widget import PdfWidget
@@ -462,15 +462,26 @@ class SwikWidget(Shell):
 
     def save_file(self, name=None):
         name = self.renderer.get_filename() if name is None else name
-        if self.renderer.get_num_of_pages() > 50:
+        if self.renderer.get_num_of_pages() > 100:
             self.progressing = Progressing(self, title="Saving PDF...")
             self.progressing.start(self.renderer.save_pdf, name, callback=self.saved)
         else:
-            self.manager.clear()
-            self.saved(self.renderer.save_pdf(name))
+            result = self.renderer.save_pdf(name, False)
+            self.saved(result, name)
 
-    def saved(self, ret_code):
-        print("Error saving file", ret_code)
+    def apply_post_save_artifacts(self, filename):
+        # Signature
+        signature = next((sig for sig in self.view.items() if isinstance(sig, SignerRectItem)), None)
+        if signature is not None:
+            output_filename = ToolSign.sign_document(signature, filename)
+            if output_filename:
+                self.open_requested.emit(output_filename, self.view.page, self.view.get_ratio())
+
+        # self.manager.clear()
+
+    def saved(self, ret_code, name):
+        print("Saved file, applying post save artifacts", name)
+        self.apply_post_save_artifacts(name)
 
     def save_file_as(self):
         name = self.renderer.get_filename()

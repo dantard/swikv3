@@ -36,7 +36,7 @@ class Progressing(QProgressDialog):
         self.ret_value = self.func(*self.args)
         self.done.emit(self.ret_value)
         if self.callback:
-            self.callback(self.ret_value)
+            self.callback(self.ret_value, *self.args)
         self.hide()
 
     def get_return_value(self):
