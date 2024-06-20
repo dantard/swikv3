@@ -315,9 +315,11 @@ class MainWindow(QMainWindow):
 def main():
     app = QApplication(sys.argv)
 
-    parser = argparse.ArgumentParser(description='ROS2 latency measurement tool')
+    parser = argparse.ArgumentParser(description='PDF Swik')
     parser.add_argument('-f', '--force-new-instance', action='store_true')
     args, unknown = parser.parse_known_args()
+
+    print(args, unknown, args.force_new_instance, sys.argv)
 
     if len(unknown) > 0 and not args.force_new_instance:
         DBusGMainLoop(set_as_default=True)
@@ -326,10 +328,9 @@ def main():
         try:
             proxy = bus.get_object('com.swik.server', '/com/swik/server')
             interface = dbus.Interface(proxy, 'com.swik.server_interface')
+            print("Requesting running instance to open", unknown[0])
             response = interface.open(unknown[0])
-            if response == "OK":
-                sys.exit(0)
-        except dbus.exceptions.DBusException as err:
+        except:
             print("No other instance running")
 
     window = MainWindow()
@@ -344,9 +345,13 @@ def main():
         window.restore()
 
     if len(unknown) > 0:
-        # window.open_file(sys.argv[1])
-        widget = window.create_widget()
-        window.open_new_tab(widget, unknown[0])
+        def open_new():
+            widget = window.create_widget()
+            window.open_new_tab(widget, unknown[0])
+
+        # Delayed to avoid it to be opened
+        # before the restored windows
+        utils.delayed(25, open_new)
 
     app.exec_()
 

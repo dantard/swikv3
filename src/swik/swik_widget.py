@@ -491,6 +491,7 @@ class SwikWidget(Shell):
 
             else:
                 QMessageBox.warning(self, "Error", "Error opening file")
+                self.tabw.tab_close_requested.emit(self)
 
     def save_file(self, name=None):
         name = self.renderer.get_filename() if name is None else name
