@@ -6,6 +6,8 @@ from dbus.mainloop.glib import DBusGMainLoop
 
 from PyQt5.QtCore import pyqtSignal, QThread
 
+from swik import utils
+
 
 class SwikDBusService(dbus.service.Object):
     def __init__(self, bus_name, object_path, callback):
@@ -25,7 +27,7 @@ class DBusServerThread(QThread):
         super().__init__()
 
     def callback(self, filename):
-        self.open_requested.emit(filename)
+        utils.delayed(50, self.open_requested.emit,filename)
 
     def run(self):
         dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)

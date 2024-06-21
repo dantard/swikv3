@@ -328,9 +328,12 @@ def main():
         try:
             proxy = bus.get_object('com.swik.server', '/com/swik/server')
             interface = dbus.Interface(proxy, 'com.swik.server_interface')
-            print("Requesting running instance to open", unknown[0])
+            print("Requesting running instance to open2222", unknown[0])
             response = interface.open(unknown[0])
-        except:
+            print("response:", response)
+            sys.exit(0)
+        except Exception as e:
+            print(e)
             print("No other instance running")
 
     window = MainWindow()
