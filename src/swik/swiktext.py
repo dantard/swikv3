@@ -114,9 +114,6 @@ class SwikText(QGraphicsTextItem, Undoable):
     def undo(self, kind, info):
         self.set_full_state(info)
 
-    def set_check_parent_limits(self, check):
-        self.check_parent_limits = check
-
     def itemChange(self, change: 'QGraphicsItem.GraphicsItemChange', value: typing.Any) -> typing.Any:
         if self.parentItem() is not None and self.check_parent_limits and change == QGraphicsItem.ItemPositionChange:
             if value.x() < 0:

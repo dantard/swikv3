@@ -124,7 +124,6 @@ class ToolInsertSignatureImage(Tool):
         self.image_cb = None
         self.draw_btn = None
         self.signature = None
-        self.signature_filename = None
         self.rubberband = None
         self.helper = None
         self.images = {}

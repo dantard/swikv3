@@ -57,10 +57,8 @@ class ResizableRectItem(PaintableSelectorRectItem, Undoable):
         self.movable = True
         self.setFlags(QGraphicsRectItem.ItemIsSelectable | QGraphicsRectItem.ItemSendsGeometryChanges | QGraphicsRectItem.ItemIsMovable)
         self.setAcceptHoverEvents(True)
-        self.handle_size = 10  # Size of resize handles
         self.handles_enabled = True
         self.handles = []
-        self.pos_before = None
         self.current_pose = None
         self.selected_handle_pos = None
         self.handle_pressed = False

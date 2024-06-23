@@ -95,11 +95,6 @@ class ToolNumerate(BasicTool):
         create_btn.clicked.connect(self.create)
         self.widget.set_app_widget(self.layout, 125, "Numerate")
 
-    def create_dialog(self):
-
-        a = EnumerateDialog(self.view, self.font_manager)
-        a.exec()
-
     def selection_changed(self):
         print("Selection changed")
 

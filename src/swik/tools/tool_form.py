@@ -66,9 +66,6 @@ class ToolForm(Tool):
             for widget in widgets:
                 widget.setVisible(True)
 
-    def usable(self):
-        return True
-
     def finish(self):
         widgets = [item for item in self.view.items() if isinstance(item, PdfWidget)]
         for widget in widgets:

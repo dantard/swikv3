@@ -50,12 +50,6 @@ class TextSearchToolbar(Toolbar):
         self.renderer = renderer
         self.finder = Finder(self.view, renderer)
         self.finder.found.connect(self.found_word)
-
-        # self.found_how_many = 0
-        # self.found = list()
-        self.found_index = None
-        self.prev_word = None
-        #        self.words = self.view.get_words()
         self.sc = QShortcut(QKeySequence('Ctrl+F'), self.toolbar)
         self.sc.activated.connect(self.activated)
         self.widgets = []

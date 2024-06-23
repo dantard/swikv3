@@ -40,23 +40,12 @@ class Undoable:
         self.undo(kind, info)
 
 
-class Serializable:
-
-    def serialize(self, info):
-        pass
-
-    def deserialize(self, info):
-        pass
-
 
 class Shell(QWidget):
     def get_renderer(self):
         pass
 
     def get_view(self):
-        pass
-
-    def get_scene(self):
         pass
 
     def get_manager(self):

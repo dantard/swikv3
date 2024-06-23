@@ -30,9 +30,6 @@ class BasicTool(QObject):
     def context_menu(self, event):
         pass
 
-    def usable(self):
-        return True
-
     def emit_finished(self, status=Manager.FINISHED, data=None):
         self.finished.emit(status, data)
 

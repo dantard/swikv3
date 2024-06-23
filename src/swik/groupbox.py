@@ -19,13 +19,6 @@ class GroupBox:
         self.current = None
         self.common_callback = common_callback
 
-    def reclick(self):
-        for btn in self.actions:
-            if btn.isChecked():
-                print("re-fucking-click")
-                btn.click()
-                break
-
     def set_common_callback(self, callback):
         self.common_callback = callback
 

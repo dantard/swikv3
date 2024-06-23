@@ -220,13 +220,6 @@ class FontPicker(QWidget):
                 current.parent().setExpanded(True)
                 current = current.parent()
 
-    def set_default_id(self, section_id, item_id, size):
-        self.size.setValue(size)
-        if self.list_widget.topLevelItemCount() > section_id:
-            top_level = self.list_widget.topLevelItem(section_id)
-            if top_level.childCount() > item_id:
-                self.list_widget.setCurrentItem(top_level.child(item_id))
-
     def change_font(self):
         ok = False
         item: FontPicker.TreeWidgetItem = self.get_selected()

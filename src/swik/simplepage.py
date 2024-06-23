@@ -38,7 +38,6 @@ class SimplePage(QGraphicsRectItem):
         self.state = SimplePage.STATE_INVALID
         self.image = None
         self.w, self.h = self.renderer.get_page_size(index)
-        self.rearrange_pickup_pose = None
 
         self.setRect(QRectF(0, 0, self.w, self.h))
         self.setAcceptTouchEvents(True)
@@ -87,26 +86,11 @@ class SimplePage(QGraphicsRectItem):
     def mouseReleaseEvent(self, event: 'QGraphicsSceneMouseEvent') -> None:
         super().mouseReleaseEvent(event)
 
-    def get_sep(self):
-        return 10 + 17  # * self.get_scaling_ratio()
-
     def get_scaled_width(self):
         return self.get_orig_width() * self.get_scaling_ratio()
 
     def get_scaled_height(self):
         return self.get_orig_height() * self.get_scaling_ratio()
-
-    def get_page_items(self, kind, strict=True):
-        if strict:
-            return reversed([p for p in self.childItems() if type(p) == kind])
-        else:
-            return reversed([p for p in self.childItems() if isinstance(p, kind)])
-
-    def finish_setup(self):
-        if self.view.is_fitting_width():
-            self.fit_width()
-        else:
-            self.update_image(self.ratio)
 
     def update_image(self, ratio):
         # print("Updating image for page", self.index, "with ratio", ratio, "and state", self.state)
@@ -116,16 +100,6 @@ class SimplePage(QGraphicsRectItem):
         self.setTransform(QTransform(ratio, 0, 0, 0, ratio, 0, 0, 0, 1))
         self.state = SimplePage.STATE_INVALID
         # self.paint_accessories()
-
-    def fit_width(self):
-        width = self.view.width() - 50
-        fit_ratio = width / self.get_orig_width()
-        self.update_image(fit_ratio)
-        return fit_ratio
-
-    def compute_fit_width(self):
-        width = self.view.width() - 50
-        return width / self.get_orig_width()
 
     def get_scaling_ratio(self):
         return self.transform().m11()
@@ -158,12 +132,6 @@ class SimplePage(QGraphicsRectItem):
         if self.isShown():
             self.update()
 
-    def image_ready2(self, index, ratio, image):
-        if index == self.index:  # and ratio == self.ratio:
-            self.image = image
-            self.state = SimplePage.STATE_FINAL
-            self.update()
-
     def invalidate(self):
         # print('Invalidating page', self.index)
         self.state = self.STATE_FORCED
@@ -193,13 +161,6 @@ class SimplePage(QGraphicsRectItem):
         self.shadow_right.setRect(QRectF(self.get_scaled_width(), shadow_width, shadow_width, self.get_scaled_height()))
         self.shadow_bottom.setRect(
             QRectF(shadow_width, self.get_scaled_height(), self.get_scaled_width(), shadow_width))
-
-    def mark(self, value, color=Qt.red):
-        self.box.setPen(color)
-        self.box.setVisible(value)
-
-    def isMarked(self):
-        return self.box.isVisible()
 
     def get_size(self):
         return self.rect().width(), self.rect().height()

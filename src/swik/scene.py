@@ -13,7 +13,6 @@ class Scene(QGraphicsScene):
         self.signals = Signals()
         self.changes_tracker = ChangesTracker(self)
         self.bunches = []
-        self.prev_selection = []
         self.selectionChanged.connect(self.selection_changed)
         self.group = None
         self.poses = {}

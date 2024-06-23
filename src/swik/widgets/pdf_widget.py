@@ -19,8 +19,6 @@ class PdfWidget(QGraphicsProxyWidget):
         self.setPos(rect.topLeft())
         self.name = ""
         self.flags = 0
-        self.unique_id = PdfWidget.count
-        self.user_data = None
         self.xref = -1
         self.on_state = "Yes"
         PdfWidget.count += 1
@@ -28,9 +26,6 @@ class PdfWidget(QGraphicsProxyWidget):
     def set_info(self, name, flags):
         self.name = name
         self.flags = flags
-
-    def get_info(self):
-        return self.name, self.flags
 
     def get_content(self):
         return self.content
@@ -110,9 +105,6 @@ class PdfComboboxWidget(PdfTextWidget):
 
     def add_items(self, items):
         self.widget.addItems(items)
-
-    def get_items(self):
-        return [self.widget.itemText(i) for i in range(self.widget.count())]
 
     def get_value(self):
         return self.widget.currentText()

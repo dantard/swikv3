@@ -37,7 +37,6 @@ class MainWindow(QMainWindow):
 
         self.config = SwikConfig()
         self.config.read()
-        self.current_event_filter = None
         menu_bar = self.menuBar()
 
         # Setup file menu

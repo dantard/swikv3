@@ -128,10 +128,6 @@ class LayoutManager:
             self.scene_width = max(self.scene_width, x + page.get_scaled_width() + self.page_sep)
             self.view.scene().setSceneRect(0, 0, self.scene_width, self.scene_height + self.page_sep)
 
-    def single_page(self, page):
-        page.setPos(0, 0)
-        page.setVisible(page.index == self.view.get_page())
-
     def move_to_page(self, page):
         if self.mode == self.MODE_SINGLE_PAGE:
             for p in self.view.pages.values():

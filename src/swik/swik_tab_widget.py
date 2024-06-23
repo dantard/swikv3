@@ -38,17 +38,6 @@ class SwikTabWidget(QTabWidget):
         self.plusButton = QPushButton("+", self)
         self.plusButton.clicked.connect(self.plus_clicked.emit)
 
-    def dragEnterEvent(self, e):
-        #        print("DragEnter")
-        e.accept()
-
-    def dragMoveEvent(self, e):
-        #        print("DragMove")
-        e.accept()
-
-    def dropEvent(self, e):
-        print("Drop")
-
     def resizeEvent(self, event):
         super().resizeEvent(event)
         self.move_plus_button()

@@ -25,10 +25,6 @@ class MiniaturePage(SimplePage):
         self.number.setPos(center, self.boundingRect().height() + 10)
         self.number.setFlag(QGraphicsItem.ItemIgnoresTransformations)
 
-    def get_sep(self):
-        self.number.setPlainText(str(self.index + 1))
-        return 60  # + 30 * self.get_scaling_ratio()
-
     def update_image(self, ratio):
         super().update_image(ratio)
         if self.background is not None:
@@ -49,8 +45,8 @@ class MiniaturePage(SimplePage):
 
         # self.box.setVisible(value)
 
-    def paint_accessories(self):
-        pass
-        # Selection Box
-        # self.box.setRect(QRectF(-5, -5, self.get_scaled_width() + 10, self.get_scaled_height() + 10))
-        # self.box.setBrush(QBrush(QColor(255, 255, 0, 30)))
+    # def paint_accessories(self):
+    #    pass
+    # Selection Box
+    # self.box.setRect(QRectF(-5, -5, self.get_scaled_width() + 10, self.get_scaled_height() + 10))
+    # self.box.setBrush(QBrush(QColor(255, 255, 0, 30)))

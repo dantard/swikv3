@@ -29,10 +29,6 @@ class Page(SimplePage):
     def mousePressEvent(self, event) -> None:
         super().mousePressEvent(event)
 
-    def set_words(self, words, join=True):
-        self.words = words
-        # self.renderer.fill_font_info(self.index, self.words)
-
     def gather_words(self, force=False):
         if self.words is None or force:
             self.words = self.renderer.extract_words(self.index)

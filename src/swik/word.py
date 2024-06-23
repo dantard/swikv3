@@ -36,14 +36,6 @@ class Word(SwikRect):
         self.block_no = kwargs.get("block_no", None)
         self.line_no = kwargs.get("line_no", None)
         self.word_no = kwargs.get("word_no", None)
-        self.word_font = None
-        self.word_size = None
-        self.word_color = None
-
-    def set_font(self, font, size, color):
-        self.word_font = font
-        self.word_size = size
-        self.word_color = color
 
     def join(self, parent):
         self.setParentItem(parent)

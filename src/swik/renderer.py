@@ -128,7 +128,6 @@ class MuPDFRenderer(QLabel):
         self.max_height = 0
         self.h = QThreadPool()
         self.h.setMaxThreadCount(100)
-        self.blanks = {}
         self.request_queue_timer = QTimer()
         self.request_queue_timer.setSingleShot(True)
         self.request_queue_timer.timeout.connect(self.process_request_queue)
@@ -224,11 +223,6 @@ class MuPDFRenderer(QLabel):
 
         if emit:
             self.document_changed.emit()
-
-    def request_image_by_width(self, index, width):
-        w, h = self.get_page_size(index)
-        ratio = width / w
-        return self.request_image(index, ratio)
 
     def process_request_queue(self):
         print("Processing request queue")
@@ -361,32 +355,6 @@ class MuPDFRenderer(QLabel):
 
         return word_objs
 
-    def fill_font_info(self, page_id, words):
-        page_spans = []
-        data = self.document[page_id].get_text("dict", sort=True, flags=TEXTFLAGS_DICT & ~TEXT_PRESERVE_IMAGES)
-        blocks = data.get('blocks', [])
-        for block in blocks:
-            lines = block.get('lines', [])
-            for line in lines:
-                spans = line.get('spans', [])
-
-                for span in spans:
-                    print("span", span)
-                    x1, y1, x2, y2 = span["bbox"]
-                    rect = QRectF(x1, y1, x2 - x1, y2 - y1)
-                    h = span.get("color")
-                    b, g, r = h & 255, (h >> 8) & 255, (h >> 16) & 255
-                    color = QColor(r, g, b)
-                    page_spans.append((rect, span.get('font'), span.get('size'), color))
-
-        for word in words:
-            for rect, font, size, color in page_spans:
-                print("rect", rect, "word", word.get_rect_on_parent())
-                if rect.intersects(word.get_rect_on_parent()):
-                    word.set_font(font, size, color)
-                    print("Setting font", font, size, color, word.get_text())
-                    break
-        return words
 
     def get_word_font_info(self, word: Word):
         data = self.document[word.page_id].get_text("dict", sort=False, flags=TEXTFLAGS_DICT & ~TEXT_PRESERVE_IMAGES)
@@ -465,19 +433,6 @@ class MuPDFRenderer(QLabel):
     def apply_redactions(self, index):
         self.document[index].apply_redactions()
 
-    def add_redact_annot2(self, word, font, size, color):
-        print("applying", word.page_id, word.get_rect_on_parent(), color)
-        print("page", self.document[word.page_id].get_fonts())
-        page = self.document[word.page_id]
-        rect = word.get_rect_on_parent()
-        # rect.setWidth(rect.width() *1.3)
-        rect.setHeight(rect.height() * 1.35)
-        rect = utils.qrectf_to_fitz_rect(rect)
-        color = utils.qcolor_to_fitz_color(color)
-        print(rect, word.get_text(), "TT3", size, color)
-        page.add_redact_annot(rect, word.get_text(), fontname="TT3", fontsize=size + 5, text_color=color)
-        page.apply_redactions()
-        word.parentItem().invalidate()
 
     annoting = None
 
@@ -731,12 +686,6 @@ class MuPDFRenderer(QLabel):
                     field.update()
 
                 return
-
-    def clear_document(self):
-        data = self.document.tobytes(encryption=PDF_ENCRYPT_KEEP, deflate=True, garbage=3)
-        self.document.close()
-        doc = pymupdf.open("pdf", data)
-        self.set_document(doc, False)
 
     def sanitize(self):
         clean_doc_data = self.document.tobytes(encryption=PDF_ENCRYPT_KEEP, deflate=True, garbage=3)

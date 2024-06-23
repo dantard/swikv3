@@ -24,28 +24,6 @@ class ToolMimicPDF(Tool):
         self.helper = None
         self.tree = None
 
-    def top_left_corner(self, midpoint, width, height):
-        # Calculate the x-coordinate of the top-left corner
-        top_left_x = midpoint.x() - (width / 2)
-
-        # Calculate the y-coordinate of the top-left corner
-        top_left_y = midpoint.y() - (height / 2)
-
-        # Return the top-left corner as a QPointF
-        return QPointF(top_left_x, top_left_y)
-
-    def rectangle_midpoint(self, rect):
-        # Midpoint of diagonal connecting top-left and bottom-right corners
-        mid1 = QPointF(rect.topLeft() + rect.bottomRight()) / 2
-
-        # Midpoint of diagonal connecting top-right and bottom-left corners
-        mid2 = QPointF(rect.topRight() + rect.bottomLeft()) / 2
-
-        # Midpoint of the rectangle
-        midpoint = (mid1 + mid2) / 2
-
-        return midpoint
-
     def init(self):
         self.texts.clear()
         self.squares.clear()

@@ -17,7 +17,6 @@ class SwikConfig(EasyConfig):
         super().__init__()
         self.base_dir = os.path.expanduser('~') + os.sep + '.swik' + os.sep
         self.set_dialog_minimum_size(500, 500)
-        self.open_other_pdf_in = None
 
         if not os.path.exists(self.base_dir):
             os.makedirs(self.base_dir)
@@ -77,9 +76,6 @@ class SwikConfig(EasyConfig):
     def flush(self):
         self.save(self.base_dir + "swikV3.yaml")
 
-    def get_open_other_pdf_in(self):
-        return self.open_other_pdf_in.get_value()
-
     def read(self):
         self.load(self.base_dir + "swikV3.yaml")
 
@@ -133,10 +129,3 @@ class SwikConfig(EasyConfig):
             for r in recent:
                 open_recent.addAction(r, lambda x=r: window.open_file(x))
 
-    def ask_once(self, key, text, parent=None):
-        if self.private.get('/Private/' + key, True, True):
-            ok, checked = TextDontShowAgainDialog("Info", text + "Continue?", parent).exec()
-            if ok:
-                self.private.set('/Private/' + key, not checked)
-            return ok
-        return True

@@ -35,25 +35,3 @@ class ColoreableRectItem(SwikRect):
         pen = self.pen()
         pen.setWidth(int(width))
         self.setPen(pen)
-
-    def serialize(self, info):
-        super().serialize(info)
-        info["pen"] = self.pen()
-        info["brush"] = self.brush()
-
-    def deserialize(self, info):
-        super().deserialize(info)
-        self.setPen(info["pen"])
-        self.setBrush(info["brush"])
-
-    def from_yaml(self, info):
-        super().from_yaml(info)
-        self.setPen(QPen(QColor(info["pen"]["r"], info["pen"]["g"], info["pen"]["b"], info["pen"]["a"]), info["pen"]["w"]))
-        self.setBrush(QBrush(QColor(info["brush"]["r"], info["brush"]["g"], info["brush"]["b"], info["brush"]["a"])))
-
-    def to_yaml(self, info):
-        super().to_yaml(info)
-        info["pen"] = {"r": self.pen().color().red(), "g": self.pen().color().green(), "b": self.pen().color().blue(), "a": self.pen().color().alpha(),
-                       "w": self.pen().width()}
-        info["brush"] = {"r": self.brush().color().red(), "g": self.brush().color().green(), "b": self.brush().color().blue(),
-                         "a": self.brush().color().alpha()}

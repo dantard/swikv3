@@ -18,7 +18,6 @@ class SwikFont:
         self.italic = False
         self.subset = False
         self.supported = True
-        self.embedded = False
 
 
 class Base14Font(SwikFont):
@@ -30,11 +29,7 @@ class Base14Font(SwikFont):
         self.weight = info.get('weight')
         self.italic = self.nickname.endswith('Oblique') or self.nickname.endswith('Italic')
         self.subset = False
-        self.embedded = False
         self.supported = True
-
-    def get_path(self):
-        return self.nickname
 
     def get_qfont(self, size=11):
         weight = FontManager.map_weigth_to_qfont(self.weight)

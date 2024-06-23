@@ -92,8 +92,6 @@ class SwikWidget(Shell):
         self.miniature_view.setRenderHint(QPainter.NonCosmeticDefaultPen)
         self.miniature_view.setMaximumWidth(350)
         self.miniature_view.setMinimumWidth(180)
-        # self.miniature_view.set_alignment(Qt.AlignTop)
-        #        self.miniature_view.set_fit_width(True)
         self.view.page_clicked.connect(self.miniature_view.set_page)
         self.miniature_view.page_clicked.connect(self.view.set_page)
         self.manager.set_view(self.view)
@@ -235,9 +233,6 @@ class SwikWidget(Shell):
     def get_view(self):
         return self.view
 
-    def get_scene(self):
-        return self.scene
-
     def get_manager(self):
         return self.manager
 
@@ -342,34 +337,8 @@ class SwikWidget(Shell):
             self.lateral_bar.setOrientation(Qt.Horizontal)
             self.vlayout.insertWidget(self.vlayout.count(), self.lateral_bar)
 
-    #
-
-    # self.sign_btn.setEnabled(self.config.get("p12") is not None)
-    # self.image_sign_btn.setEnabled(self.config.get("image_signature") is not None)
-
-    def set_tab(self, tab):
-        self.tab = tab
-
     def statusBar(self):
         return self.win.statusBar()
-
-    def should_open_here(self, filename):
-        msg_box = QMessageBox(self)
-        msg_box.setIcon(QMessageBox.Question)
-        msg_box.setText("Open file {} in this window?".format(os.path.basename(filename)))
-        msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
-        lay: QHBoxLayout = msg_box.findChild(QHBoxLayout)
-        w = lay.takeAt(3)
-        lay.insertWidget(1, w.widget())
-        w = lay.takeAt(2)
-        lay.insertWidget(3, w.widget())
-        user_choice = msg_box.exec()
-        if user_choice == QMessageBox.Yes:
-            return True
-        elif user_choice == QMessageBox.No:
-            return False
-        else:
-            return True
 
     def iterate_mode(self):
         mode = (self.view.get_mode() + 1) % (len(LayoutManager.modes) - 1)
@@ -387,14 +356,6 @@ class SwikWidget(Shell):
     def extract_fonts(self):
         fonts = self.renderer.save_fonts(".")
         QMessageBox.information(self, "Fonts extracted", "Extracted " + str(len(fonts)) + "fonts")
-
-    def undo(self):
-        selected = self.view.scene().selectedItems()
-        for item in selected:
-            item.deserialize(self.info)
-
-    def copy(self):
-        pass
 
     def document_changed(self):
         # Clear views and fonts
@@ -460,9 +421,6 @@ class SwikWidget(Shell):
 
     def get_filename(self):
         return self.renderer.get_filename()
-
-    def manage_tool(self, tool):
-        self.manager.use_tool(tool)
 
     def open_button(self):
         # self.set_ratio(1)

@@ -33,26 +33,19 @@ class GraphView(QGraphicsView):
         self.on_document_ready = []
         self.previous_state = 0, 0, None
         self.page_object = page
-        self.scrolled = pyqtSignal(QWheelEvent)
         self.ratio = 1
-        self.pages_ready = 0
-        self.pages_ready_mtx = QMutex()
         self.natural_hscroll = False
         self.renderer = renderer
         self.manager = manager
-        self.exiting = False
         self.page = 0
         self.mode = mode
         self.pages = SyncDict()
-        self.futures = list()
-        self.pool = ThreadPool(processes=100)
         self.immediate_resize = False
 
         self.setScene(scene)
         self.scene().setBackgroundBrush(Qt.gray)
         self.setRenderHint(QPainter.Antialiasing)
         self.setRenderHint(QPainter.SmoothPixmapTransform)
-        self.get_page_size_future = None
         self.align = Qt.AlignVCenter
         self.setVerticalScrollBar(SB())
         # ## Connect signals
@@ -67,13 +60,6 @@ class GraphView(QGraphicsView):
         self.hhh.setPos(0, 0)
         self.scene().addItem(self.hhh)
 
-    def submit(self, func):
-        print("submitting", func)
-        self.pool.apply_async(func)
-
-    def append_on_document_ready(self, delay, func, *args):
-        print("append", (delay, func, *args))
-        self.on_document_ready.append((delay, func, args))
 
     def set_mode(self, mode, force=False):
         print("Setting mode", mode, force)
@@ -83,9 +69,6 @@ class GraphView(QGraphicsView):
 
     def finish(self):
         self.pages.clear()
-
-    def set_alignment(self, align):
-        self.align = align
 
     def get_mode(self):
         return self.layout_manager.get_mode()
@@ -117,9 +100,6 @@ class GraphView(QGraphicsView):
 
     def get_width(self):
         return self.geometry().width()
-
-    def get_page_width(self, index):
-        return self.pages[index].get_orig_width()
 
     def get_ratio(self):
         return self.ratio
@@ -166,9 +146,6 @@ class GraphView(QGraphicsView):
         self.scene().addItem(self.pages[i])
         return self.pages[i]
 
-    def add_annotation(self, annot):
-        self.pages[annot.page].create_annotation(annot)
-
     def get_page(self):
         return self.page
 
@@ -207,10 +184,6 @@ class GraphView(QGraphicsView):
     def get_current_page(self):
         return self.pages.get(self.page)
 
-    def get_page_offset(self, index):
-        page = self.pages.get(index)
-        return -self.mapFromScene(page.scenePos()).y()
-
     def move_to_page(self, index, offset=None):
         print("move to page", index, offset, self.pages.get(index))
         if (page := self.pages.get(index)) is not None:
@@ -229,12 +202,6 @@ class GraphView(QGraphicsView):
             page.update()
             self.page_changed.emit(index, self.renderer.get_num_of_pages())
 
-    def set_override_cursor(self, cursor):
-        self.viewport().setCursor(cursor)
-
-    def reset_cursor(self):
-        self.viewport().setCursor(Qt.ArrowCursor)
-
     def page_updated(self, index):
         self.pages[index].invalidate()
         v, h = self.verticalScrollBar().value(), self.horizontalScrollBar().value()
@@ -246,10 +213,6 @@ class GraphView(QGraphicsView):
         self.horizontalScrollBar().setValue(h)
 
     # ## UTILITY METHODS
-
-    def get_item_at_pos(self, pos):
-        item = self.itemAt(pos)
-        return item
 
     def get_page_at_pos(self, pos):
         item = self.items(pos)
@@ -284,20 +247,6 @@ class GraphView(QGraphicsView):
             event.accept()
         else:
             event.ignore()
-
-    def get_page_at_global(self, pos: QPoint):
-        pos = self.mapFromGlobal(pos)
-        return self.get_page_at_pos(pos).index
-
-    def top_is(self, pos, check_items):
-        items = self.scene().items(self.mapToScene(pos))
-        print("Mouse pressed", items)
-        if len(items) == 0:
-            return False
-        for item in check_items:
-            if isinstance(items[0], item):
-                return True
-        return False
 
     def there_is_any_other_than(self, pos, check_items):
         items = self.scene().items(self.mapToScene(pos))

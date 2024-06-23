@@ -117,7 +117,6 @@ class ToolSign(Tool):
         self.signature_cb = None
         self.selected = 0
         self.signatures: dict = {}
-        self.cfg_p12 = []
 
         self.nicknames = self.config.root().getList("signature_list", default=[], hidden=True)
         self.config.read()
