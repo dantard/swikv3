@@ -1,8 +1,8 @@
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QToolBar, QComboBox
 
-from swik.GraphView import GraphView
-from swik.LayoutManager import LayoutManager
+from swik.graphview import GraphView
+from swik.layout_manager import LayoutManager
 from swik.toolbars.toolbar import Toolbar
 
 

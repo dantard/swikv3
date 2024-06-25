@@ -18,7 +18,7 @@ from PyQt5.QtNetwork import QUdpSocket, QHostAddress
 from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog
 
 import swik.utils as utils
-from swik.LayoutManager import LayoutManager
+from swik.layout_manager import LayoutManager
 from swik.progressing import Progressing
 from swik.swik_dbus import DBusServerThread
 from swik.swik_tab_widget import SwikTabWidget

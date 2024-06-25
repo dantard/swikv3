@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QDialog
 
 from swik.action import Action
-from swik.colorwidget import ColorAlphaAndWidth, ColorAndAlpha, TextLineEdit
+from swik.color_widget import ColorAlphaAndWidth, ColorAndAlpha, TextLineEdit
 from swik.dialogs import ComposableDialog
 from swik.resizeable import ResizableRectItem
 

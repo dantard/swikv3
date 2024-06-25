@@ -2,7 +2,7 @@ from PyQt5.QtCore import Qt, QPointF
 from PyQt5.QtWidgets import QDialog, QMenu
 
 from swik.action import Action
-from swik.colorwidget import Color
+from swik.color_widget import Color
 from swik.dialogs import ComposableDialog
 from swik.interfaces import Copyable
 from swik.resizeable import ResizableRectItem

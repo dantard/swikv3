@@ -6,7 +6,7 @@ from swik.bunch import NumerateBunch
 from swik.dialogs import FontAndColorDialog
 from swik.font_manager import Font
 from swik.interfaces import Shell
-from swik.swiktext import SwikTextNumerate
+from swik.swik_text import SwikTextNumerate
 from swik.tools.tool import BasicTool
 
 

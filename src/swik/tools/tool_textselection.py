@@ -3,13 +3,13 @@ from PyQt5.QtGui import QColor, QGuiApplication, QDesktopServices, QDrag
 from PyQt5.QtWidgets import QMenu, QDialog, QMessageBox
 
 from swik.annotations.highlight_annotation import HighlightAnnotation
-from swik.annotations.redactannotation import RedactAnnotation
+from swik.annotations.redact_annotation import RedactAnnotation
 from swik.dialogs import FontAndColorDialog
 from swik.font_manager import Font
 from swik.interfaces import Shell
 from swik.selector import SelectorRectItem
 from swik.simplepage import SimplePage
-from swik.swiktext import SwikText, SwikTextReplace
+from swik.swik_text import SwikText, SwikTextReplace
 from swik.tools.tool import Tool
 from swik.word import Word
 

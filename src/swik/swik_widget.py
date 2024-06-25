@@ -10,8 +10,8 @@ from PyQt5.QtWidgets import QApplication, QFileDialog, QDialog, QMessageBox, QHB
     QSplitter, QGraphicsScene, QProgressBar, QTreeWidget, QTreeWidgetItem, QPushButton, QLabel, QFrame, QSizePolicy
 from pymupdf import Document
 
-from swik.LayoutManager import LayoutManager
-from swik.SwikGraphView import SwikGraphView
+from swik.layout_manager import LayoutManager
+from swik.swik_graphview import SwikGraphView
 from swik.dialogs import PasswordDialog
 from swik.font_manager import FontManager
 from swik.groupbox import GroupBox
@@ -24,8 +24,8 @@ from swik.progressing import Progressing
 from swik.renderer import MuPDFRenderer
 from swik.scene import Scene
 from swik.title_widget import AppBar
-from swik.toolbars.navigationtoolbar import NavigationToolbar
-from swik.toolbars.searchtoolbar import TextSearchToolbar
+from swik.toolbars.navigation_toolbar import NavigationToolbar
+from swik.toolbars.search_toolbar import TextSearchToolbar
 from swik.toolbars.zoom_toolbar import ZoomToolbar
 from swik.tools.tool_form import ToolForm
 from swik.tools.tool_insert_image import ToolInsertSignatureImage

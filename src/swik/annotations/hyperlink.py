@@ -11,9 +11,10 @@ class Link(QGraphicsRectItem):
     ENTER, MOVE, LEAVE = 0, 1, 2
 
     def __init__(self, rect: QRectF, page):
-        super().__init__(rect, page)
+        super().__init__(QRectF(0,0,rect.width(), rect.height()), page)
         self.signals = Link.Signals()
         self.setBrush(QColor(0, 0, 255, 0))
+        self.setPos(rect.x(), rect.y())
         self.page = page
 
 

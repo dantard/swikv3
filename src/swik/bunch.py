@@ -1,6 +1,6 @@
 from PyQt5.QtCore import QObject
 
-from swik.swiktext import SwikTextNumerate
+from swik.swik_text import SwikTextNumerate
 
 
 class Bunch(QObject):

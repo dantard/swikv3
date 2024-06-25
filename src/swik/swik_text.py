@@ -6,7 +6,7 @@ from PyQt5.QtGui import QFont, QColor, QPen
 from PyQt5.QtWidgets import QGraphicsTextItem, QMenu, QGraphicsRectItem, QGraphicsItem
 
 from swik.action import Action
-from swik.colorwidget import Color
+from swik.color_widget import Color
 from swik.dialogs import ComposableDialog, FontAndColorDialog
 from swik.interfaces import Undoable
 

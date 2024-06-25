@@ -18,10 +18,10 @@ from pymupdf.mupdf import PDF_ENCRYPT_KEEP, PDF_WIDGET_TYPE_TEXT, PDF_WIDGET_TYP
 import swik.utils as utils
 from swik.annotations.highlight_annotation import HighlightAnnotation
 from swik.annotations.hyperlink import ExternalLink, InternalLink
-from swik.annotations.squareannotation import SquareAnnotation
+from swik.annotations.square_annotation import SquareAnnotation
 from swik.font_manager import Base14Font
 from swik.span import Span
-from swik.swiktext import SwikText, SwikTextReplace
+from swik.swik_text import SwikText, SwikTextReplace
 from swik.utils import fitz_rect_to_qrectf
 from swik.widgets.pdf_widget import PdfTextWidget, MultiLinePdfTextWidget, PdfCheckboxWidget, PdfWidget, \
     PdfRadioButtonWidget
@@ -793,11 +793,21 @@ class MuPDFRenderer(QLabel):
         self.set_document(self.document, False)
 
     def get_links(self, page):
+        x0, y0 = self.document[page.index].cropbox.x0, self.document[page.index].cropbox.y0
+        x1, y1 = self.document[page.index].cropbox.x1, self.document[page.index].cropbox.y1
+
         self.page_links = self.document[page.index]
         pdf_link = self.page_links.first_link
         links = []
         while pdf_link is not None:
+            rx, ry, rw, rh = pdf_link.rect
+
+            if rx < x0 or rx > x1 or ry < y0 or ry > y1:
+                pdf_link = pdf_link.next
+                continue
+
             rect = utils.fitz_rect_to_qrectf(pdf_link.rect)
+
 
             if pdf_link.is_external:
                 link = ExternalLink(rect, page, pdf_link.uri)

@@ -7,7 +7,7 @@ from swik.dialogs import FontAndColorDialog, ComposableDialog
 from swik.interfaces import Shell
 from swik.page import Page
 from swik.progressing import Progressing
-from swik.swiktext import SwikText
+from swik.swik_text import SwikText
 from swik.tools.tool import Tool
 
 

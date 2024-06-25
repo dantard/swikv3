@@ -1,6 +1,6 @@
 from PyQt5.QtCore import Qt
 
-from swik.annotations.redactannotation import RedactAnnotation
+from swik.annotations.redact_annotation import RedactAnnotation
 from swik.tools.tool import Tool
 
 
