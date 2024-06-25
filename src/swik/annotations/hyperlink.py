@@ -22,11 +22,20 @@ class ExternalLink(Link):
         super().__init__(rect, page)
         self.uri = uri
         self.setPen(Qt.red)
+        self.setAcceptHoverEvents(True)
+
 
     def mousePressEvent(self, event: 'QGraphicsSceneMouseEvent') -> None:
         super(Link, self).mousePressEvent(event)
         QDesktopServices.openUrl(QUrl(self.uri))
 
+    def hoverEnterEvent(self, event):
+        super().hoverEnterEvent(event)
+        self.setCursor(Qt.PointingHandCursor)
+
+    def hoverLeaveEvent(self, event):
+        super().hoverLeaveEvent(event)
+        self.setCursor(Qt.ArrowCursor)
 
 class InternalLink(Link):
     def __init__(self, rect, page, dest):
@@ -48,6 +57,8 @@ class InternalLink(Link):
 
     def hoverEnterEvent(self, event):
         self.signals.link_hovered.emit(Link.ENTER, self.dest_page, QPointF(self.x, self.y))
+        self.setCursor(Qt.PointingHandCursor)
 
     def hoverLeaveEvent(self, event):
         self.signals.link_hovered.emit(Link.LEAVE, self.dest_page, QPointF(self.x, self.y))
+        self.setCursor(Qt.ArrowCursor)
