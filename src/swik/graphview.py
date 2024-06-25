@@ -6,7 +6,7 @@ from PyQt5.QtGui import QWheelEvent, QPainter, QColor
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsRectItem, QApplication, QScrollBar
 
 # import EnhancedPage
-from swik.LayoutManager import LayoutManager
+from swik.layout_manager import LayoutManager
 from swik.sync_dict import SyncDict
 from swik.simplepage import SimplePage
 from swik.word import Word

@@ -2,7 +2,7 @@ from PyQt5.QtCore import pyqtSignal, Qt
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QToolBar, QLineEdit, QLabel
 
-from swik.GraphView import GraphView
+from swik.graphview import GraphView
 from swik.toolbars.toolbar import Toolbar
 
 

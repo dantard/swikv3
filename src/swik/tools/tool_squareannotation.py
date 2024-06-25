@@ -1,7 +1,7 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QColor
 
-from swik.annotations.squareannotation import SquareAnnotation
+from swik.annotations.square_annotation import SquareAnnotation
 from swik.tools.tool import Tool
 
 

@@ -2,7 +2,7 @@ from PyQt5 import QtCore
 from PyQt5.QtWidgets import QGraphicsScene
 
 from swik.action import Action
-from swik.changestracker import ChangesTracker
+from swik.changes_tracker import ChangesTracker
 from swik.utils import Signals
 
 

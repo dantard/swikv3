@@ -1,6 +1,7 @@
 from PyQt5.QtCore import Qt
 
 from swik.action import Action
+from swik.annotations.hyperlink import Link
 from swik.interfaces import Undoable
 from swik.selector import SelectorRectItem
 from swik.tools.tool import Tool
@@ -29,15 +30,27 @@ class ToolCrop(Tool, Undoable):
         if self.rubberband is not None:
             page = self.rubberband.parentItem()
             self.rubberband.view_mouse_release_event(self.view, event)
+            items =  self.view.pages[page.index].items(Link)
+            pos_on_orig_page = {}
+            for item in items:
+                pos_on_orig_page[item] = item.pos()
+                print("pos", item.pos(), type(item))
+
             before = self.renderer.get_cropbox(page.index)
-            print("before CB", before)
             self.renderer.set_cropbox(page.index, self.rubberband.get_rect_on_parent(), False)
             after = self.renderer.get_cropbox(page.index)
-            print("after CB", after)
+
+            for k, v in pos_on_orig_page.items():
+                if v.x() < after.x() or v.y() < after.y() or v.x() > after.x() + after.width() or v.y() > after.y() + after.height():
+                    print("removing", k, v, after.x(), after.y(), after.width(), after.height())
+                    self.view.scene().removeItem(k)
+                else:
+                    k.setPos(v.x() - after.x(), v.y() - after.y())
+                    print("keeping", k, v, after.x(), after.y(), after.width(), after.height())
+
             self.view.scene().removeItem(self.rubberband)
             self.rubberband = None
             self.notify_any_change(Action.ACTION_CHANGED, (page.index, before, 1), (page.index, after, 1), self.view.scene())
-            print("BEFORE AFTER", before, after)
 
     def mouse_moved(self, event):
         if self.rubberband is not None:

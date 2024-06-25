@@ -3,16 +3,16 @@ from PyQt5.QtGui import QColor, QCursor, QHoverEvent, QPainter
 from PyQt5.QtWidgets import QGraphicsEllipseItem, QGraphicsView, QPushButton
 
 import swik.utils as utils
-from swik.GraphView import GraphView
-from swik.LayoutManager import LayoutManager
+from swik.graphview import GraphView
+from swik.layout_manager import LayoutManager
 from swik.annotations.highlight_annotation import HighlightAnnotation
 from swik.annotations.hyperlink import InternalLink
-from swik.annotations.redactannotation import RedactAnnotation
-from swik.annotations.squareannotation import SquareAnnotation
+from swik.annotations.redact_annotation import RedactAnnotation
+from swik.annotations.square_annotation import SquareAnnotation
 from swik.bunch import NumerateBunch
 from swik.page import Page
 from swik.simplepage import SimplePage
-from swik.swiktext import SwikText, SwikTextReplace, SwikTextNumerate
+from swik.swik_text import SwikText, SwikTextReplace, SwikTextNumerate
 from swik.tools.tool_insert_image import InsertImageRectItem
 from swik.widgets.pdf_widget import PdfWidget
 

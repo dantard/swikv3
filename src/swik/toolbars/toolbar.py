@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QToolBar
 
-from swik.GraphView import GraphView
+from swik.graphview import GraphView
 
 
 class Toolbar:

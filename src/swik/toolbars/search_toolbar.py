@@ -3,7 +3,7 @@ from PyQt5.QtCore import Qt, pyqtSignal, QObject
 from PyQt5.QtGui import QKeySequence, QBrush, QColor, QPainter, QIcon
 from PyQt5.QtWidgets import QToolBar, QShortcut, QLineEdit, QLabel, QApplication, QGraphicsRectItem, QStyle
 
-from swik.GraphView import GraphView
+from swik.graphview import GraphView
 from swik.finder import Finder
 from swik.renderer import MuPDFRenderer
 from swik.toolbars.toolbar import Toolbar

@@ -172,6 +172,10 @@ class SimplePage(QGraphicsRectItem):
         intersection = item_rect.intersected(self.boundingRect())
         return intersection.width() * intersection.height(), intersection
 
+    def items(self, kind=None):
+        all = self.scene().items(self.sceneBoundingRect())
+        return all if kind is None else [item for item in all if isinstance(item, kind)]
+
     def isShown(self):
         views = self.scene().views()
         shown = False

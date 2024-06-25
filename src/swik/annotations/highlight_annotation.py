@@ -2,7 +2,7 @@ from PyQt5.QtCore import QRectF, Qt, QPointF
 from PyQt5.QtWidgets import QGraphicsRectItem, QDialog, QMenu
 
 from swik.action import Action
-from swik.colorwidget import ColorAndAlpha, TextLineEdit
+from swik.color_widget import ColorAndAlpha, TextLineEdit
 from swik.dialogs import ComposableDialog
 from swik.interfaces import Undoable
 

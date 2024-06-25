@@ -7,7 +7,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.serialization import pkcs12
 
 import swik.utils as utils
-from swik.colorwidget import FontPicker, Color
+from swik.color_widget import FontPicker, Color
 from swik.font_manager import FontManager
 from swik.progressing import Progressing
 from OpenSSL import crypto
