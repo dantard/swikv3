@@ -1,7 +1,7 @@
 import os
 
 from PyQt5 import QtCore
-from PyQt5.QtCore import QRect
+from PyQt5.QtCore import QRect, Qt
 # from Dialogs import TextDontShowAgainDialog
 # from gi.overrides.Gio import Gio
 # from gi.overrides.Gtk import Gtk
@@ -13,6 +13,8 @@ from easyconfig.EasyConfig import EasyConfig
 
 
 class SwikConfig(EasyConfig):
+
+    colors = [Qt.transparent, Qt.blue, Qt.red, Qt.green, Qt.black]
     def __init__(self):
         super().__init__()
         self.base_dir = os.path.expanduser('~') + os.sep + '.swik' + os.sep

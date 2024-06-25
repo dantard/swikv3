@@ -9,6 +9,9 @@ class ToolRedactAnnotation(Tool):
         super().__init__(widget)
         self.rubberband = None
 
+    def init(self):
+        self.view.viewport().setCursor(Qt.CrossCursor)
+
     def configure(self):
         pass
 
@@ -22,7 +25,6 @@ class ToolRedactAnnotation(Tool):
             self.rubberband = RedactAnnotation(page, pen=Qt.transparent, brush=RedactAnnotation.initial_color)
             self.rubberband.view_mouse_press_event(self.view, event)
             self.rubberband.notify_creation()
-            self.view.setCursor(Qt.CrossCursor)
 
     def mouse_moved(self, event):
         if self.rubberband is not None:
@@ -35,4 +37,4 @@ class ToolRedactAnnotation(Tool):
             # self.finished.emit()
 
     def finish(self):
-        self.view.setCursor(Qt.ArrowCursor)
+        self.view.viewport().setCursor(Qt.ArrowCursor)

@@ -86,6 +86,7 @@ class ToolInsertImage(Tool):
         if self.rubberband is not None:
             self.rubberband.view_mouse_release_event(self.view, event)
             self.rubberband = None
+            self.view.setCursor(Qt.ArrowCursor)
             self.emit_finished()
 
     def finish(self):
@@ -297,15 +298,15 @@ class ToolInsertSignatureImage(Tool):
             if self.rubberband.view_mouse_release_event(self.view, event):
                 self.draw_btn.setChecked(False)
                 self.draw_btn.setEnabled(True)
-                self.view.setCursor(Qt.ArrowCursor)
 
             self.rubberband = None
+        self.view.viewport().setCursor(Qt.ArrowCursor)
 
     def draw_image(self):
         if self.rubberband is None:
             self.rubberband = InsertImageRectItem(None, pen=Qt.transparent, brush=Qt.transparent, image_filename=self.image_filename,
                                                   image_mode=self.image_mode)
-            self.view.setCursor(Qt.CrossCursor)
+            self.view.viewport().setCursor(Qt.CrossCursor)
 
     def on_image_clicked(self):
         if self.image_filename is None:
@@ -319,8 +320,7 @@ class ToolInsertSignatureImage(Tool):
     def finish(self):
         if self.rubberband is not None:
             self.view.scene().removeItem(self.rubberband)
-            self.view.setCursor(Qt.ArrowCursor)
             self.rubberband = None
-        self.view.setCursor(Qt.ArrowCursor)
+        self.view.viewport().setCursor(Qt.ArrowCursor)
         self.widget.remove_app_widget()
         self.helper.deleteLater()

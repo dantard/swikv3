@@ -13,16 +13,15 @@ class Link(QGraphicsRectItem):
     def __init__(self, rect: QRectF, page):
         super().__init__(QRectF(0,0,rect.width(), rect.height()), page)
         self.signals = Link.Signals()
-        self.setBrush(QColor(0, 0, 255, 0))
+        self.setBrush(Qt.transparent)
+        self.setPen(Qt.transparent)
         self.setPos(rect.x(), rect.y())
         self.page = page
-
 
 class ExternalLink(Link):
     def __init__(self, rect, page, uri):
         super().__init__(rect, page)
         self.uri = uri
-        self.setPen(Qt.red)
         self.setAcceptHoverEvents(True)
 
 
@@ -37,6 +36,8 @@ class ExternalLink(Link):
     def hoverLeaveEvent(self, event):
         super().hoverLeaveEvent(event)
         self.setCursor(Qt.ArrowCursor)
+    def set_color(self, color):
+        self.setBrush(color)
 
 class InternalLink(Link):
     def __init__(self, rect, page, dest):
@@ -44,7 +45,6 @@ class InternalLink(Link):
         self.dest_page = dest[0]
         self.x = dest[1]
         self.y = dest[2]
-        self.setPen(Qt.blue)
         self.setAcceptHoverEvents(True)
 
     def mousePressEvent(self, event: 'QGraphicsSceneMouseEvent') -> None:

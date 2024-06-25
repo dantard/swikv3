@@ -12,9 +12,10 @@ from swik.utils import check_parent_limits
 
 
 class HandleItem(QGraphicsRectItem):
-    def __init__(self, parent):
+    def __init__(self, parent, cursor):
         super().__init__(-5, -5, 10, 10, parent=parent)
         self.setBrush(Qt.white)
+        self.mycursor = cursor
         self.setPen(Qt.black)
         self.setFlags(QGraphicsRectItem.ItemIsMovable | QGraphicsRectItem.ItemIsSelectable | QGraphicsRectItem.ItemSendsGeometryChanges)
         self.setAcceptHoverEvents(True)
@@ -24,6 +25,7 @@ class HandleItem(QGraphicsRectItem):
         self.setBrush(Qt.black)
         super().hoverEnterEvent(event)
         self.parentItem().handle_hover_enter(self, event)
+        self.setCursor(self.mycursor)
 
     def hoverLeaveEvent(self, event):
         self.setBrush(Qt.white)
@@ -69,8 +71,8 @@ class ResizableRectItem(PaintableSelectorRectItem, Undoable):
         self.timer.timeout.connect(lambda: self.set_handle_visibility(False))
         self.timer.setInterval(2000)
 
-        for i in range(8):
-            handle = HandleItem(self)
+        for cursor in [Qt.SizeFDiagCursor, Qt.SizeVerCursor, Qt.SizeBDiagCursor, Qt.SizeHorCursor, Qt.SizeFDiagCursor, Qt.SizeVerCursor, Qt.SizeBDiagCursor, Qt.SizeHorCursor]:
+            handle = HandleItem(self, cursor)
             handle.setBrush(Qt.white)
             handle.setPen(Qt.black)
             handle.setFlag(QGraphicsRectItem.ItemIsMovable, False)
@@ -124,17 +126,13 @@ class ResizableRectItem(PaintableSelectorRectItem, Undoable):
         if not self.handle_pressed:
             self.timer.start()
 
-        if any(handle.contains(handle.mapFromScene(event.scenePos())) for handle in self.handles):
-            self.setCursor(Qt.SizeFDiagCursor)
-        else:
-            self.setCursor(Qt.ArrowCursor)
-
     # event.scenePos()
 
     def mousePressEvent(self, event):
         super().mousePressEvent(event)
         self.setFlag(QGraphicsItem.ItemIsMovable, True)
         self.current_pose = self.pos()
+        self.setCursor(Qt.ClosedHandCursor)
 
     def mouseMoveEvent(self, event):
         super().mouseMoveEvent(event)
@@ -149,6 +147,7 @@ class ResizableRectItem(PaintableSelectorRectItem, Undoable):
         self.update_handles_position()
         if self.current_pose != self.pos():
             self.notify_position_change(self.current_pose, self.pos())
+        self.setCursor(Qt.OpenHandCursor)
 
     # Handles
 
@@ -224,6 +223,7 @@ class ResizableRectItem(PaintableSelectorRectItem, Undoable):
 
     def hoverEnterEvent(self, event) -> None:
         self.set_handle_visibility(True)
+        self.setCursor(Qt.OpenHandCursor)
 
     def itemChange(self, change: 'QGraphicsItem.GraphicsItemChange', value: typing.Any) -> typing.Any:
 
