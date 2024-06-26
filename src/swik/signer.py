@@ -114,14 +114,26 @@ def get_signature_info(pdf_path, cert_path):
                 status = validate_pdf_signature(sig)  # , vc)
                 data = status.signing_cert.subject.human_friendly.split(', ')
                 info = {}
+                all_fields = []
                 for field in data:
-                    k, v = field.split(': ')
-                    info[k] = v
+                    if ";" in field:
+                        other_fields = field.split('; ')
+                        print("other_fields", other_fields)
+                        all_fields.extend(other_fields)
+                    else:
+                        all_fields.append(field)
+
+                for data in all_fields:
+                    data = data.split(': ')
+                    if len(data) == 2:
+                        k, v = data
+                        info[k] = v
+
                 info.update({'Valid': 'Yes' if status.valid else 'No',
                              'Intact': 'Yes' if status.intact else 'No',
                              'Coverage': 'Whole file' if status.coverage == SignatureCoverageLevel.ENTIRE_FILE else 'Partial ' + status.coverage.name,
                              'Date': status.signer_reported_dt.isoformat(),
                              })
                 result.append(info)
-                status.coverage
+
     return result

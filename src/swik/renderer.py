@@ -455,9 +455,9 @@ class MuPDFRenderer(QLabel):
 
         fitz_annot.update()
 
-    def get_annotations(self, page):
+    def get_annotations(self, index):
         annots = list()
-        for annot in self.document[page.index].annots():  # type: Annot
+        for annot in self.document[index].annots():  # type: Annot
             if annot.type[0] == PDF_ANNOT_SQUARE:
                 opacity = annot.opacity if 1 > annot.opacity > 0 else 0.999
                 stroke = utils.fitz_color_to_qcolor(annot.colors['stroke'], opacity) if annot.colors[
@@ -467,22 +467,25 @@ class MuPDFRenderer(QLabel):
                 border_width = annot.border['width']
                 pen = QPen(stroke, border_width)
 
-                swik_annot = SquareAnnotation(page, brush=fill, pen=pen)
+                swik_annot = SquareAnnotation(None, brush=fill, pen=pen)
 
-                annot.set_rect(annot.rect * self.document[page.index].rotation_matrix)
+                annot.set_rect(annot.rect * self.document[index].rotation_matrix)
 
                 swik_annot.setRect(QRectF(0, 0, annot.rect[2] - annot.rect[0], annot.rect[3] - annot.rect[1]))
                 swik_annot.set_content(annot.info["content"])
                 swik_annot.setToolTip(swik_annot.get_content())
                 locked = annot.flags & PDF_ANNOT_IS_LOCKED
                 swik_annot.set_movable(not locked)
+                # NEW DANI
                 swik_annot.setPos(annot.rect[0], annot.rect[1])
+
+
                 annots.append(swik_annot)
-                self.document[page.index].delete_annot(annot)
+                self.document[index].delete_annot(annot)
             elif annot.type[0] == PDF_ANNOT_HIGHLIGHT:
                 color = utils.fitz_color_to_qcolor(annot.colors["stroke"], annot.opacity)
                 # print(annot.colors, annot.opacity)
-                swik_annot = HighlightAnnotation(color, page)
+                swik_annot = HighlightAnnotation(color, None)
                 swik_annot.set_content(annot.info["content"])
                 swik_annot.setRect(QRectF(0, 0, annot.rect[2] - annot.rect[0], annot.rect[3] - annot.rect[1]))
                 swik_annot.setPos(annot.rect[0], annot.rect[1])
@@ -491,11 +494,11 @@ class MuPDFRenderer(QLabel):
                     quad_count = int(len(points) / 4)
                     for i in range(quad_count):
                         rect = Quad(points[i * 4: i * 4 + 4]).rect
-                        rect = rect * self.document[page.index].rotation_matrix
+                        rect = rect * self.document[index].rotation_matrix
                         quad = utils.fitz_rect_to_qrectf(rect)
                         swik_annot.add_quad(quad)
                 annots.append(swik_annot)
-                self.document[page.index].delete_annot(annot)
+                self.document[index].delete_annot(annot)
 
             '''
             elif a.type[0] == fitz.PDF_ANNOT_HIGHLIGHT:
@@ -617,8 +620,8 @@ class MuPDFRenderer(QLabel):
         self.add_redact_annot(index, patch)
         self.add_text(index, text)
 
-    def get_widgets(self, page):
-        doc_page = self.document[page.index]
+    def get_widgets(self, index):
+        doc_page = self.document[index]
         pdf_widgets = list()
         widgets = doc_page.widgets()
 
@@ -631,16 +634,16 @@ class MuPDFRenderer(QLabel):
             if field.field_type == PDF_WIDGET_TYPE_TEXT:
                 print("aoooooooooooo", field.field_value, type(field.field_value))
                 if field.field_flags & 4096:
-                    swik_widget = MultiLinePdfTextWidget(page, field.field_value, rect, field.text_fontsize)
+                    swik_widget = MultiLinePdfTextWidget(None, field.field_value, rect, field.text_fontsize)
                 else:
-                    swik_widget = PdfTextWidget(page, field.field_value, rect, field.text_fontsize)
+                    swik_widget = PdfTextWidget(None, field.field_value, rect, field.text_fontsize)
 
             elif field.field_type == PDF_WIDGET_TYPE_CHECKBOX:
-                swik_widget = PdfCheckboxWidget(page, field.field_value == field.on_state().replace("#20", " "), rect,
+                swik_widget = PdfCheckboxWidget(None, field.field_value == field.on_state().replace("#20", " "), rect,
                                                 field.text_fontsize)
 
             elif field.field_type == PDF_WIDGET_TYPE_RADIOBUTTON:
-                swik_widget = PdfRadioButtonWidget(page, field.field_value == field.on_state().replace("#20", " "),
+                swik_widget = PdfRadioButtonWidget(None, field.field_value == field.on_state().replace("#20", " "),
                                                    rect, field.text_fontsize)
 
             if swik_widget is not None:
@@ -792,11 +795,11 @@ class MuPDFRenderer(QLabel):
         self.document[index].set_rotation(angle)
         self.set_document(self.document, False)
 
-    def get_links(self, page):
-        x0, y0 = self.document[page.index].cropbox.x0, self.document[page.index].cropbox.y0
-        x1, y1 = self.document[page.index].cropbox.x1, self.document[page.index].cropbox.y1
+    def get_links(self, index):
+        x0, y0 = self.document[index].cropbox.x0, self.document[index].cropbox.y0
+        x1, y1 = self.document[index].cropbox.x1, self.document[index].cropbox.y1
 
-        self.page_links = self.document[page.index]
+        self.page_links = self.document[index]
         pdf_link = self.page_links.first_link
         links = []
         while pdf_link is not None:
@@ -810,10 +813,10 @@ class MuPDFRenderer(QLabel):
 
 
             if pdf_link.is_external:
-                link = ExternalLink(rect, page, pdf_link.uri)
+                link = ExternalLink(rect, pdf_link.uri)
             else:
                 index, x, y = self.document.resolve_link(pdf_link.uri)
-                link = InternalLink(rect, page, (index, x, y))
+                link = InternalLink(rect, (index, x, y))
 
             links.append(link)
             pdf_link = pdf_link.next

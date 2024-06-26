@@ -8,6 +8,12 @@ from swik.interfaces import Copyable
 class SquareAnnotation(Annotation, Copyable):
     def __init__(self, parent=None, **kwargs):
         super().__init__(parent, **kwargs)
+        self.page_pos_x = 0
+        self.page_pos_y = 0
+
+    def set_page_pos(self, x, y):
+        self.page_pos_x = x
+        self.page_pos_y = y
 
     def contextMenuEvent(self, event: 'QGraphicsSceneContextMenuEvent') -> None:
         super().contextMenuEvent(event)

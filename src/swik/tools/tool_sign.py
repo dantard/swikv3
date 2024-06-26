@@ -177,7 +177,7 @@ class ToolSign(Tool):
         v_layout.addWidget(QLabel("Info"))
         v_layout.addWidget(self.tree)
 
-        try:
+        if True:#try:
             valid = signer.get_signature_info(self.renderer.get_filename(),
                                               '/home/danilo/Desktop/AC_FNMT_Usuarios.cer')
             print(valid)
@@ -189,8 +189,8 @@ class ToolSign(Tool):
                     item.addChild(QTreeWidgetItem([k, v]))
             self.tree.header().setSectionResizeMode(0, QHeaderView.ResizeToContents)
             self.tree.header().setSectionResizeMode(1, QHeaderView.ResizeToContents)
-        except Exception as e:
-            print(e)
+        #except Exception as e:
+        #    print(e)
 
         # = '/home/danilo/Downloads/20240510_Resolucion_240510_Expresion_de_Interes_bolsa_viajes_general_2024-signed.pdf'
         # root_cert = load_cert_from_pemder('/home/danilo/Desktop/AC_FNMT_Usuarios.cer')

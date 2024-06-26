@@ -11,7 +11,8 @@ class Undoable:
 
     def notify_creation(self, item=None, scene=None):
         scene = self.scene() if scene is None else scene
-        self.scene().tracker().item_added(item if item is not None else self)
+        if scene is not None:
+            scene.tracker().item_added(item if item is not None else self)
 
     def notify_deletion(self, item=None, scene=None):
         scene = self.scene() if scene is None else scene

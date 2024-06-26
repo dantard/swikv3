@@ -1,10 +1,12 @@
 from multiprocessing.pool import ThreadPool
 
 from PyQt5 import QtGui, QtWidgets, QtCore
-from PyQt5.QtCore import pyqtSignal, QCoreApplication, Qt, QEvent, QPoint, QTimer, QMutex
+from PyQt5.QtCore import pyqtSignal, QCoreApplication, Qt, QEvent, QPoint, QTimer, QMutex, QRectF
 from PyQt5.QtGui import QWheelEvent, QPainter, QColor
-from PyQt5.QtWidgets import QGraphicsView, QGraphicsRectItem, QApplication, QScrollBar
+from PyQt5.QtWidgets import QGraphicsView, QGraphicsRectItem, QApplication, QScrollBar, QGraphicsEllipseItem
 
+from swik import utils
+from swik.annotations.hyperlink import InternalLink
 # import EnhancedPage
 from swik.layout_manager import LayoutManager
 from swik.sync_dict import SyncDict
@@ -378,4 +380,5 @@ class GraphView(QGraphicsView):
         self.pages[last_page] = page
         self.scene().addItem(page)
         return last_page
+
 

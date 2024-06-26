@@ -1,6 +1,7 @@
 from PyQt5.QtCore import QObject, pyqtSignal
 from PyQt5.QtWidgets import QGraphicsItem, QGraphicsTextItem
 
+from swik.annotations.hyperlink import InternalLink
 from swik.simplepage import SimplePage
 
 
@@ -22,6 +23,29 @@ class Page(SimplePage):
         self.info.setFont(font)
         self.info.setVisible(False)
         self.info.setFlag(QGraphicsItem.ItemIgnoresTransformations)
+
+
+        self.read_widgets()
+        self.read_annotations()
+        self.read_links()
+
+    def read_annotations(self):
+        annotations = self.renderer.get_annotations(self.index)
+        for annotation in annotations:
+            annotation.setParentItem(self)
+
+    def read_links(self):
+        links = self.renderer.get_links(self.index)
+        for link in links:
+            link.setParentItem(self)
+            if type(link) == InternalLink:
+                link.signals.clicked.connect(self.view.link_clicked)
+                link.signals.link_hovered.connect(self.view.link_hovered)
+
+    def read_widgets(self):
+        widgets = self.renderer.get_widgets(self.index)
+        for widget in widgets:
+            widget.setParentItem(self)
 
     def toggle_info(self):
         self.info.setVisible(not self.info.isVisible())

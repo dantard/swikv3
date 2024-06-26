@@ -2,7 +2,10 @@ import typing
 
 from PyQt5.QtCore import Qt, QRectF, pyqtSignal, QObject, QMutex, QTimer
 from PyQt5.QtGui import QBrush, QColor, QTransform, QPixmap
-from PyQt5.QtWidgets import QWidget, QGraphicsView, QGraphicsRectItem, QGraphicsItem
+from PyQt5.QtWidgets import QWidget, QGraphicsView, QGraphicsRectItem, QGraphicsItem, QGraphicsEllipseItem
+
+from swik import utils
+from swik.annotations.hyperlink import InternalLink
 
 
 class SimplePage(QGraphicsRectItem):
@@ -70,6 +73,9 @@ class SimplePage(QGraphicsRectItem):
         self.request_image_timer.timeout.connect(self.process_requested_image)
         self.requested_image_ratio = 1
         self.image_ratio = 0
+
+
+
 
     def get_index(self):
         return self.index

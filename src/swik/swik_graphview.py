@@ -193,24 +193,7 @@ class SwikGraphView(GraphView):
     def create_page(self, page, ratio=1):
         page = super().create_page(page)
         page.update_image(ratio)
-        self.renderer.get_annotations(page)
-        self.renderer.get_widgets(page)
-        links = self.renderer.get_links(page)
-        for link in links:
-            if type(link) == InternalLink:
-                link.signals.clicked.connect(self.link_clicked)
-                link.signals.link_hovered.connect(self.link_hovered)
-                # self.pages[page.index].add_link(link[0], link[1], link[2])
         return page
-
-    def link_clicked(self, page, pos):
-        # self.move_to_page(page)
-        ellipse = QGraphicsEllipseItem(QRectF(0, 0, 10, 10), self.pages[page])
-        ellipse.setBrush(QColor(255, 0, 0, 255))
-        ellipse.setPen(Qt.transparent)
-        ellipse.setPos(pos)
-        self.centerOn(ellipse)
-        utils.delayed(2000, self.scene().removeItem, ellipse)
 
     def link_hovered(self, kind, page, pos):
 
@@ -222,6 +205,16 @@ class SwikGraphView(GraphView):
 
         elif kind == InternalLink.LEAVE:
             self.link_shower.leave(dest_page, pos)
+
+
+    def link_clicked(self, page, pos):
+        # self.move_to_page(page)
+        ellipse = QGraphicsEllipseItem(QRectF(0, 0, 10, 10), self.pages[page])
+        ellipse.setBrush(QColor(255, 0, 0, 255))
+        ellipse.setPen(Qt.transparent)
+        ellipse.setPos(pos)
+        self.centerOn(ellipse)
+        utils.delayed(2000, self.scene().removeItem, ellipse)
 
     def toggle_page_info(self):
         for page in self.pages.values():
