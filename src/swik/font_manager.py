@@ -6,6 +6,7 @@ import tempfile
 
 from PyQt5.QtCore import QObject, QStandardPaths
 from PyQt5.QtGui import QFont, QFontDatabase
+from fontTools import ttLib
 
 
 class SwikFont:
@@ -52,7 +53,9 @@ class Font(SwikFont):
         self.subset = '+' in path
 
         try:
+            print("uno")
             font = ttLib.TTFont(path)
+            print("dos")
             if font.has_key('name'):
                 self.family_name = font['name'].getDebugName(1)
                 self.full_name = font['name'].getDebugName(4) if font['name'].getDebugName(4) else self.full_name

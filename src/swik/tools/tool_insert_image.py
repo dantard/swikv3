@@ -41,58 +41,6 @@ class InsertImageRectItem(ResizableRectItem):
         self.update()
 
 
-class ToolInsertImage(Tool):
-    configured = False
-    signature = None
-
-    @staticmethod
-    def configure(config):
-        if not ToolInsertImage.configured:
-            section = config.root().addSubSection("Image Signature")
-            ToolInsertImage.signature = section.addFile("image_image", pretty="Signature File", extension=["png", "jpg"], extension_name="Image")
-            ToolInsertImage.configured = True
-
-    def __init__(self, widget):
-        super().__init__(widget)
-        self.rubberband = None
-        self.image = None
-        self.image_filename = None
-
-    def init(self):
-        filename, _ = QFileDialog.getOpenFileName(None, "Select image", "", "Image files (*.png *.jpg *.jpeg *.bmp *.gif *.tiff *.tif)")
-        if filename:
-            self.image = QImage(filename)
-            self.image_filename = filename
-        else:
-            self.emit_finished()
-
-    def mouse_pressed(self, event):
-        page = self.view.get_page_at_pos(event.pos())
-
-        if page is None:
-            return
-
-        if self.rubberband is None:
-            self.rubberband = InsertImageRectItem(page, pen=Qt.transparent, brush=Qt.transparent, image_filename=self.image_filename, image_mode=3)
-            self.rubberband.view_mouse_press_event(self.view, event)
-            self.rubberband.notify_creation()
-            self.view.setCursor(Qt.CrossCursor)
-
-    def mouse_moved(self, event):
-        if self.rubberband is not None:
-            self.rubberband.view_mouse_move_event(self.view, event)
-
-    def mouse_released(self, event):
-        if self.rubberband is not None:
-            self.rubberband.view_mouse_release_event(self.view, event)
-            self.rubberband = None
-            self.view.setCursor(Qt.ArrowCursor)
-            self.emit_finished()
-
-    def finish(self):
-        self.view.setCursor(Qt.ArrowCursor)
-
-
 class ResizeableWidget(QWidget):
     resized = pyqtSignal()
 
@@ -295,18 +243,25 @@ class ToolInsertSignatureImage(Tool):
 
     def mouse_released(self, event):
         if self.rubberband is not None:
-            if self.rubberband.view_mouse_release_event(self.view, event):
-                self.draw_btn.setChecked(False)
-                self.draw_btn.setEnabled(True)
-
-            self.rubberband = None
-        self.view.viewport().setCursor(Qt.ArrowCursor)
+            self.rubberband.view_mouse_release_event(self.view, event)
 
     def draw_image(self):
         if self.rubberband is None:
             self.rubberband = InsertImageRectItem(None, pen=Qt.transparent, brush=Qt.transparent, image_filename=self.image_filename,
                                                   image_mode=self.image_mode)
+            self.rubberband.signals.done.connect(self.selection_done)
             self.view.viewport().setCursor(Qt.CrossCursor)
+
+    def selection_done(self, rb):
+        if rb.get_rect_on_parent().width() > 5 and rb.get_rect_on_parent().height() > 5:
+            pass
+        else:
+            self.view.scene().removeItem(rb)
+
+        self.draw_btn.setChecked(False)
+        self.draw_btn.setEnabled(True)
+        self.view.viewport().setCursor(Qt.ArrowCursor)
+        self.rubberband = None
 
     def on_image_clicked(self):
         if self.image_filename is None:

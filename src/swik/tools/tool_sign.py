@@ -177,7 +177,7 @@ class ToolSign(Tool):
         v_layout.addWidget(QLabel("Info"))
         v_layout.addWidget(self.tree)
 
-        if True:#try:
+        if True:  # try:
             valid = signer.get_signature_info(self.renderer.get_filename(),
                                               '/home/danilo/Desktop/AC_FNMT_Usuarios.cer')
             print(valid)
@@ -189,7 +189,7 @@ class ToolSign(Tool):
                     item.addChild(QTreeWidgetItem([k, v]))
             self.tree.header().setSectionResizeMode(0, QHeaderView.ResizeToContents)
             self.tree.header().setSectionResizeMode(1, QHeaderView.ResizeToContents)
-        #except Exception as e:
+        # except Exception as e:
         #    print(e)
 
         # = '/home/danilo/Downloads/20240510_Resolucion_240510_Expresion_de_Interes_bolsa_viajes_general_2024-signed.pdf'
@@ -286,16 +286,7 @@ class ToolSign(Tool):
 
     def mouse_released(self, event):
         if self.rubberband is not None:
-            if self.rubberband.view_mouse_release_event(self.view, event):
-                self.sign_btn.setEnabled(True)
-                self.cancel_btn.setEnabled(True)
-                self.widget.set_protected_interaction(False)
-                self.draw_btn.setChecked(False)
-                self.draw_btn.setEnabled(False)
-                self.view.setCursor(Qt.ArrowCursor)
-            else:
-                self.rubberband = None
-            # self.finished.emit()
+            self.rubberband.view_mouse_release_event(self.view, event)
 
     def mouse_moved(self, event):
         if self.rubberband is not None:
@@ -317,8 +308,23 @@ class ToolSign(Tool):
         self.rubberband = SignerRectItem(None, self.get_selected(), text=text, image_filename=image_filename, max_font_size=max_font_size,
                                          text_mode=text_mode,
                                          image_mode=image_mode, pen=Qt.transparent, brush=QColor(255, 0, 0, 80))
+        self.rubberband.signals.done.connect(self.selection_done)
 
         self.view.setCursor(Qt.CrossCursor)
+
+    def selection_done(self, rb):
+        if rb.get_rect_on_parent().width() > 5 or rb.get_rect_on_parent().height() > 5:
+            self.sign_btn.setEnabled(True)
+            self.cancel_btn.setEnabled(True)
+            self.widget.set_protected_interaction(False)
+            self.draw_btn.setChecked(False)
+            self.draw_btn.setEnabled(False)
+            self.view.setCursor(Qt.ArrowCursor)
+        else:
+            self.rubberband = None
+            self.view.scene().removeItem(rb)
+
+    # self.finished.emit()
 
     def cancel_btn_clicked(self):
         if self.rubberband is not None:
