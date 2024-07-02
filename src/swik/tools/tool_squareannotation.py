@@ -24,7 +24,7 @@ class ToolSquareAnnotation(Tool):
             self.rubberband = SquareAnnotation(page, pen=color, brush=color)
             self.rubberband.view_mouse_press_event(self.view, event)
             self.rubberband.notify_creation()
-            self.view.setCursor(Qt.CrossCursor)
+            self.view.viewport().setCursor(Qt.CrossCursor)
 
     def mouse_moved(self, event):
         if self.rubberband is not None:

@@ -1,6 +1,6 @@
 from PyQt5.QtCore import Qt, QPointF, QUrl, QMimeData
 from PyQt5.QtGui import QColor, QGuiApplication, QDesktopServices, QDrag
-from PyQt5.QtWidgets import QMenu, QDialog, QMessageBox
+from PyQt5.QtWidgets import QMenu, QDialog, QMessageBox, QApplication
 
 from swik.annotations.highlight_annotation import HighlightAnnotation
 from swik.annotations.redact_annotation import RedactAnnotation
@@ -84,8 +84,6 @@ class ToolTextSelection(Tool):
 
     def selecting_done(self, selector: SelectorRectItem):
         self.selecting(selector)
-        self.view.scene().removeItem(selector)
-        self.rubberband = None
         self.view.setCursor(Qt.ArrowCursor)
         self.multiple_selection.extend(self.selected)
 
@@ -120,17 +118,22 @@ class ToolTextSelection(Tool):
                 self.rubberband = SelectorRectItem()
                 self.view.setCursor(Qt.CrossCursor)
 
-            self.rubberband.signals.creating.connect(self.selecting)
             self.view.scene().addItem(self.rubberband)
+            self.rubberband.signals.creating.connect(self.selecting)
+            self.rubberband.signals.done.connect(self.selection_done)
             self.rubberband.view_mouse_press_event(self.view, event)
 
     def mouse_released(self, event):
         if self.rubberband is not None:
-            if self.rubberband.view_mouse_release_event(self.view, event):
-                self.selecting_done(self.rubberband)
-            else:
-                self.clear_selection()
-            self.rubberband = None
+            self.rubberband.view_mouse_release_event(self.view, event)
+
+    def selection_done(self, rb):
+        if rb.get_rect_on_parent().width() > 5 and rb.get_rect_on_parent().height() > 5:
+            self.selecting_done(rb)
+        elif not QApplication.keyboardModifiers() & Qt.ControlModifier:
+            self.clear_selection()
+        self.rubberband = None
+        self.view.scene().removeItem(rb)
 
     def mouse_moved(self, event):
         if self.rubberband is not None:
@@ -223,9 +226,13 @@ class ToolTextSelection(Tool):
                     self.clear_selection()
 
     def mouse_double_clicked(self, event):
+        page = self.view.get_page_at_pos(event.pos())
+        page.gather_words()
+
         scene_pos = self.view.mapToScene(event.pos())
         items = self.view.scene().items(scene_pos)
         if len(items) > 0 and type(items[0]) == Word:
+            print("it is")
             word = items[0]
             word.set_selected(True)
             if not word in self.selected:

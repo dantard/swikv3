@@ -14,7 +14,7 @@ class Link(QGraphicsRectItem):
         super().__init__(QRectF(0,0,rect.width(), rect.height()))
         self.signals = Link.Signals()
         self.setBrush(Qt.transparent)
-        self.setPen(Qt.transparent)
+        self.setPen(Qt.red)
         self.setPos(rect.x(), rect.y())
 
 class ExternalLink(Link):

@@ -456,8 +456,10 @@ class MuPDFRenderer(QLabel):
         fitz_annot.update()
 
     def get_annotations(self, index):
+
         annots = list()
         for annot in self.document[index].annots():  # type: Annot
+
             if annot.type[0] == PDF_ANNOT_SQUARE:
                 opacity = annot.opacity if 1 > annot.opacity > 0 else 0.999
                 stroke = utils.fitz_color_to_qcolor(annot.colors['stroke'], opacity) if annot.colors[
@@ -476,7 +478,6 @@ class MuPDFRenderer(QLabel):
                 swik_annot.setToolTip(swik_annot.get_content())
                 locked = annot.flags & PDF_ANNOT_IS_LOCKED
                 swik_annot.set_movable(not locked)
-                # NEW DANI
                 swik_annot.setPos(annot.rect[0], annot.rect[1])
 
 
@@ -803,11 +804,10 @@ class MuPDFRenderer(QLabel):
         pdf_link = self.page_links.first_link
         links = []
         while pdf_link is not None:
-            rx, ry, rw, rh = pdf_link.rect
-
-            if rx < x0 or rx > x1 or ry < y0 or ry > y1:
-                pdf_link = pdf_link.next
-                continue
+            rx, ry = pdf_link.rect[0], pdf_link.rect[1]
+            if rx < 0 or rx > x1-x0 or ry < 0 or ry > y1-y0:
+               pdf_link = pdf_link.next
+               continue
 
             rect = utils.fitz_rect_to_qrectf(pdf_link.rect)
 

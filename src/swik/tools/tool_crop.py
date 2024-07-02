@@ -1,10 +1,14 @@
 from PyQt5.QtCore import Qt
 
 from swik.action import Action
+from swik.annotations.annotation import Annotation
 from swik.annotations.hyperlink import Link
+from swik.annotations.redact_annotation import RedactAnnotation
 from swik.interfaces import Undoable
 from swik.selector import SelectorRectItem
+from swik.simplepage import SimplePage
 from swik.tools.tool import Tool
+from swik.word import Word
 
 
 class ToolCrop(Tool, Undoable):
@@ -17,40 +21,43 @@ class ToolCrop(Tool, Undoable):
         if event.button() == Qt.RightButton:
             return
 
+        if self.view.there_is_any_other_than(event.pos(), (SimplePage, Word)):
+            return
+
         page = self.view.get_page_at_pos(event.pos())
         if page is None:
             return
 
         if self.rubberband is None:
-            self.rubberband = SelectorRectItem(page)
             self.view.setCursor(Qt.CrossCursor)
-            self.rubberband.view_mouse_press_event(self.view, event)
+            self.rubberband = SelectorRectItem(page, event=(self.view, event))
+            self.rubberband.signals.done.connect(self.selection_done)
+            #self.rubberband.view_mouse_press_event(self.view, event)
 
-    def mouse_released(self, event):
-        if self.rubberband is not None:
+    def selection_done(self, rb):
+        if rb.get_rect_on_parent().width() > 5 and rb.get_rect_on_parent().height() > 5:
+
+            # Remove items outside the cropbox or move those inside
             page = self.rubberband.parentItem()
-            self.rubberband.view_mouse_release_event(self.view, event)
-            items =  self.view.pages[page.index].items(Link)
-            pos_on_orig_page = {}
+            items = self.view.pages[page.index].items((Link, Annotation, RedactAnnotation))
             for item in items:
-                pos_on_orig_page[item] = item.pos()
-                print("pos", item.pos(), type(item))
+                if not self.rubberband.get_rect_on_parent().contains(item.pos()):
+                    self.view.scene().removeItem(item)
+                else:
+                    item.setPos(item.pos().x() - self.rubberband.get_rect_on_parent().x(), item.pos().y() - self.rubberband.get_rect_on_parent().y())
 
+            # Apply the cropbox
             before = self.renderer.get_cropbox(page.index)
             self.renderer.set_cropbox(page.index, self.rubberband.get_rect_on_parent(), False)
             after = self.renderer.get_cropbox(page.index)
-
-            for k, v in pos_on_orig_page.items():
-                if v.x() < after.x() or v.y() < after.y() or v.x() > after.x() + after.width() or v.y() > after.y() + after.height():
-                    print("removing", k, v, after.x(), after.y(), after.width(), after.height())
-                    self.view.scene().removeItem(k)
-                else:
-                    k.setPos(v.x() - after.x(), v.y() - after.y())
-                    print("keeping", k, v, after.x(), after.y(), after.width(), after.height())
-
-            self.view.scene().removeItem(self.rubberband)
-            self.rubberband = None
             self.notify_any_change(Action.ACTION_CHANGED, (page.index, before, 1), (page.index, after, 1), self.view.scene())
+
+        self.view.scene().removeItem(self.rubberband)
+        self.rubberband = None
+
+    def mouse_released(self, event):
+        if self.rubberband is not None:
+            self.rubberband.view_mouse_release_event(self.view, event)
 
     def mouse_moved(self, event):
         if self.rubberband is not None:
