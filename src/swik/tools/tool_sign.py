@@ -332,7 +332,6 @@ class ToolSign(Tool):
     def finish(self):
         if self.rubberband is not None:
             # self.view.scene().removeItem(self.rubberband)
-            self.view.setCursor(Qt.ArrowCursor)
             self.rubberband = None
         self.view.setCursor(Qt.ArrowCursor)
         self.widget.remove_app_widget()

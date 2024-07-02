@@ -3,7 +3,7 @@ import os
 import psutil
 from PyQt5.QtCore import QObject, pyqtSignal, QRectF, QRect, Qt, QTimer
 from PyQt5.QtGui import QImage, QColor
-from PyQt5.QtWidgets import QGraphicsRectItem, QGraphicsItem
+from PyQt5.QtWidgets import QGraphicsRectItem, QGraphicsItem, QHBoxLayout, QLabel, QSizePolicy, QFrame
 from pymupdf import pymupdf
 
 
@@ -16,7 +16,8 @@ class Signals(QObject):
     item_added = pyqtSignal(QGraphicsItem)
     item_removed = pyqtSignal(QGraphicsItem)
     item_changed = pyqtSignal(QGraphicsItem)
-    mierda_changed = pyqtSignal(int)
+    discarded = pyqtSignal()
+
 
 
 def check_parent_limits(parent: QGraphicsRectItem, scene_x, scene_y):
@@ -59,7 +60,7 @@ def fitz_color_to_qcolor(color, opacity=1):
     return color
 
 
-def adjust_crop(image: QImage) -> QRect:
+def adjust_crop(image: QImage, ratio=1.0) -> QRectF:
     # Create a QColor object to represent white
     white = QColor(Qt.white)
 
@@ -85,7 +86,8 @@ def adjust_crop(image: QImage) -> QRect:
                 bottom = max(bottom, y)
 
     # Return the smallest rectangle that contains non-white pixels
-    return QRect(left, top, right - left + 1, bottom - top + 1)
+    return QRectF(left/ratio, top/ratio, (right - left)/ratio + 2, (bottom - top)/ratio + 2)
+    #return QRect(left, top, right - left + 1, bottom - top + 1)/ratio
 
 
 def are_other_instances_running():
@@ -139,3 +141,18 @@ colors = [Qt.black, Qt.red, Qt.green, Qt.blue, Qt.magenta, Qt.cyan, Qt.darkRed, 
 
 def get_color(index):
     return colors[index % len(colors)]
+
+def row(w1, w2):
+    h_layout = QHBoxLayout()
+    if isinstance(w1, str):
+        w1 = QLabel(w1)
+        w1.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+    h_layout.addWidget(w1)
+    h_layout.addWidget(w2)
+    return h_layout, w1, w2
+
+def separator():
+    hLine = QFrame()
+    hLine.setFrameShape(QFrame.HLine)
+    hLine.setFrameShadow(QFrame.Sunken)
+    return hLine

@@ -455,6 +455,13 @@ class MuPDFRenderer(QLabel):
 
         fitz_annot.update()
 
+    def uncrop(self, index):
+        self.document[index].set_cropbox(self.document[index].mediabox)
+        self.page_updated.emit(index)
+
+    def is_cropped(self, index):
+        return self.document[index].cropbox != self.document[index].mediabox
+
     def get_annotations(self, index):
 
         annots = list()

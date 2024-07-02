@@ -130,6 +130,9 @@ class SimplePage(QGraphicsRectItem):
         if self.image is not None:
             painter.drawImage(QRectF(0, 0, self.rect().width(), self.rect().height()), self.image.toImage())
 
+    def get_image_by_rect(self, rect):
+        return self.image.copy(int(rect.x()*self.image_ratio), int(rect.y()*self.image_ratio), int(rect.width()*self.image_ratio), int(rect.height()*self.image_ratio))
+
     def image_ready(self, image, ratio):
         # print("Image ready for page", self.index, "with state", self.state, "and image", image.width(), "x", image.height())
         self.image = image
