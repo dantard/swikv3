@@ -2,13 +2,14 @@ import base64
 import glob
 import os
 import shutil
+from datetime import datetime
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QImage, QColor
 from PyQt5.QtWidgets import QMenu, QDialog, QMessageBox, QVBoxLayout, QWidget, QPushButton, QTreeWidget, \
     QTreeWidgetItem, QHeaderView, QComboBox, QHBoxLayout, QLabel, QFileDialog, QGraphicsTextItem
 
-from swik import signer
+from swik import signer, utils
 from swik.dialogs import PasswordDialog, ImportDialog, ImportP12
 from swik.interfaces import Shell
 from swik.manager import Manager
@@ -42,6 +43,7 @@ class SignatureConf:
         image = appearance.getSubSection("Image")
         self.image_file = image.getFile("image_file", pretty="File", extension="png")
         self.image_stretch = image.getCheckbox("image_stretch", pretty="Stretch")
+        self.nickname = section_name
 
 
 class ToolSign(Tool):
@@ -201,7 +203,8 @@ class ToolSign(Tool):
         self.sign_btn = QPushButton("Sign")
         self.sign_btn.setEnabled(False)
 
-        self.cancel_btn = QPushButton("Cancel")
+        self.cancel_btn = QPushButton("×")
+        self.cancel_btn.setFixedSize(25, 25)
         self.cancel_btn.setEnabled(False)
         self.cancel_btn.clicked.connect(self.cancel_btn_clicked)
 
@@ -209,8 +212,8 @@ class ToolSign(Tool):
         v_layout.addWidget(QLabel("Sign with"))
         v_layout.addLayout(h_layout)
         v_layout.addWidget(self.draw_btn)
-        v_layout.addWidget(self.sign_btn)
-        v_layout.addWidget(self.cancel_btn)
+        v_layout.addLayout(utils.row(self.cancel_btn, self.sign_btn)[0])
+        # v_layout.addWidget(self.cancel_btn)
 
         self.helper.setLayout(v_layout)
         self.widget.set_app_widget(self.helper, title="Sign")
@@ -300,6 +303,10 @@ class ToolSign(Tool):
         signature = self.get_selected()
 
         text = signature.text_signature.get_value().replace('&&', '\n')
+
+        text = text.replace('%(ts)s', datetime.now().strftime(signature.text_timestamp.get_value()))
+        text = text.replace('%(signer)s', signature.nickname)
+
         image_filename = signature.image_file.get_value()
         max_font_size = signature.text_font_size.get_value()
 
@@ -310,10 +317,10 @@ class ToolSign(Tool):
                                          image_mode=image_mode, pen=Qt.transparent, brush=QColor(255, 0, 0, 80))
         self.rubberband.signals.done.connect(self.selection_done)
 
-        self.view.setCursor(Qt.CrossCursor)
+        self.view.viewport().setCursor(Qt.CrossCursor)
 
     def selection_done(self, rb):
-        if rb.get_rect_on_parent().width() > 5 or rb.get_rect_on_parent().height() > 5:
+        if rb.get_rect_on_parent().width() > 5 and rb.get_rect_on_parent().height() > 5:
             self.sign_btn.setEnabled(True)
             self.cancel_btn.setEnabled(True)
             self.widget.set_protected_interaction(False)
@@ -323,6 +330,8 @@ class ToolSign(Tool):
         else:
             self.rubberband = None
             self.view.scene().removeItem(rb)
+
+        self.view.viewport().setCursor(Qt.ArrowCursor)
 
     # self.finished.emit()
 

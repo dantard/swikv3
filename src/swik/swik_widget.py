@@ -307,6 +307,7 @@ class SwikWidget(Shell):
         self.interaction_changed.emit(self)
 
     def set_protected_interaction(self, status):
+        self.interaction_enabled = status
         self.save_btn.setEnabled(status)
         self.interaction_changed.emit(self)
 

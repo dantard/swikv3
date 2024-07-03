@@ -7,14 +7,14 @@ from PyQt5.QtCore import QRect, Qt
 # from gi.overrides.Gtk import Gtk
 from easyconfig.EasyConfig import EasyConfig
 
-
 # gi.require_version('Gtk', '3.0')
 # from gi.repository import Gtk, Gio, GLib
+from swik import utils
 
 
 class SwikConfig(EasyConfig):
-
     colors = [Qt.transparent, Qt.blue, Qt.red, Qt.green, Qt.black]
+
     def __init__(self):
         super().__init__()
         self.base_dir = os.path.expanduser('~') + os.sep + '.swik' + os.sep
@@ -131,3 +131,11 @@ class SwikConfig(EasyConfig):
             for r in recent:
                 open_recent.addAction(r, lambda x=r: window.open_file(x))
 
+    def should_continue(self, key, message):
+        if not self.been_warned(key):
+            ok, do_not_show_again = utils.get_warning_messagebox(message)
+            if not ok:
+                return False
+            if do_not_show_again:
+                self.set_warned(key, True)
+        return True

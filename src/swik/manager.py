@@ -1,5 +1,8 @@
 from PyQt5.QtCore import QObject, pyqtSignal, Qt
 from PyQt5.QtWidgets import QGraphicsRectItem
+from swik.word import Word
+
+from swik.simplepage import SimplePage
 
 from swik.interfaces import Copyable
 
@@ -70,7 +73,7 @@ class Manager(QObject):
         # TODO:if not self.top_is(event.pos(), [SimplePage, SimplePage.MyImage, Word]):
         # return
         # if event.modifiers() & Qt.ShiftModifier:
-
+        
         if self.current is not None:
             self.current.mouse_pressed(event)
 

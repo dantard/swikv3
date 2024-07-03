@@ -1,9 +1,11 @@
 import os
+import importlib.resources as pkg_resources
+from pathlib import Path
 
 import psutil
 from PyQt5.QtCore import QObject, pyqtSignal, QRectF, QRect, Qt, QTimer
 from PyQt5.QtGui import QImage, QColor
-from PyQt5.QtWidgets import QGraphicsRectItem, QGraphicsItem, QHBoxLayout, QLabel, QSizePolicy, QFrame
+from PyQt5.QtWidgets import QGraphicsRectItem, QGraphicsItem, QHBoxLayout, QLabel, QSizePolicy, QFrame, QGroupBox, QVBoxLayout, QWidget, QMessageBox, QCheckBox
 from pymupdf import pymupdf
 
 
@@ -17,7 +19,6 @@ class Signals(QObject):
     item_removed = pyqtSignal(QGraphicsItem)
     item_changed = pyqtSignal(QGraphicsItem)
     discarded = pyqtSignal()
-
 
 
 def check_parent_limits(parent: QGraphicsRectItem, scene_x, scene_y):
@@ -86,8 +87,8 @@ def adjust_crop(image: QImage, ratio=1.0) -> QRectF:
                 bottom = max(bottom, y)
 
     # Return the smallest rectangle that contains non-white pixels
-    return QRectF(left/ratio, top/ratio, (right - left)/ratio + 2, (bottom - top)/ratio + 2)
-    #return QRect(left, top, right - left + 1, bottom - top + 1)/ratio
+    return QRectF(left / ratio, top / ratio, (right - left) / ratio + 2, (bottom - top) / ratio + 2)
+    # return QRect(left, top, right - left + 1, bottom - top + 1)/ratio
 
 
 def are_other_instances_running():
@@ -142,6 +143,7 @@ colors = [Qt.black, Qt.red, Qt.green, Qt.blue, Qt.magenta, Qt.cyan, Qt.darkRed, 
 def get_color(index):
     return colors[index % len(colors)]
 
+
 def row(w1, w2):
     h_layout = QHBoxLayout()
     if isinstance(w1, str):
@@ -151,8 +153,58 @@ def row(w1, w2):
     h_layout.addWidget(w2)
     return h_layout, w1, w2
 
+
+def col(w1, w2, *args):
+    v_layout = QVBoxLayout()
+    if isinstance(w1, str):
+        w1 = QLabel(w1)
+        w1.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+    v_layout.addWidget(w1)
+    v_layout.addWidget(w2)
+    for w in args:
+        v_layout.addWidget(w)
+
+    return v_layout
+
+
 def separator():
     hLine = QFrame()
     hLine.setFrameShape(QFrame.HLine)
     hLine.setFrameShadow(QFrame.Sunken)
     return hLine
+
+
+def framed(widget, title=None):
+    frame = QGroupBox()
+    frame.setStyleSheet(
+        "QGroupBox {border: 1px solid silver; border-radius: 2px; margin-top: 10px;}"
+        "QGroupBox::title { subcontrol-origin: margin;    left: 7px;  padding: 0px 5px 0px 5px;}")
+
+    frame.setTitle(title if title else "")
+    frame.setLayout(QVBoxLayout())
+
+    if isinstance(widget, QWidget):
+        frame.layout().addWidget(widget)
+    else:
+        frame.layout().addLayout(widget)
+
+    return frame
+
+
+def get_font_path(name):
+    package_name = 'swik.fonts'
+    return str(pkg_resources.path(package_name, name))
+
+
+def get_warning_messagebox(text, parent=None):
+    msg = QMessageBox()
+    msg.setParent(parent)
+    msg.setIcon(QMessageBox.Warning)
+    msg.setText(text)
+    msg.setStandardButtons(QMessageBox.Yes)
+    msg.addButton(QMessageBox.Cancel)
+    # msg.setDefaultButton(QMessageBox.Cancel)
+
+    check_box = QCheckBox("Don't show this again")
+    msg.setCheckBox(check_box)
+    return msg.exec() == QMessageBox.Yes, check_box.isChecked()

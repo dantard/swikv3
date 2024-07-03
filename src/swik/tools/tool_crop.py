@@ -1,6 +1,6 @@
 from PyQt5.QtCore import Qt, QRectF
 from PyQt5.QtGui import QColor, QPixmap
-from PyQt5.QtWidgets import QWidget, QPushButton, QVBoxLayout, QLabel, QMenu, QComboBox, QApplication
+from PyQt5.QtWidgets import QWidget, QPushButton, QVBoxLayout, QLabel, QMenu, QComboBox, QApplication, QMessageBox, QCheckBox
 
 from swik import utils
 from swik.action import Action
@@ -14,8 +14,12 @@ from swik.simplepage import SimplePage
 from swik.tools.tool import Tool
 from swik.word import Word
 
-class CropRectItem(ResizableRectItem):
 
+class Clearer(RedactAnnotation):
+    pass
+
+
+class CropRectItem(ResizableRectItem):
     ADJUST = 0
     CROP = 1
     ADJUST_N_CROP = 2
@@ -24,7 +28,7 @@ class CropRectItem(ResizableRectItem):
         menu = QMenu()
         adjust = menu.addAction("Adjust Crop")
         crop = menu.addAction("Crop")
-        adjust_and_crop = menu.addAction("Adjust & Crop")
+        adjust_and_crop = menu.addAction("Adjust and Crop")
         menu.addSeparator()
         discard = menu.addAction("Discard")
         res = menu.exec(event.screenPos())
@@ -36,7 +40,6 @@ class CropRectItem(ResizableRectItem):
             self.signals.action.emit(CropRectItem.CROP, None)
         elif res == adjust_and_crop:
             self.signals.action.emit(CropRectItem.ADJUST_N_CROP, None)
-
 
 
 class ToolCrop(Tool, Undoable):
@@ -70,25 +73,35 @@ class ToolCrop(Tool, Undoable):
         self.uncrop_btn = QPushButton("Uncrop")
         self.uncrop_btn.clicked.connect(self.uncrop)
 
+        self.clear_btn = QPushButton("Clean")
+        self.clear_btn.clicked.connect(self.clear_cropped)
+
         self.cropped_cb = QComboBox()
         self.update_cropped()
 
         self.crop_btn.setEnabled(False)
         self.adjust_crop_btn.setEnabled(False)
+        self.uncrop_btn.setEnabled(False)
+        self.clear_btn.setEnabled(False)
 
-        self.vlayout.addWidget(QLabel("Cropping"))
-        self.vlayout.addWidget(self.draw_btn)
-        self.vlayout.addWidget(self.adjust_crop_btn)
-        self.vlayout.addWidget(self.crop_btn)
-        self.vlayout.addWidget(utils.separator())
+        self.vlayout.addWidget(utils.framed(utils.col(self.draw_btn, self.adjust_crop_btn, self.clear_btn, self.crop_btn), "Crop"))
+        self.vlayout.addWidget(utils.framed(utils.col(self.cropped_cb, self.uncrop_btn), "Cropped pages"))
 
-        self.vlayout.addWidget(QLabel("Uncropping"))
-        l, _, _ = utils.row("Pag:", self.cropped_cb)
-        self.vlayout.addLayout(l)
-        self.vlayout.addWidget(self.uncrop_btn)
+        self.widget.set_app_widget(self.helper, 180, "Crop")
 
-        self.widget.set_app_widget(self.helper, 140, "Crop")
+    def clear_cropped(self):
+        if not self.config.should_continue("clear_cropped44", "This action in not undoable.\nContinue?"):
+            return
 
+        page = self.rubberband.parentItem()
+        self.renderer.add_redact_annot(page.index, QRectF(0, 0, self.rubberband.pos().x() - 1, page.rect().height()))
+        self.renderer.add_redact_annot(page.index, QRectF(0, 0, page.rect().width(), self.rubberband.pos().y() - 1))
+        self.renderer.add_redact_annot(page.index, QRectF(self.rubberband.pos().x() + self.rubberband.rect().width(), 0,
+                                                          page.rect().width() - self.rubberband.pos().x() - self.rubberband.rect().width(),
+                                                          page.rect().height()))
+        self.renderer.add_redact_annot(page.index, QRectF(0, self.rubberband.pos().y() + self.rubberband.rect().height(), page.rect().width(),
+                                                          page.rect().height() - self.rubberband.pos().y() - self.rubberband.rect().height()))
+        page.invalidate()
 
     def draw(self):
         self.rubberband = CropRectItem(None, pen=Qt.transparent, brush=QColor(0, 0, 0, 80))
@@ -100,12 +113,11 @@ class ToolCrop(Tool, Undoable):
         self.cropped_cb.clear()
         for index in self.view.pages:
             if self.renderer.is_cropped(index):
-                self.cropped_cb.addItem(str(index+1))
+                self.cropped_cb.addItem(str(index + 1))
         self.uncrop_btn.setEnabled(self.cropped_cb.count() > 0)
 
-
     def uncrop(self):
-        index = int(self.cropped_cb.currentText())-1
+        index = int(self.cropped_cb.currentText()) - 1
         self.renderer.uncrop(index)
         self.update_cropped()
 
@@ -139,8 +151,10 @@ class ToolCrop(Tool, Undoable):
     def discarded(self):
         self.crop_btn.setEnabled(False)
         self.adjust_crop_btn.setEnabled(False)
-        self.draw_btn.setChecked(False)
+        self.clear_btn.setEnabled(False)
         self.draw_btn.setEnabled(True)
+        self.draw_btn.setChecked(False)
+
         self.view.scene().removeItem(self.rubberband)
         self.rubberband = None
 
@@ -157,6 +171,8 @@ class ToolCrop(Tool, Undoable):
         if rb.get_rect_on_parent().width() > 5 and rb.get_rect_on_parent().height() > 5:
             self.crop_btn.setEnabled(True)
             self.adjust_crop_btn.setEnabled(True)
+            self.clear_btn.setEnabled(True)
+            self.draw_btn.setChecked(False)
             self.draw_btn.setEnabled(False)
         else:
             self.discarded()
@@ -179,13 +195,12 @@ class ToolCrop(Tool, Undoable):
 
         self.view.scene().removeItem(self.rubberband)
         self.rubberband = None
-        self.draw_btn.setEnabled(True)
-        self.draw_btn.setChecked(False)
         self.crop_btn.setEnabled(False)
         self.adjust_crop_btn.setEnabled(False)
+        self.clear_btn.setEnabled(False)
+        self.draw_btn.setEnabled(True)
+        self.draw_btn.setChecked(False)
         self.update_cropped()
-
-
 
     def mouse_released(self, event):
         if self.rubberband is not None:
@@ -207,8 +222,6 @@ class ToolCrop(Tool, Undoable):
         self.widget.remove_app_widget()
         self.helper.deleteLater()
 
-
-
     def undo(self, kind, info):
         index, rect, ratio = info
         print(info, "undo cropbox")
@@ -216,5 +229,3 @@ class ToolCrop(Tool, Undoable):
 
     def redo(self, kind, info):
         self.undo(kind, info)
-
-

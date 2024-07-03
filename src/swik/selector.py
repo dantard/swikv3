@@ -46,8 +46,9 @@ class SelectorRectItem(ColoreableRectItem):
         return self.p2
 
     def view_mouse_release_event(self, view, event):
-        self.p1 = None
-        self.signals.done.emit(self)
+        if self.p1 is not None:
+            self.p1 = None
+            self.signals.done.emit(self)
 
 
 class PaintableSelectorRectItem(SelectorRectItem):

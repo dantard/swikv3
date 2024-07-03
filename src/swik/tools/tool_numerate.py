@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import QPushButton, QFormLayout, QComboBox, QVBoxLayout, QL
 import swik.utils as utils
 from swik.bunch import NumerateBunch
 from swik.dialogs import FontAndColorDialog
-from swik.font_manager import Font
+from swik.font_manager import Font, Arial
 from swik.interfaces import Shell
 from swik.swik_text import SwikTextNumerate
 from swik.tools.tool import BasicTool
@@ -14,6 +14,7 @@ class EnumerateDialog(QDialog):
 
     def __init__(self, view, font_manager):
         super().__init__()
+
         self.view = view
         self.font_manager = font_manager
         self.layout = QVBoxLayout()
@@ -46,7 +47,7 @@ class EnumerateDialog(QDialog):
         f_layout.addRow("Text", self.text_te)
         f_layout.addRow("Pages", self.oddeven_db)
 
-        font = Font("fonts/Arial.ttf")
+        font = Arial()
         self.font_btn = QPushButton(font.full_name)
         self.font_btn.setFont(font.get_qfont())
         self.font_btn.clicked.connect(self.font_clicked)
@@ -65,7 +66,7 @@ class EnumerateDialog(QDialog):
         self.setLayout(self.layout)
 
     def font_clicked(self):
-        font_dialog = FontAndColorDialog(self.font_manager, Font("fonts/Arial.ttf"), 11, Qt.black)
+        font_dialog = FontAndColorDialog(self.font_manager, Arial(), 11, Qt.black)
         if font_dialog.exec() == FontAndColorDialog.Accepted:
             font, color = font_dialog.get("Font"), font_dialog.get("Text Color")
             self.font_btn.setFont(font.get_font().get_qfont())
@@ -121,7 +122,7 @@ class ToolNumerate(BasicTool):
                         num = utils.int_to_roman(start + j).lower()
 
                     number = SwikTextNumerate(text.replace("$i", num), self.view.pages[i], self.font_manager,
-                                              Font("fonts/Arial.ttf"), 12)
+                                              Arial(), 12)
                     number.set_box_color(utils.get_color(self.view.scene().get_bunches_count()))
                     bunch.add(number)
 

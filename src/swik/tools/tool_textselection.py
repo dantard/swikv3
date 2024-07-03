@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QMenu, QDialog, QMessageBox, QApplication
 from swik.annotations.highlight_annotation import HighlightAnnotation
 from swik.annotations.redact_annotation import RedactAnnotation
 from swik.dialogs import FontAndColorDialog
-from swik.font_manager import Font
+from swik.font_manager import Font, Arial
 from swik.interfaces import Shell
 from swik.selector import SelectorRectItem
 from swik.simplepage import SimplePage
@@ -173,7 +173,7 @@ class ToolTextSelection(Tool):
         elif res == paste:
             text = QGuiApplication.clipboard().text()
             for i, word in enumerate(text.replace("\n", " ").split(" ")):
-                st = SwikText(word, page, self.font_manager, Font("fonts/Arial.ttf"), 11)
+                st = SwikText(word, page, self.font_manager, Arial(), 11)
                 on_scene = self.view.mapToScene(event.pos())
                 st.setPos(st.mapFromScene(on_scene) + QPointF(15 * i, 15 * i))
 
@@ -199,7 +199,7 @@ class ToolTextSelection(Tool):
             self.clear_selection()
 
         elif res == add_text:
-            st = SwikText("New Text", page, self.font_manager, Font("fonts/Arial.ttf"), 11)
+            st = SwikText("New Text", page, self.font_manager, Arial(), 11)
             on_scene = self.view.mapToScene(event.pos())
             st.setPos(st.mapFromScene(on_scene))
 

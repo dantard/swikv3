@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QDialogButtonBox, QDialog, QLabel, QVBoxLayout, QGroupBox, QLineEdit, QCheckBox, QTreeWidget, QTreeWidgetItem, \
     QComboBox, QPushButton, QFileDialog, QHBoxLayout, QInputDialog, QMessageBox
@@ -135,7 +137,7 @@ def FontTextAndColor(FontAndColorDialog):
 
 class ImportDialog(QDialog):
 
-    def __init__(self, text, filter, parent=None):
+    def __init__(self, text, filter, path=None, nickname=None, parent=None):
         super().__init__()
         self.setWindowTitle(text)
         # self.setWindowIcon(QIcon(ICON_PATH))
@@ -145,12 +147,13 @@ class ImportDialog(QDialog):
         self.setWindowModality(Qt.ApplicationModal)
         layout = QVBoxLayout()
         self.setLayout(layout)
+        self.path = path
 
         self.lb = QLabel("Select the file to import")
         layout.addWidget(self.lb)
         h_layout = QHBoxLayout()
 
-        self.le = QLineEdit()
+        self.le = QLineEdit(path)
         self.le.setReadOnly(True)
         self.pb = QPushButton("...")
         self.pb.clicked.connect(self.browse)
@@ -163,7 +166,7 @@ class ImportDialog(QDialog):
         h_layout.addWidget(self.clear_btn)
         layout.addLayout(h_layout)
         layout.addWidget(QLabel("Nickname"))
-        self.nickname = QLineEdit()
+        self.nickname = QLineEdit(nickname)
         layout.addWidget(self.nickname)
         self.nickname.textChanged.connect(self.check_interaction)
 
@@ -183,20 +186,11 @@ class ImportDialog(QDialog):
         self.ok_btn.setEnabled(ok)
 
     def browse(self):
-        file, _ = QFileDialog.getOpenFileName(self, "Select File", "", self.filter)
+        file, _ = QFileDialog.getOpenFileName(self, "Select File", self.path, self.filter)
         if file:
             self.le.setText(file)
+            self.nickname.setText(Path(file).stem)
             self.check_interaction()
-
-    def read_p12_file(self, file_path, password):
-        with open(file_path, 'rb') as file:
-            p12_data = file.read()
-
-        p12 = pkcs12.load_key_and_certificates(p12_data, password.encode(), backend=default_backend())
-        certificates = p12[1]
-        subject = certificates.subject
-        common_name = subject.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value
-        return common_name
 
     def get_file(self):
         return self.le.text()

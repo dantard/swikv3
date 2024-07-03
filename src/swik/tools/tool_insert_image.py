@@ -2,10 +2,16 @@ import glob
 import glob
 import os
 import shutil
+from pathlib import Path
 
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtWidgets import QMenu, QMessageBox, QFileDialog, QVBoxLayout, QWidget, QComboBox, QHBoxLayout, QPushButton, QLabel
+from swik import utils
+
+from swik.word import Word
+
+from swik.simplepage import SimplePage
 
 from swik.dialogs import ImportDialog
 from swik.resizeable import ResizableRectItem
@@ -119,9 +125,13 @@ class ToolInsertSignatureImage(Tool):
         # h_layout.addWidget(self.make_default_btn)
         h_layout.addWidget(self.config_btn)
         h_layout.addWidget(self.remove_btn)
-        h_layout.addWidget(add_btn)
+        # h_layout.addWidget(add_btn)
+
+        # self.draw_btn = QPushButton("✎")
+        # self.draw_btn.setFixedSize(25, 25)
 
         self.draw_btn = QPushButton("Draw")
+
         self.draw_btn.setEnabled(False)
         self.draw_btn.clicked.connect(self.draw_image)
         self.draw_btn.setCheckable(True)
@@ -132,18 +142,57 @@ class ToolInsertSignatureImage(Tool):
         # self.image_lb.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
 
         v_layout.setAlignment(Qt.AlignTop)
-        v_layout.addWidget(QLabel("Imported Images"))
-        v_layout.addLayout(h_layout)
-        v_layout.addWidget(QLabel("Image"))
-        v_layout.addWidget(self.image_lb)
+        # v_layout.addWidget(QLabel("Imported Images"))
 
-        v_layout.addWidget(self.draw_btn)
+        frame = utils.framed(h_layout, "Imported Images")
+        v_layout.addWidget(frame)
+
+        # v_layout.addWidget(QLabel("Image"))
+        frame = utils.framed(self.image_lb, "Current Image")
+        v_layout.addWidget(frame)
+
+        # v_layout.addWidget(frame)
+
+        self.save_btn = QPushButton("+")
+        self.save_btn.setMaximumSize(25, 25)
+        self.save_btn.clicked.connect(self.save_image)
+        self.save_btn.setEnabled(False)
+        self.save_btn.setToolTip("Import current image")
+
+        self.discard_btn = QPushButton("×")
+        self.discard_btn.setMaximumSize(25, 25)
+        self.discard_btn.clicked.connect(self.discard_image)
+        self.discard_btn.setEnabled(False)
+        self.discard_btn.setToolTip("Discard image")
+
+        hh_layout = QHBoxLayout()
+
+        hh_layout.addWidget(self.save_btn)
+        hh_layout.addWidget(self.discard_btn)
+        hh_layout.addWidget(self.draw_btn)
+        # hh_layout.setAlignment(Qt.AlignRight)
+        v_layout.addLayout(hh_layout)
+
+        # v_layout.addWidget(self.draw_btn)
         self.helper.setLayout(v_layout)
-        self.widget.set_app_widget(self.helper, title="Insert Image")
+        self.widget.set_app_widget(self.helper, 250, title="Insert Image")
 
         self.update_cb()
         self.update_image()
         self.check_interaction()
+
+    def discard_image(self):
+        self.image_filename = None
+        self.update_image()
+        self.check_interaction()
+
+    def save_image(self):
+        import_dialog = ImportDialog("Select image", "JPG (*.jpg)", self.image_filename, Path(self.image_filename).stem)
+        if import_dialog.exec_():
+            nickname = import_dialog.get_nickname()
+            self.images[nickname] = ImageConf(self.config, import_dialog.get_nickname(), import_dialog.get_file())
+            self.nicknames.get_value().append(nickname)
+            self.update_cb(True)
 
     def make_default(self):
         selected = self.image_cb.currentText()
@@ -181,7 +230,7 @@ class ToolInsertSignatureImage(Tool):
             self.update_cb(True)
 
     def remove_image(self):
-        if self.image_cb.currentIndex() > 1:
+        if self.image_cb.currentIndex() >= 1:
             index = self.image_cb.currentText()
             ask = QMessageBox.question(self.helper, "Remove Image", "Are you sure you want to remove this image?", QMessageBox.Yes | QMessageBox.No)
             if ask == QMessageBox.Yes:
@@ -201,18 +250,22 @@ class ToolInsertSignatureImage(Tool):
         self.remove_btn.setEnabled(self.image_cb.currentIndex() > 0)
         self.config_btn.setEnabled(self.image_cb.currentIndex() > 0)
         self.make_default_btn.setEnabled(self.image_cb.currentIndex() > 1)
+        self.discard_btn.setEnabled(self.image_filename is not None)
+        self.save_btn.setEnabled(self.image_filename is not None)
+        self.draw_btn.setEnabled(self.image_filename is not None)
 
     def on_image_changed(self):
 
         if self.image_cb.currentIndex() > 0:
-            image = self.images[self.image_cb.currentText()]
-            self.image_filename = image.image_file.get_value()
-            self.image_mode = image.stretch.get_value()
-            self.draw_btn.setEnabled(True)
+            if image := self.images.get(self.image_cb.currentText()):
+                self.image_filename = image.image_file.get_value()
+                self.image_mode = image.stretch.get_value()
+                self.draw_btn.setEnabled(True)
         else:
             self.image_filename = None
             self.image_mode = None
             self.draw_btn.setEnabled(False)
+            self.save_btn.setEnabled(False)
 
         self.update_image()
         self.check_interaction()
@@ -222,12 +275,23 @@ class ToolInsertSignatureImage(Tool):
             self.image_lb.setPixmap(QPixmap(self.image_filename).scaledToWidth(self.helper.width() - 20, Qt.SmoothTransformation))
             self.image_lb.setText("")
             self.image_lb.setContentsMargins(0, 0, 0, 0)
+
+            self.save_btn.setEnabled(True)
+            for image in self.images.values():
+                if image.image_file.get_value() == self.image_filename:
+                    self.save_btn.setEnabled(False)
+                    break
         else:
-            self.image_lb.setText("Click to load image or\nselect imported image\nabove")
-            self.image_lb.setContentsMargins(0, 100, 0, 100)
+            self.image_lb.setText("Click to load a new image\nor select an imported image\nabove")
+            self.image_lb.setContentsMargins(0, 50, 0, 50)
             self.image_lb.setAlignment(Qt.AlignCenter)
 
+        self.check_interaction()
+
     def mouse_pressed(self, event):
+        if self.view.there_is_any_other_than(event.pos(), (SimplePage, Word)):
+            return
+
         page = self.view.get_page_at_pos(event.pos())
         if page is None:
             return

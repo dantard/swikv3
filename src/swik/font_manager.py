@@ -7,6 +7,7 @@ import tempfile
 from PyQt5.QtCore import QObject, QStandardPaths
 from PyQt5.QtGui import QFont, QFontDatabase
 from fontTools import ttLib
+from swik import utils
 
 
 class SwikFont:
@@ -98,6 +99,11 @@ class Font(SwikFont):
             return font
         else:
             return None
+
+
+class Arial(Font):
+    def __init__(self):
+        super().__init__(utils.get_font_path("Arial.ttf"))
 
 
 class FontManager(QObject):
