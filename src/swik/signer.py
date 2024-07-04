@@ -1,6 +1,7 @@
 import contextlib
 from random import randint
 
+from asn1crypto import x509
 from pyhanko import stamp
 from pyhanko.pdf_utils import text, images
 from pyhanko.pdf_utils.incremental_writer import IncrementalPdfFileWriter
@@ -8,7 +9,7 @@ from pyhanko.pdf_utils.layout import InnerScaling, SimpleBoxLayoutRule, AxisAlig
 from pyhanko.pdf_utils.reader import PdfFileReader
 from pyhanko.sign import signers, fields
 from pyhanko.sign.fields import VisibleSigSettings
-from pyhanko.sign.validation import SignatureCoverageLevel
+from pyhanko.sign.validation import SignatureCoverageLevel, EmbeddedPdfSignature
 from pyhanko.sign.validation import validate_pdf_signature
 
 
@@ -111,6 +112,19 @@ def get_signature_info(pdf_path, cert_path):
         with open(pdf_path, 'rb') as doc:
             r = PdfFileReader(doc, False)
             for sig in r.embedded_signatures:
+                # sig: EmbeddedPdfSignature
+                # a = sig.signer_cert.issuer
+                # a: x509.Name
+                # for rdn in a.chosen:
+                #     for type_val in rdn:
+                #         field_name = type_val['type'].human_friendly
+                #
+                #         b = type_val['value']
+                #         b: x509.DirectoryString
+                #         print("ttttt", b.contents)
+                #
+                #         print(field_name, type_val['value'], a._recursive_humanize(type_val['value']))
+
                 status = validate_pdf_signature(sig)  # , vc)
                 data = status.signing_cert.subject.human_friendly.split(', ')
                 info = {}
