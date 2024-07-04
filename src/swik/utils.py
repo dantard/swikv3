@@ -208,3 +208,42 @@ def get_warning_messagebox(text, parent=None):
     check_box = QCheckBox("Don't show this again")
     msg.setCheckBox(check_box)
     return msg.exec() == QMessageBox.Yes, check_box.isChecked()
+
+def add_mimeapps_entry(section, name):
+
+    # Path to the mimeapps.list file
+    mimeapps_list_path = os.path.expanduser("~/.config/mimeapps.list")
+
+    # The entry to be added or modified
+    default_app_entry = "application/pdf="+name+"\n"
+
+    # Read the current content of mimeapps.list
+    if os.path.exists(mimeapps_list_path):
+        with open(mimeapps_list_path, "r") as file:
+            lines = file.readlines()
+    else:
+        lines = []
+
+    # Check if the [Default Applications] section exists
+    section_found = False
+    for i, line in enumerate(lines):
+        if line.strip() == section:
+            section_found = True
+            # Check if there's already an entry for application/pdf
+            for j in range(i + 1, len(lines)):
+                if lines[j].startswith("application/pdf=swik"):
+                    lines[j] = default_app_entry
+                    break
+            else:
+                # Add the entry if it doesn't exist
+                lines.insert(i + 1, default_app_entry)
+            break
+
+    # If the section doesn't exist, add it
+    if not section_found:
+        lines.append(section + "\n")
+        lines.append(default_app_entry)
+
+    # Write the updated content back to mimeapps.list
+    with open(mimeapps_list_path, "w") as file:
+        file.writelines(lines)

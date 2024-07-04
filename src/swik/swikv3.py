@@ -70,6 +70,8 @@ class MainWindow(QMainWindow):
         self.edit_menu = menu_bar.addMenu('Edit')
         self.edit_menu.addSeparator()
         self.edit_menu.addAction('Preferences', self.preferences)
+        self.edit_menu.addSeparator()
+        self.edit_menu.addAction('Set as default PDF reader', self.set_as_default)
         # end setup edit menu
 
         # Setup tools menu
@@ -112,6 +114,10 @@ class MainWindow(QMainWindow):
         self.config.apply_window_config(self)
         self.update_interaction_status()
         self.show()
+
+    def set_as_default(self):
+        utils.add_mimeapps_entry("[Default Applications]", "swik0.3.desktop")
+        utils.add_mimeapps_entry("[Added Associations]", "swik0.3.desktop")
 
     def restore(self):
         if self.config.general.get("open_last"):
