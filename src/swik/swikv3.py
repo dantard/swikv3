@@ -21,6 +21,7 @@ import swik.utils as utils
 from swik.layout_manager import LayoutManager
 from swik.progressing import Progressing
 from swik.swik_dbus import DBusServerThread
+from swik.swik_graphview import Shower, Magnifier
 from swik.swik_tab_widget import SwikTabWidget
 from swik.swik_widget import SwikWidget
 from swik.swik_config import SwikConfig
@@ -77,6 +78,7 @@ class MainWindow(QMainWindow):
 
         # Setup tools menu
         self.tool_menu = menu_bar.addMenu('Tools')
+        self.tool_menu.addAction('Magnifier', self.magnifier)
         self.tool_menu.addAction('Flatten', lambda: self.flatten(False))
         self.tool_menu.addAction('Flatten and Open', lambda: self.flatten(True))
         self.tool_menu.addSeparator()
@@ -115,6 +117,11 @@ class MainWindow(QMainWindow):
         self.config.apply_window_config(self)
         self.update_interaction_status()
         self.show()
+
+    def magnifier(self):
+        self.shower = Magnifier(self.current().scene, self.current().view)
+        self.shower.setGeometry(0, 0, 300, 300)
+        self.shower.show()
 
     def set_as_default(self):
         utils.add_mimeapps_entry("[Default Applications]", "swik0.3.desktop")

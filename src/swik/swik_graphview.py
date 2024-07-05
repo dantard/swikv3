@@ -1,5 +1,5 @@
-from PyQt5.QtCore import pyqtSignal, QRectF, Qt, QTimer
-from PyQt5.QtGui import QColor, QCursor, QHoverEvent, QPainter
+from PyQt5.QtCore import pyqtSignal, QRectF, Qt, QTimer, QPoint
+from PyQt5.QtGui import QColor, QCursor, QHoverEvent, QPainter, QTransform
 from PyQt5.QtWidgets import QGraphicsEllipseItem, QGraphicsView, QPushButton
 
 import swik.utils as utils
@@ -100,6 +100,60 @@ class Shower(QGraphicsView):
         self.show()
 
 
+class Magnifier(QGraphicsView):
+
+    def __init__(self, scene, main_view):
+        super().__init__(scene)
+        self.main_view: QGraphicsView = main_view
+        self.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+        # self.link_shower.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setWindowFlags(Qt.Window | Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
+        self.setTransform(QTransform().scale(2, 2))
+        self.setRenderHint(QPainter.Antialiasing)
+        self.setRenderHint(QPainter.SmoothPixmapTransform)
+        self.close = QPushButton("✕")
+        self.close.setParent(self)
+        self.close.setGeometry(10, 10, 20, 20)
+        self.close.clicked.connect(self.hide)
+
+        self.plus = QPushButton("+")
+        self.plus.setParent(self)
+        self.plus.setGeometry(30, 10, 20, 20)
+
+        self.minus = QPushButton("-")
+        self.minus.setParent(self)
+        self.minus.setGeometry(60, 10, 20, 20)
+
+    def mousePressEvent(self, event):
+        super().mousePressEvent(event)
+        self.pos1 = event.pos()
+
+    def mouseMoveEvent(self, event):
+        super().mouseMoveEvent(event)
+        if self.pos1 is not None:
+            self.move(event.globalPos() - self.pos1)
+
+        print("pose1", self.pos())
+        obj = self.main_view
+        pose = QPoint(0, 0)
+        while obj is not None:
+            pose += obj.mapToParent(QPoint(0, 0))
+            obj = obj.parent()
+
+        pose = self.pos() - pose
+
+        # print("pose2", pose)
+        pose = self.main_view.mapToScene(pose)
+        print("pose3", pose)
+        self.setSceneRect(pose.x(), pose.y(), 200, 200)
+        self.setFixedSize(400, 400)
+
+    def mouseReleaseEvent(self, event):
+        self.pos1 = None
+
+
 class SwikGraphView(GraphView):
     drop_event = pyqtSignal(list)
 
@@ -183,7 +237,8 @@ class SwikGraphView(GraphView):
         images = [item for item in items if isinstance(item, InsertImageRectItem)]
         for image in images:
             page: Page = image.parentItem()
-            self.renderer.insert_image_from_file(page.get_index(), image.get_image_rect_on_parent(), image.get_image_filename())
+            self.renderer.insert_image_from_file(page.get_index(), image.get_image_rect_on_parent(),
+                                                 image.get_image_filename())
             pages_to_refresh.add(page.get_index())
             self.scene().removeItem(image)
 
@@ -205,7 +260,6 @@ class SwikGraphView(GraphView):
 
         elif kind == InternalLink.LEAVE:
             self.link_shower.leave(dest_page, pos)
-
 
     def link_clicked(self, page, pos):
         # self.move_to_page(page)
