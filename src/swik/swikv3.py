@@ -19,9 +19,9 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog
 
 import swik.utils as utils
 from swik.layout_manager import LayoutManager
+from swik.magnifier import Magnifier
 from swik.progressing import Progressing
 from swik.swik_dbus import DBusServerThread
-from swik.swik_graphview import Shower, Magnifier
 from swik.swik_tab_widget import SwikTabWidget
 from swik.swik_widget import SwikWidget
 from swik.swik_config import SwikConfig
@@ -78,7 +78,8 @@ class MainWindow(QMainWindow):
 
         # Setup tools menu
         self.tool_menu = menu_bar.addMenu('Tools')
-        self.tool_menu.addAction('Magnifier', self.magnifier)
+        self.tool_menu.addAction('Magnifier', self.show_magnifier)
+        self.tool_menu.addSeparator()
         self.tool_menu.addAction('Flatten', lambda: self.flatten(False))
         self.tool_menu.addAction('Flatten and Open', lambda: self.flatten(True))
         self.tool_menu.addSeparator()
@@ -113,15 +114,15 @@ class MainWindow(QMainWindow):
         # Done
 
         # self.tab_widget.setVisible(False)
+        self.magnifier = None
         self.setCentralWidget(self.tab_widget)
         self.config.apply_window_config(self)
         self.update_interaction_status()
         self.show()
 
-    def magnifier(self):
-        self.shower = Magnifier(self.current().scene, self.current().view)
-        self.shower.setGeometry(0, 0, 300, 300)
-        self.shower.show()
+    def show_magnifier(self):
+        self.magnifier = Magnifier(self.current())
+        self.magnifier.show()
 
     def set_as_default(self):
         utils.add_mimeapps_entry("[Default Applications]", "swik0.3.desktop")
@@ -204,6 +205,8 @@ class MainWindow(QMainWindow):
 
     def tab_changed(self, index):
         self.update_title()
+        if self.magnifier is not None:
+            self.magnifier.set_widget(self.current())
 
     #        self.removeEventFilter(self.current_event_filter)
     #        self.installEventFilter(self.current())
@@ -258,6 +261,10 @@ class MainWindow(QMainWindow):
                 else:
                     value = swik_widget.view.page
                 tabs[index] = [filename, swik_widget.view.get_mode(), swik_widget.view.get_ratio(), value]
+
+        if self.magnifier is not None:
+            self.magnifier.close()
+            self.magnifier.deleteLater()
 
         self.config.set_tabs(tabs)
         self.config.push_window_config(self)
