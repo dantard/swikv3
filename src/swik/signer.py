@@ -3,6 +3,7 @@ from random import randint
 
 from asn1crypto import x509
 from pyhanko import stamp
+from pyhanko.keys import load_cert_from_pemder
 from pyhanko.pdf_utils import text, images
 from pyhanko.pdf_utils.incremental_writer import IncrementalPdfFileWriter
 from pyhanko.pdf_utils.layout import InnerScaling, SimpleBoxLayoutRule, AxisAlignment
@@ -11,6 +12,7 @@ from pyhanko.sign import signers, fields
 from pyhanko.sign.fields import VisibleSigSettings
 from pyhanko.sign.validation import SignatureCoverageLevel, EmbeddedPdfSignature
 from pyhanko.sign.validation import validate_pdf_signature
+from pyhanko_certvalidator import ValidationContext
 
 
 class P12Signer:
@@ -104,35 +106,36 @@ class P12Signer:
         return self.ERROR_SIGNING_FAILED
 
 
-def get_signature_info(pdf_path, cert_path):
+def get_signature_info(pdf_path, cert_path=None):
     with contextlib.redirect_stderr(None):
-        # root_cert = load_cert_from_pemder(cert_path)
-        # vc = ValidationContext(trust_roots=[root_cert])
+
+        if cert_path is None:
+            root_cert = load_cert_from_pemder(cert_path)
+            vc = ValidationContext(trust_roots=[root_cert])
+        else:
+            vc = None
+
         result = []
         with open(pdf_path, 'rb') as doc:
             r = PdfFileReader(doc, False)
-            for sig in r.embedded_signatures:
-                # sig: EmbeddedPdfSignature
-                # a = sig.signer_cert.issuer
-                # a: x509.Name
-                # for rdn in a.chosen:
-                #     for type_val in rdn:
-                #         field_name = type_val['type'].human_friendly
-                #
-                #         b = type_val['value']
-                #         b: x509.DirectoryString
-                #         print("ttttt", b.contents)
-                #
-                #         print(field_name, type_val['value'], a._recursive_humanize(type_val['value']))
+            for sig in r.embedded_signatures:  # type: EmbeddedPdfSignature
+                all_fields = []
+                a: x509.Name = sig.signer_cert.issuer
 
-                status = validate_pdf_signature(sig)  # , vc)
+                for rdn in a.chosen:
+                    for type_val in rdn:
+                        # field_name = type_val['type'].human_friendly
+                        # b:x509.DirectoryString = type_val['value']
+                        # print("contents", b.contents)
+                        all_fields.append(
+                            type_val['type'].human_friendly + ": " + a._recursive_humanize(type_val['value']))
+
+                status = validate_pdf_signature(sig, vc)
                 data = status.signing_cert.subject.human_friendly.split(', ')
                 info = {}
-                all_fields = []
                 for field in data:
                     if ";" in field:
                         other_fields = field.split('; ')
-                        print("other_fields", other_fields)
                         all_fields.extend(other_fields)
                     else:
                         all_fields.append(field)
@@ -145,8 +148,9 @@ def get_signature_info(pdf_path, cert_path):
 
                 info.update({'Valid': 'Yes' if status.valid else 'No',
                              'Intact': 'Yes' if status.intact else 'No',
-                             'Coverage': 'Whole file' if status.coverage == SignatureCoverageLevel.ENTIRE_FILE else 'Partial ' + status.coverage.name,
+                             'Coverage': status.coverage.name,
                              'Date': status.signer_reported_dt.isoformat(),
+                             'Issuer is trusted': 'Yes' if status.trusted else 'No',
                              })
                 result.append(info)
 

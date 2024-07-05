@@ -12,7 +12,8 @@ from PyQt5.QtCore import Qt, QRunnable, QThreadPool, pyqtSignal, QMutex, QRectF,
 from PyQt5.QtGui import QPixmap, QImage, QBrush, QPen, QColor
 from PyQt5.QtWidgets import QLabel
 from pymupdf import TEXTFLAGS_DICT, TEXT_PRESERVE_IMAGES, TextWriter, Font, Point, Document, Rect, Quad, Annot
-from pymupdf.mupdf import PDF_ENCRYPT_KEEP, PDF_WIDGET_TYPE_TEXT, PDF_WIDGET_TYPE_CHECKBOX, PDF_ANNOT_IS_LOCKED, PDF_ANNOT_HIGHLIGHT, \
+from pymupdf.mupdf import PDF_ENCRYPT_KEEP, PDF_WIDGET_TYPE_TEXT, PDF_WIDGET_TYPE_CHECKBOX, PDF_ANNOT_IS_LOCKED, \
+    PDF_ANNOT_HIGHLIGHT, \
     PDF_ANNOT_SQUARE, PDF_WIDGET_TYPE_RADIOBUTTON
 
 import swik.utils as utils
@@ -355,7 +356,6 @@ class MuPDFRenderer(QLabel):
 
         return word_objs
 
-
     def get_word_font_info(self, word: Word):
         data = self.document[word.page_id].get_text("dict", sort=False, flags=TEXTFLAGS_DICT & ~TEXT_PRESERVE_IMAGES)
         if data is not None:
@@ -433,7 +433,6 @@ class MuPDFRenderer(QLabel):
     def apply_redactions(self, index):
         self.document[index].apply_redactions()
 
-
     annoting = None
 
     def add_highlight_annot(self, index, swik_annot):
@@ -486,7 +485,6 @@ class MuPDFRenderer(QLabel):
                 locked = annot.flags & PDF_ANNOT_IS_LOCKED
                 swik_annot.set_movable(not locked)
                 swik_annot.setPos(annot.rect[0], annot.rect[1])
-
 
                 annots.append(swik_annot)
                 self.document[index].delete_annot(annot)
@@ -659,7 +657,8 @@ class MuPDFRenderer(QLabel):
                 swik_widget.user_data = field.__dict__.copy()                
                 self.document[page.index].delete_widget(field)
                 '''
-                swik_widget.xref = str(field.field_type) + "_" + str(field.field_name) + "_" + str(field.rect[0]) + "_" + str(field.rect[1])
+                swik_widget.xref = str(field.field_type) + "_" + str(field.field_name) + "_" + str(
+                    field.rect[0]) + "_" + str(field.rect[1])
                 swik_widget.on_state = field.on_state()
                 pdf_widgets.append(swik_widget)
 
@@ -680,7 +679,8 @@ class MuPDFRenderer(QLabel):
         page = self.document[index]
         widgets = page.widgets()
         for field in widgets:
-            xref = str(field.field_type) + "_" + str(field.field_name) + "_" + str(field.rect[0]) + "_" + str(field.rect[1])
+            xref = str(field.field_type) + "_" + str(field.field_name) + "_" + str(field.rect[0]) + "_" + str(
+                field.rect[1])
             if xref == swik_widget.xref:
 
                 value = swik_widget.get_value()
@@ -812,12 +812,11 @@ class MuPDFRenderer(QLabel):
         links = []
         while pdf_link is not None:
             rx, ry = pdf_link.rect[0], pdf_link.rect[1]
-            if rx < 0 or rx > x1-x0 or ry < 0 or ry > y1-y0:
-               pdf_link = pdf_link.next
-               continue
+            if rx < 0 or rx > x1 - x0 or ry < 0 or ry > y1 - y0:
+                pdf_link = pdf_link.next
+                continue
 
             rect = utils.fitz_rect_to_qrectf(pdf_link.rect)
-
 
             if pdf_link.is_external:
                 link = ExternalLink(rect, pdf_link.uri)
@@ -858,3 +857,9 @@ class MuPDFRenderer(QLabel):
             toc_item = TOC(item[0], item[1], page_no, QPointF(point.x, point.y), item[3]['kind'])
             toc_items.append(toc_item)
         return toc_items
+
+    def set_metadata(self, metadata):
+        self.document.set_metadata(metadata)
+
+    def get_metadata(self):
+        return self.document.metadata

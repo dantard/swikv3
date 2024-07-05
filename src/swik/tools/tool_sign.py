@@ -37,7 +37,8 @@ class SignatureConf:
         self.border = appearance.getInt("signature_border", pretty="Border width", default=0)
         text = appearance.getSubSection("Text")
         self.text_font_size = text.getInt("text_font_size", pretty="Font Size", default=11, max=85)
-        self.text_signature = text.getEditBox("text_signature", pretty="Text", default='Signed by&&%(signer)s&&Time: %(ts)s'.replace('\n', '\\n'))
+        self.text_signature = text.getEditBox("text_signature", pretty="Text",
+                                              default='Signed by&&%(signer)s&&Time: %(ts)s'.replace('\n', '\\n'))
         self.text_stretch = text.getCheckbox("text_stretch", pretty="Stretch")
         self.text_timestamp = text.getString("text_timestamp", default="%d/%m/%Y")
         image = appearance.getSubSection("Image")
@@ -230,7 +231,8 @@ class ToolSign(Tool):
         self.check_interaction()
 
     def sign_btn_clicked(self):
-        cont = QMessageBox.question(self.helper, "Sign Document", "Original file will be saved before signing", QMessageBox.Ok | QMessageBox.Cancel)
+        cont = QMessageBox.question(self.helper, "Sign Document", "Original file will be saved before signing",
+                                    QMessageBox.Ok | QMessageBox.Cancel)
         if cont == QMessageBox.Cancel:
             return
 
@@ -245,7 +247,8 @@ class ToolSign(Tool):
         import_dialog = ImportP12("Select signature file", "PKCS#12 (*.p12)")
         if import_dialog.exec_():
             nickname = import_dialog.get_nickname()
-            self.signatures[nickname] = SignatureConf(self.config, import_dialog.get_nickname(), import_dialog.get_file())
+            self.signatures[nickname] = SignatureConf(self.config, import_dialog.get_nickname(),
+                                                      import_dialog.get_file())
             self.nicknames.get_value().append(nickname)
             self.update_cb()
 
@@ -259,7 +262,9 @@ class ToolSign(Tool):
     def remove_signature(self):
         if self.signature_cb.currentIndex() >= 0:
             index = self.signature_cb.currentText()
-            ask = QMessageBox.question(self.helper, "Remove signature", "Are you sure you want to remove this signature?", QMessageBox.Yes | QMessageBox.No)
+            ask = QMessageBox.question(self.helper, "Remove signature",
+                                       "Are you sure you want to remove this signature?",
+                                       QMessageBox.Yes | QMessageBox.No)
             if ask == QMessageBox.Yes:
                 self.signatures.pop(index)
                 self.nicknames.get_value().remove(index)
@@ -312,7 +317,8 @@ class ToolSign(Tool):
 
         text_mode = SignerRectItem.TEXT_MODE_STRETCH if signature.text_stretch.get_value() else SignerRectItem.TEXT_MODE_KEEP
         image_mode = SignerRectItem.IMAGE_MODE_STRETCH if signature.image_stretch.get_value() else SignerRectItem.IMAGE_MODE_MAINTAIN_RATIO
-        self.rubberband = SignerRectItem(None, self.get_selected(), text=text, image_filename=image_filename, max_font_size=max_font_size,
+        self.rubberband = SignerRectItem(None, self.get_selected(), text=text, image_filename=image_filename,
+                                         max_font_size=max_font_size,
                                          text_mode=text_mode,
                                          image_mode=image_mode, pen=Qt.transparent, brush=QColor(255, 0, 0, 80))
         self.rubberband.signals.done.connect(self.selection_done)

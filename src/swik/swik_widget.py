@@ -12,7 +12,7 @@ from pymupdf import Document
 
 from swik.layout_manager import LayoutManager
 from swik.swik_graphview import SwikGraphView
-from swik.dialogs import PasswordDialog
+from swik.dialogs import PasswordDialog, DictDialog
 from swik.font_manager import FontManager
 from swik.groupbox import GroupBox
 from swik.interfaces import Shell
@@ -520,3 +520,8 @@ class SwikWidget(Shell):
     def deleteLater(self):
         self.finder_toolbar.close()
         super().deleteLater()
+
+    def edit_metadata(self):
+        dialog = DictDialog(self.renderer.get_metadata(), ["format", "encryption"], parent=self)
+        if dialog.exec() == QDialog.Accepted:
+            self.renderer.set_metadata(dialog.get_dict())

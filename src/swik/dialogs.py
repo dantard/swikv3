@@ -1,8 +1,9 @@
 from pathlib import Path
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QDialogButtonBox, QDialog, QLabel, QVBoxLayout, QGroupBox, QLineEdit, QCheckBox, QTreeWidget, QTreeWidgetItem, \
-    QComboBox, QPushButton, QFileDialog, QHBoxLayout, QInputDialog, QMessageBox
+from PyQt5.QtWidgets import QDialogButtonBox, QDialog, QLabel, QVBoxLayout, QGroupBox, QLineEdit, QCheckBox, \
+    QTreeWidget, QTreeWidgetItem, \
+    QComboBox, QPushButton, QFileDialog, QHBoxLayout, QInputDialog, QMessageBox, QFormLayout
 from cryptography.hazmat._oid import NameOID
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
@@ -104,7 +105,8 @@ class FontAndColorDialog(ComposableDialog):
             sec3 = self.font_picker.add_section("Unsupported", parent)
             self.font_picker.add_elements(sec1, self.font_manager.filter('document', subset=False, supported=True))
             self.font_picker.add_elements(sec2, self.font_manager.filter('document', subset=True, supported=True))
-            self.font_picker.add_elements(sec3, self.font_manager.filter('document', supported=False), use_own_font=False)
+            self.font_picker.add_elements(sec3, self.font_manager.filter('document', supported=False),
+                                          use_own_font=False)
 
             parent = self.font_picker.add_section("Base14 Fonts")
             self.font_picker.add_elements(parent, self.font_manager.get_base14_fonts())
@@ -214,7 +216,8 @@ class ImportP12(ImportDialog):
     def browse(self):
         file, _ = QFileDialog.getOpenFileName(self, "Select File", "", self.filter)
         if file:
-            password, ok = QInputDialog.getText(self, "Password", "Enter the password (it will NOT be stored)", QLineEdit.Password)
+            password, ok = QInputDialog.getText(self, "Password", "Enter the password (it will NOT be stored)",
+                                                QLineEdit.Password)
             if ok:
                 try:
                     common_name = self.read_p12_file(file, password)
@@ -224,3 +227,50 @@ class ImportP12(ImportDialog):
                     return
                 self.le.setText(file)
             self.check_interaction()
+
+
+class DictDialog(QDialog):
+
+    def __init__(self, input_dict, ignore=None, parent=None):
+        super(DictDialog, self).__init__(parent)
+
+        ignore = [] if ignore is None else ignore
+
+        self.setWindowTitle("Input Dialog")
+        self.input_dict = input_dict  # Store the input dictionary
+
+        # Create the form layout
+        self.form_layout = QFormLayout()
+
+        # Iterate over the dictionary and add labels and line edits to the form layout
+        for key, value in input_dict.items():
+            label = key
+            line_edit = QLineEdit()
+            line_edit.setText(value)
+            if key in ignore:
+                line_edit.setEnabled(False)
+            self.form_layout.addRow(label, line_edit)
+            line_edit.home(True)
+
+        # Create the button box with OK and Cancel buttons
+        button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        button_box.accepted.connect(self.accept)
+        button_box.rejected.connect(self.reject)
+
+        # Create the main layout
+        main_layout = QVBoxLayout()
+        main_layout.addLayout(self.form_layout)
+        main_layout.addWidget(button_box)
+
+        self.setLayout(main_layout)
+        self.setMinimumWidth(400)
+
+    def get_dict(self):
+        # Update the values in the input dictionary with the new values from the line edits
+        for i in range(self.form_layout.rowCount()):
+            label_widget = self.form_layout.itemAt(i, QFormLayout.LabelRole).widget()
+            line_edit_widget = self.form_layout.itemAt(i, QFormLayout.FieldRole).widget()
+            label = label_widget.text()
+            value = line_edit_widget.text()
+            self.input_dict[label] = value
+        return self.input_dict
