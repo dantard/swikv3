@@ -11,9 +11,13 @@ class Annotation(ResizableRectItem):
     def __init__(self, parent=None, **kwargs):
         super().__init__(parent, **kwargs)
         self.content = str()
+        self.name = str()
 
     def set_content(self, text):
         self.content = text
+
+    def set_name(self, name):
+        self.name = name
 
     def get_content(self):
         return self.content

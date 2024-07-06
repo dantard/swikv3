@@ -481,6 +481,7 @@ class MuPDFRenderer(QLabel):
 
                 swik_annot.setRect(QRectF(0, 0, annot.rect[2] - annot.rect[0], annot.rect[3] - annot.rect[1]))
                 swik_annot.set_content(annot.info["content"])
+                swik_annot.set_name(annot.info["name"])
                 swik_annot.setToolTip(swik_annot.get_content())
                 locked = annot.flags & PDF_ANNOT_IS_LOCKED
                 swik_annot.set_movable(not locked)

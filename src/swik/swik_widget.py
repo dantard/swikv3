@@ -61,14 +61,14 @@ class Splitter(QSplitter):
 class SwikWidget(Shell):
     interaction_changed = pyqtSignal(QWidget)
     open_requested = pyqtSignal(str, int, float)
-    file_changed = pyqtSignal()
+    close_requested = pyqtSignal(Shell)
+    file_changed = pyqtSignal(Shell)
     progress = pyqtSignal(float)
 
-    def __init__(self, window, tab_widget, config):
+    def __init__(self, window, config):
         super().__init__()
         self.interaction_enabled = False
         self.win = window
-        self.tabw = tab_widget
         self.config = config
         self.renderer = MuPDFRenderer()
         self.renderer.document_changed.connect(self.document_changed)
@@ -412,12 +412,6 @@ class SwikWidget(Shell):
 
     def update_tab_text(self):
         # Update the tab name
-        my_index = self.tabw.indexOf(self)
-        text = os.path.basename(self.renderer.get_filename())
-        font_metrics = self.tabw.fontMetrics()
-        text = font_metrics.elidedText(text, Qt.ElideRight, 200)
-        self.tabw.setTabText(my_index, text)
-        self.tabw.setTabToolTip(my_index, self.renderer.get_filename())
         self.mode_group.reset()
 
     def get_filename(self):
@@ -442,7 +436,7 @@ class SwikWidget(Shell):
 
             if res == MuPDFRenderer.OPEN_OK:
                 self.set_interactable(True)
-                self.file_changed.emit()
+                self.file_changed.emit(self)
                 # To update the number of page
                 self.view.page_scrolled()
                 self.config.update_recent(self.renderer.get_filename())
@@ -450,7 +444,7 @@ class SwikWidget(Shell):
 
             else:
                 QMessageBox.warning(self, "Error", "Error opening file")
-                self.tabw.tab_close_requested.emit(self)
+                self.close_requested.emit(self)
 
     def save_file(self, name=None):
         name = self.renderer.get_filename() if name is None else name
@@ -461,7 +455,7 @@ class SwikWidget(Shell):
             result = self.renderer.save_pdf(name, False)
             self.saved(result, name)
 
-        self.file_changed.emit()
+        self.file_changed.emit(self)
         self.update_tab_text()
 
     def apply_post_save_artifacts(self, filename):
