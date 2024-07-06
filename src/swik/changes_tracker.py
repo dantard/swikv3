@@ -1,4 +1,4 @@
-from PyQt5.QtCore import QObject
+from PyQt5.QtCore import QObject, pyqtSignal
 
 from swik.action import Action
 
@@ -14,10 +14,32 @@ from swik.action import Action
 # which are 2 atoms to undo/redo. The items that want to be undoable must implement the Undoable interface.
 
 class ChangesTracker(QObject):
+    dirty = pyqtSignal(bool)
+
+    class Stack(list):
+
+        class Signals(QObject):
+            dirty = pyqtSignal(bool)
+
+        def __init__(self):
+            super(ChangesTracker.Stack, self).__init__()
+            self.signals = self.Signals()
+
+        def append(self, __object) -> None:
+            super(ChangesTracker.Stack, self).append(__object)
+            self.signals.dirty.emit(len(self) > 0)
+
+        def pop(self, index=-1) -> Action:
+            action = super(ChangesTracker.Stack, self).pop(index)
+            self.signals.dirty.emit(len(self) > 0)
+            return action
+
     def __init__(self, scene):
         super(ChangesTracker, self).__init__()
-        self.undo_stack = []
-        self.redo_stack = []
+        self.undo_stack = self.Stack()
+        self.redo_stack = self.Stack()
+        self.undo_stack.signals.dirty.connect(self.dirty.emit)
+        # self.redo_stack.signals.dirty.connect(self.dirty.emit)
         self.scene = scene
 
     def undo(self):
@@ -35,6 +57,7 @@ class ChangesTracker(QObject):
                     else:
                         self.scene.addItem(atom.item)
                 elif atom.kind == Action.POSE_CHANGED:
+                    print("pose changed", atom.item, atom.old, atom.new)
                     atom.item.setPos(atom.old)
                 else:
                     atom.item.undo(atom.kind, atom.old)
@@ -72,6 +95,13 @@ class ChangesTracker(QObject):
             action.push(item, Action.ACTION_REMOVE, item.parentItem())
         self.undo_stack.append(action)
 
+    def add_action(self, action):
+        self.undo_stack.append(action)
+
     def item_changed(self, action):
         print("item changed", action[0].item, action[0].kind, action[0].old, action[0].new)
         self.undo_stack.append(action)
+
+    def saved(self):
+        self.undo_stack.clear()
+        self.redo_stack.clear()

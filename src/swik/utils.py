@@ -140,8 +140,10 @@ def int_to_roman(number):
 colors = [Qt.black, Qt.red, Qt.green, Qt.blue, Qt.magenta, Qt.cyan, Qt.darkRed, Qt.darkGreen, Qt.darkBlue, ]
 
 
-def get_color(index):
-    return colors[index % len(colors)]
+def get_color(index, alpha=1):
+    color = QColor(colors[index % len(colors)])
+    color.setAlpha(int(alpha * 255))
+    return color
 
 
 def row(w1, w2):
@@ -209,13 +211,13 @@ def get_warning_messagebox(text, parent=None):
     msg.setCheckBox(check_box)
     return msg.exec() == QMessageBox.Yes, check_box.isChecked()
 
-def add_mimeapps_entry(section, name):
 
+def add_mimeapps_entry(section, name):
     # Path to the mimeapps.list file
     mimeapps_list_path = os.path.expanduser("~/.config/mimeapps.list")
 
     # The entry to be added or modified
-    default_app_entry = "application/pdf="+name+"\n"
+    default_app_entry = "application/pdf=" + name + "\n"
 
     # Read the current content of mimeapps.list
     if os.path.exists(mimeapps_list_path):

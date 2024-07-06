@@ -12,7 +12,7 @@ from pymupdf import Document
 
 from swik.layout_manager import LayoutManager
 from swik.swik_graphview import SwikGraphView
-from swik.dialogs import PasswordDialog, DictDialog
+from swik.dialogs import PasswordDialog, DictDialog, TextBoxDialog
 from swik.font_manager import FontManager
 from swik.groupbox import GroupBox
 from swik.interfaces import Shell
@@ -525,3 +525,8 @@ class SwikWidget(Shell):
         dialog = DictDialog(self.renderer.get_metadata(), ["format", "encryption"], parent=self)
         if dialog.exec() == QDialog.Accepted:
             self.renderer.set_metadata(dialog.get_dict())
+
+    def edit_xml_metadata(self):
+        dialog = TextBoxDialog(self.renderer.get_xml_metadata(), parent=self, title="Edit XML Metadata")
+        if dialog.exec() == QDialog.Accepted:
+            self.renderer.set_xml_metadata(dialog.get_text())

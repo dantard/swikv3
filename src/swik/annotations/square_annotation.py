@@ -26,23 +26,16 @@ class SquareAnnotation(Annotation, Copyable):
             self.notify_deletion(self)
             self.scene().removeItem(self)
 
-    def get_common_state(self):
-        common = super().get_common_state()
-        common["pen"] = self.pen()
-        return common
-
-    def set_common_state(self, state):
-        super().set_common_state(state)
-        self.setPen(state["pen"] if "pen" in state else self.pen())
-
     def get_full_state(self):
         full = super().get_full_state()
         full["content"] = self.content
+        full["pen"] = self.pen()
         return full
 
     def set_full_state(self, state):
         super().set_full_state(state)
         self.content = state["content"] if "content" in state else self.content
+        self.setPen(state["pen"] if "pen" in state else self.pen())
 
     def duplicate(self):
         r = SquareAnnotation(brush=self.brush(), pen=self.pen())

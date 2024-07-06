@@ -27,7 +27,7 @@ class Scene(QGraphicsScene):
         for elem in self.selectedItems():
             if elem is not item and type(elem) == type(item):
                 old = elem.get_full_state()
-                elem.set_common_state(full_state)
+                elem.set_full_state(full_state)
                 action.push(elem, kind, old, elem.get_full_state())
 
     def notify_any_change(self, kind, item, old, new):
@@ -73,6 +73,9 @@ class Scene(QGraphicsScene):
         bunches = [b for b in self.bunches if type(b) == kind]
         for bunch in bunches:
             self.bunches.remove(bunch)
+
+    def get_bunches(self, kind):
+        return [b for b in self.bunches if type(b) == kind]
 
     def keyPressEvent(self, event) -> None:
         items = self.selectedItems()

@@ -70,6 +70,7 @@ class MainWindow(QMainWindow):
         # Setup edit menu
         self.edit_menu = menu_bar.addMenu('Edit')
         self.edit_menu.addAction('Edit metadata', lambda: self.current().edit_metadata())
+        self.edit_menu.addAction('Edit XML metadata', lambda: self.current().edit_xml_metadata())
         self.edit_menu.addSeparator()
         self.edit_menu.addAction('Preferences', self.preferences)
         self.edit_menu.addSeparator()

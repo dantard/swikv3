@@ -863,3 +863,13 @@ class MuPDFRenderer(QLabel):
 
     def get_metadata(self):
         return self.document.metadata
+
+    def get_xml_metadata(self):
+        try:
+            md = self.document.get_xml_metadata()
+        except:
+            md = ""
+        return md
+
+    def set_xml_metadata(self, xml):
+        self.document.set_xml_metadata(xml)

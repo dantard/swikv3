@@ -71,7 +71,8 @@ class ResizableRectItem(PaintableSelectorRectItem, Undoable):
         self.timer.timeout.connect(lambda: self.set_handle_visibility(False))
         self.timer.setInterval(2000)
 
-        for cursor in [Qt.SizeFDiagCursor, Qt.SizeVerCursor, Qt.SizeBDiagCursor, Qt.SizeHorCursor, Qt.SizeFDiagCursor, Qt.SizeVerCursor, Qt.SizeBDiagCursor, Qt.SizeHorCursor]:
+        for cursor in [Qt.SizeFDiagCursor, Qt.SizeVerCursor, Qt.SizeBDiagCursor, Qt.SizeHorCursor, Qt.SizeFDiagCursor, Qt.SizeVerCursor, Qt.SizeBDiagCursor,
+                       Qt.SizeHorCursor]:
             handle = HandleItem(self, cursor)
             handle.setBrush(Qt.white)
             handle.setPen(Qt.black)
@@ -247,19 +248,11 @@ class ResizableRectItem(PaintableSelectorRectItem, Undoable):
 
     # State management
     def get_full_state(self):
-        common = self.get_common_state()
-        common.update({"rect": self.rect()})
-        return common
+        return {"rect": self.rect(), "brush": self.brush()}
 
     def set_full_state(self, state):
-        self.set_common_state(state)
-        self.setRect(state["rect"] if "rect" in state else self.rect())
-
-    def set_common_state(self, state):
         self.setBrush(state["brush"] if "brush" in state else self.brush())
-
-    def get_common_state(self):
-        return {"brush": self.brush()}
+        self.setRect(state["rect"] if "rect" in state else self.rect())
 
     def undo(self, action, previous_state):
         self.set_full_state(previous_state)

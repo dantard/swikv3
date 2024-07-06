@@ -3,7 +3,7 @@ from pathlib import Path
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QDialogButtonBox, QDialog, QLabel, QVBoxLayout, QGroupBox, QLineEdit, QCheckBox, \
     QTreeWidget, QTreeWidgetItem, \
-    QComboBox, QPushButton, QFileDialog, QHBoxLayout, QInputDialog, QMessageBox, QFormLayout
+    QComboBox, QPushButton, QFileDialog, QHBoxLayout, QInputDialog, QMessageBox, QFormLayout, QTextEdit
 from cryptography.hazmat._oid import NameOID
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
@@ -11,7 +11,7 @@ from cryptography.hazmat.primitives.serialization import pkcs12
 
 import swik.utils as utils
 from swik.color_widget import FontPicker, Color
-from swik.font_manager import FontManager
+from swik.font_manager import FontManager, Arial
 from swik.progressing import Progressing
 from OpenSSL import crypto
 
@@ -274,3 +274,102 @@ class DictDialog(QDialog):
             value = line_edit_widget.text()
             self.input_dict[label] = value
         return self.input_dict
+
+
+class TextBoxDialog(QDialog):
+
+    def __init__(self, text, title="", parent=None):
+        super(TextBoxDialog, self).__init__(parent)
+
+        self.setWindowTitle(title)
+
+        # Create the form layout
+        self.form_layout = QVBoxLayout()
+
+        # Create the text box
+        self.text_box = QTextEdit()
+        self.text_box.setPlainText(text)
+
+        # Create the button box with OK and Cancel buttons
+        button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        button_box.accepted.connect(self.accept)
+        button_box.rejected.connect(self.reject)
+
+        # Create the main layout
+        main_layout = QVBoxLayout()
+        main_layout.addWidget(self.text_box)
+        main_layout.addWidget(button_box)
+
+        self.setLayout(main_layout)
+        self.setMinimumWidth(400)
+
+    def get_text(self):
+        return self.text_box.toPlainText()
+
+
+class EnumerateDialog(QDialog):
+
+    def __init__(self, view, font_manager):
+        super().__init__()
+
+        self.view = view
+        self.font_manager = font_manager
+        self.layout = QVBoxLayout()
+        f_layout = QFormLayout()
+        self.layout.addLayout(f_layout)
+        self.from_cb = QComboBox()
+        self.from_cb.addItems(str(i) for i in range(1, len(self.view.pages) + 1))
+        self.from_cb.currentIndexChanged.connect(self.from_changed)
+
+        self.to_cb = QComboBox()
+        self.from_changed(0)
+
+        self.first_page = QComboBox()
+        self.first_page.addItems(str(i) for i in range(1, len(self.view.pages) + 1))
+
+        self.text_te = QLineEdit("$i")
+        self.text_te.setAlignment(Qt.AlignCenter)
+        self.text_te.setPlaceholderText("Use $i for the number")
+
+        self.style_cb = QComboBox()
+        self.style_cb.addItems(["Arabic (1, 2, ...)", "Roman (lvxi, ...)", "Roman (LVI, ...)"])
+
+        self.oddeven_db = QComboBox()
+        self.oddeven_db.addItems(["Both", "Odd", "Even"])
+
+        f_layout.addRow("Style", self.style_cb)
+        f_layout.addRow("From", self.from_cb)
+        f_layout.addRow("To", self.to_cb)
+        f_layout.addRow("Start with", self.first_page)
+        f_layout.addRow("Text", self.text_te)
+        f_layout.addRow("Pages", self.oddeven_db)
+
+        font = Arial()
+        self.font_btn = QPushButton(font.full_name)
+        self.font_btn.setFont(font.get_qfont())
+        self.font_btn.clicked.connect(self.font_clicked)
+        f_layout.addRow("Font", self.font_btn)
+
+        anchor_cb = QComboBox()
+        anchor_cb.addItems(["Top Left", "Top Right", "Bottom Left", "Bottom Right"])
+        f_layout.addRow("Anchor", anchor_cb)
+
+        # self.layout.addStretch(1)
+        self.button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+
+        self.button_box.accepted.connect(self.accept)
+        self.button_box.rejected.connect(self.reject)
+        self.layout.addWidget(self.button_box)
+        self.setLayout(self.layout)
+
+    def font_clicked(self):
+        font_dialog = FontAndColorDialog(self.font_manager, Arial(), 11, Qt.black)
+        if font_dialog.exec() == FontAndColorDialog.Accepted:
+            font, color = font_dialog.get("Font"), font_dialog.get("Text Color")
+            self.font_btn.setFont(font.get_font().get_qfont())
+            self.font_btn.setText(font.get_font().full_name)
+
+    def from_changed(self, index):
+        self.to_cb.clear()
+        self.to_cb.addItems(str(i) for i in range(index + 1, len(self.view.pages) + 1))
+        self.to_cb.setCurrentIndex(self.to_cb.count() - 1)

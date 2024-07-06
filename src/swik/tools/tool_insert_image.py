@@ -19,6 +19,9 @@ from swik.tools.tool import Tool
 
 
 class InsertImageRectItem(ResizableRectItem):
+    def __init__(self, parent=None, **kwargs):
+        super().__init__(parent, **kwargs)
+
     def contextMenuEvent(self, event):
         menu = QMenu()
         image_mode = self.get_image_mode()
@@ -299,6 +302,7 @@ class ToolInsertSignatureImage(Tool):
         if self.rubberband is not None:
             if self.rubberband.parentItem() is None:
                 self.rubberband.setParentItem(page)
+                self.rubberband.notify_creation()
                 self.rubberband.view_mouse_press_event(self.view, event)
 
     def mouse_moved(self, event):
