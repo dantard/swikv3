@@ -178,11 +178,12 @@ class MainWindow(QMainWindow):
         self.open_new_tab(widget, filename)
 
     def create_widget(self, mode=LayoutManager.MODE_VERTICAL):
-        widget = SwikWidget(self, self.tab_widget, self.config)
+        widget = SwikWidget(self, self.config)
         widget.set_mode(mode)
         widget.interaction_changed.connect(self.update_interaction_status)
         widget.open_requested.connect(self.open_requested_by_tab)
-        widget.file_changed.connect(self.update_title)
+        widget.close_requested.connect(self.close_requested_by_tab)
+        widget.file_changed.connect(self.update_tab_text)
         return widget
 
     def tab_menu(self, action, code, data, widget):
@@ -223,6 +224,14 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(title)
         self.update_interaction_status()
 
+    def update_tab_text(self, widget):
+        my_index = self.tab_widget.indexOf(widget)
+        text = os.path.basename(widget.get_filename())
+        font_metrics = self.tab_widget.fontMetrics()
+        text = font_metrics.elidedText(text, Qt.ElideRight, 200)
+        self.tab_widget.setTabText(my_index, text)
+        self.tab_widget.setTabToolTip(my_index, widget.get_filename())
+
     def update_interaction_status(self):
         value = self.current().is_interaction_enabled() if self.current() is not None else False
         self.tool_menu.setEnabled(value)
@@ -243,6 +252,9 @@ class MainWindow(QMainWindow):
         self.open_new_tab(widget, filename)
         widget.view.set_ratio(zoom, True)
         widget.view.set_page(page)
+
+    def close_requested_by_tab(self, widget):
+        self.close_tab(widget)
 
     def close_tab(self, tab):
         self.tab_widget.close_tab(tab)
