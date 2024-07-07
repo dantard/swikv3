@@ -61,7 +61,6 @@ class ResizableRectItem(PaintableSelectorRectItem, Undoable):
         self.setAcceptHoverEvents(True)
         self.handles_enabled = True
         self.handles = []
-        self.current_pose = None
         self.selected_handle_pos = None
         self.handle_pressed = False
         self.current_state = None
@@ -132,7 +131,7 @@ class ResizableRectItem(PaintableSelectorRectItem, Undoable):
     def mousePressEvent(self, event):
         super().mousePressEvent(event)
         self.setFlag(QGraphicsItem.ItemIsMovable, True)
-        self.current_pose = self.pos()
+        self.current_state = self.get_full_state()
         self.setCursor(Qt.ClosedHandCursor)
 
     def mouseMoveEvent(self, event):
@@ -142,12 +141,11 @@ class ResizableRectItem(PaintableSelectorRectItem, Undoable):
 
     def mouseReleaseEvent(self, event):
         super().mouseReleaseEvent(event)
-        print('mouse release')
         self.setPos(self.pos().x() + self.rect().x(), self.pos().y() + self.rect().y())
         self.setRect(QRectF(0, 0, self.rect().width(), self.rect().height()))
         self.update_handles_position()
-        if self.current_pose != self.pos():
-            self.notify_position_change(self.current_pose, self.pos())
+        if self.current_state != self.get_full_state():
+            self.notify_change(Action.FULL_STATE, self.current_state, self.get_full_state())
         self.setCursor(Qt.OpenHandCursor)
 
     # Handles
@@ -248,11 +246,12 @@ class ResizableRectItem(PaintableSelectorRectItem, Undoable):
 
     # State management
     def get_full_state(self):
-        return {"rect": self.rect(), "brush": self.brush()}
+        return {"rect": self.rect(), "brush": self.brush(), "pos": self.pos()}
 
     def set_full_state(self, state):
         self.setBrush(state["brush"] if "brush" in state else self.brush())
         self.setRect(state["rect"] if "rect" in state else self.rect())
+        self.setPos(state["pos"] if "pos" in state else self.pos())
 
     def undo(self, action, previous_state):
         self.set_full_state(previous_state)

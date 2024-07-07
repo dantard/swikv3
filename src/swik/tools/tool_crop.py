@@ -191,7 +191,7 @@ class ToolCrop(Tool, Undoable):
         before = self.renderer.get_cropbox(page.index)
         self.renderer.set_cropbox(page.index, self.rubberband.get_rect_on_parent(), False)
         after = self.renderer.get_cropbox(page.index)
-        self.notify_any_change(Action.ACTION_CHANGED, (page.index, before, 1), (page.index, after, 1), self.view.scene())
+        # TODO: self.notify_any_change(Action.ACTION_CHANGED, (page.index, before, 1), (page.index, after, 1), self.view.scene())
 
         self.view.scene().removeItem(self.rubberband)
         self.rubberband = None

@@ -30,24 +30,6 @@ class Scene(QGraphicsScene):
                 elem.set_full_state(full_state)
                 action.push(elem, kind, old, elem.get_full_state())
 
-    def notify_any_change(self, kind, item, old, new):
-        action = Action(item, kind, old, new)
-
-        for elem in self.selectedItems():
-            if elem is not item and elem in self.poses and elem.pos() != self.poses[elem]:
-                action.push(elem, kind, self.poses[elem], elem.pos())
-
-        self.tracker().item_changed(action)
-
-    def notify_position_change(self, item, old, new):
-        action = Action(item, Action.POSE_CHANGED, old, new)
-
-        for elem in self.selectedItems():
-            if elem is not item and elem in self.poses and elem.pos() != self.poses[elem]:
-                action.push(elem, Action.POSE_CHANGED, self.poses[elem], elem.pos())
-
-        self.tracker().item_changed(action)
-
     def mousePressEvent(self, event: 'QGraphicsSceneMouseEvent') -> None:
         # print("mouse press on scene", event.scenePos())
         super(Scene, self).mousePressEvent(event)
@@ -104,9 +86,9 @@ class Scene(QGraphicsScene):
                 x, y = 0, 0
 
             for item in items:
-                pre = item.pos()
+                current_state = item.get_full_state()
                 item.setPos(item.pos().x() + x * val, item.pos().y() + y * val)
-                self.notify_position_change(item, pre, item.pos())
+                self.notify_change(item, Action.FULL_STATE, current_state, item.get_full_state())
         elif event.key() == QtCore.Qt.Key_Delete:
             self.delete_objects()
         elif event.key() == QtCore.Qt.Key_Backspace:

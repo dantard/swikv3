@@ -42,7 +42,7 @@ class AnchoredBunch(Bunch):
     def __init__(self, scene):
         super(AnchoredBunch, self).__init__(scene)
         self.my_scene.bunches.append(self)
-        self.old_pos = None
+        self.current_state = None
 
     def add(self, element):
         super(AnchoredBunch, self).add(element)
@@ -51,20 +51,18 @@ class AnchoredBunch(Bunch):
         element.signals.move_finished.connect(self.move_finished)
 
     def move_started(self, obj):
-        self.old_pos = obj.pos()
+        self.current_state = obj.get_full_state()
 
     def move_finished(self, obj):
-        if self.old_pos != obj.pos():
+        if self.current_state != obj.get_full_state():
             action = Action()
             for number in self.numbers:
-                print("pushing action for number", number, "old pos", self.old_pos, "new pos", obj.pos())
-                action.push(number, Action.POSE_CHANGED, self.old_pos, obj.pos())
+                action.push(number, Action.FULL_STATE, self.current_state, obj.get_full_state())
             self.my_scene.tracker().add_action(action)
 
     def moved(self, obj, pos):
         for number in self.numbers:
             if number != obj:
-                print("Processing", number)
                 if number.anchor == SwikTextNumerate.ANCHOR_TOP_LEFT:
                     number.setPos(pos)
                 elif number.anchor == SwikTextNumerate.ANCHOR_TOP_RIGHT:
