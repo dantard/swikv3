@@ -137,7 +137,7 @@ def int_to_roman(number):
     return res
 
 
-colors = [Qt.black, Qt.red, Qt.green, Qt.blue, Qt.magenta, Qt.cyan, Qt.darkRed, Qt.darkGreen, Qt.darkBlue, ]
+colors = [Qt.black, Qt.red, Qt.green, Qt.blue, Qt.magenta, Qt.cyan, Qt.darkRed, Qt.darkGreen, Qt.darkBlue, Qt.white]
 
 
 def get_color(index, alpha=1):
@@ -146,14 +146,17 @@ def get_color(index, alpha=1):
     return color
 
 
-def row(w1, w2):
+def row(w1, w2, all=True):
     h_layout = QHBoxLayout()
     if isinstance(w1, str):
         w1 = QLabel(w1)
         w1.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
     h_layout.addWidget(w1)
     h_layout.addWidget(w2)
-    return h_layout, w1, w2
+    if all:
+        return h_layout, w1, w2
+
+    return h_layout
 
 
 def col(w1, w2, *args):
@@ -249,3 +252,11 @@ def add_mimeapps_entry(section, name):
     # Write the updated content back to mimeapps.list
     with open(mimeapps_list_path, "w") as file:
         file.writelines(lines)
+
+
+def filter_out_dict(d, keys):
+    return {k: v for k, v in d.items() if k not in keys}
+
+
+def get_different_keys(old: dict, new: dict, ignore_keys=None):
+    return {k: v for k, v in new.items() if new[k] != old[k] and k not in (ignore_keys if ignore_keys else [])}

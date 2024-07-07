@@ -4,9 +4,11 @@ import os
 import shutil
 from pathlib import Path
 
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import Qt, pyqtSignal, QPointF
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtWidgets import QMenu, QMessageBox, QFileDialog, QVBoxLayout, QWidget, QComboBox, QHBoxLayout, QPushButton, QLabel
+from swik.interfaces import Copyable
+
 from swik import utils
 
 from swik.word import Word
@@ -18,7 +20,7 @@ from swik.resizeable import ResizableRectItem
 from swik.tools.tool import Tool
 
 
-class InsertImageRectItem(ResizableRectItem):
+class InsertImageRectItem(ResizableRectItem, Copyable):
     def __init__(self, parent=None, **kwargs):
         super().__init__(parent, **kwargs)
 
@@ -48,6 +50,12 @@ class InsertImageRectItem(ResizableRectItem):
             self.notify_deletion(self)
             self.scene().removeItem(self)
         self.update()
+
+    def duplicate(self):
+        r = InsertImageRectItem(self.parentItem(), **self.kwargs)
+        r.setRect(self.rect())
+        r.setPos(self.pos() + QPointF(10, 10))
+        return r, self.parentItem()
 
 
 class ResizeableWidget(QWidget):

@@ -3,11 +3,14 @@ from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QGraphicsRectItem, QTreeWidget, QTreeWidgetItem, QVBoxLayout, \
     QPushButton, QWidget
 
+from swik import utils
+from swik.font_manager import FontManager, Arial
+
 from swik.dialogs import FontAndColorDialog, ComposableDialog
 from swik.interfaces import Shell
 from swik.page import Page
 from swik.progressing import Progressing
-from swik.swik_text import SwikText
+from swik.swik_text import SwikText, SwikTextReplace, SwikTextMimic
 from swik.tools.tool import Tool
 
 
@@ -27,28 +30,43 @@ class ToolMimicPDF(Tool):
     def init(self):
         self.texts.clear()
         self.squares.clear()
-
+        self.v_layout = QVBoxLayout()
         self.helper = QWidget()
         self.helper.setContentsMargins(0, 0, 0, 0)
-        self.helper.setLayout(QVBoxLayout())
+        self.helper.setLayout(self.v_layout)
         self.helper.layout().setAlignment(Qt.AlignTop)
         self.helper.layout().setContentsMargins(0, 0, 0, 0)
-        generate_btn = QPushButton("Generate")
-        apply_btn = QPushButton("Apply")
-        colorize_btn = QPushButton("Colorize")
-        colorize_btn.clicked.connect(self.colorize)
-        colorize_btn.setCheckable(True)
+        self.generate_btn = QPushButton("Generate")
+        self.generate_btn.clicked.connect(self.generate)
+
+        self.apply_btn = QPushButton("Apply")
+        self.apply_btn.clicked.connect(self.apply)
+        self.apply_btn.setEnabled(False)
+
+        self.colorize_btn = QPushButton("Colorize")
+        self.colorize_btn.setCheckable(True)
+        self.colorize_btn.clicked.connect(self.colorize_btn_clicked)
+
+        self.clear_btn = QPushButton("×")
+        self.clear_btn.clicked.connect(self.clear)
+        self.clear_btn.setFixedSize(25, 25)
+        self.clear_btn.setEnabled(False)
+
+        self.transparent_btn = QPushButton("•")
+        self.transparent_btn.clicked.connect(self.transparent_btn_clicked)
+        self.transparent_btn.setFixedSize(25, 25)
+        self.transparent_btn.setCheckable(True)
+        self.transparent_btn.setEnabled(False)
 
         self.tree = QTreeWidget()
         self.tree.setColumnCount(2)
         self.tree.setHeaderLabels(["Font", "Replace"])
-        self.helper.layout().addWidget(self.tree)
-        self.helper.layout().addWidget(colorize_btn)
-        self.helper.layout().addWidget(generate_btn)
-        self.helper.layout().addWidget(apply_btn)
+        self.v_layout.addWidget(self.tree)
+        self.v_layout.addWidget(self.colorize_btn)
 
-        generate_btn.clicked.connect(self.generate)
-        apply_btn.clicked.connect(self.apply)
+        self.v_layout.addLayout(utils.row(self.generate_btn, self.transparent_btn, False))
+        self.v_layout.addLayout(utils.row(self.apply_btn, self.clear_btn, False))
+
         self.widget.set_app_widget(self.helper, 300, title="Mimic PDF")
         fonts = set()
         for i in range(0, self.view.get_page_count()):
@@ -71,18 +89,49 @@ class ToolMimicPDF(Tool):
             q.clicked.connect(lambda x=font_name, y=font_name, z=q: chose_font(y, z))
             self.tree.setItemWidget(child1, 1, q)
 
-    def apply(self):
-        self.renderer.sync_requested.emit()
-        self.view.pages[0].invalidate()
-        filename = self.renderer.get_filename().replace(".pdf", "-mimic.pdf")
-        self.renderer.save_elsewhere(filename)
-        self.widget.open_requested.emit(filename, self.view.page, self.view.get_ratio())
+    def transparent_btn_clicked(self):
+        for page in self.view.pages.values():
+            items = page.items(SwikTextMimic)
+            for item in items:
+                if self.transparent_btn.isChecked():
+                    item.set_bg_color(QColor(0, 0, 0, 0))
+                else:
+                    item.set_bg_color(QColor(255, 255, 255, 255))
 
-    def colorize(self):
+    def clear(self):
+        for page in self.view.pages.values():
+            for item in page.items(SwikTextMimic):
+                self.view.scene().removeItem(item)
+
+        self.clear_btn.setEnabled(False)
+        self.apply_btn.setEnabled(False)
+        self.widget.set_protected_interaction(True)
+        self.generate_btn.setEnabled(True)
+        self.transparent_btn.setEnabled(False)
+        self.colorize_btn.setEnabled(True)
+
+    def apply(self):
+        self.placeholder = Progressing(self.view, 0, "Applying changes", cancel=True)
+
+        def apply():
+            self.renderer.sync_requested.emit()
+            self.view.pages[0].invalidate()
+            filename = self.renderer.get_filename().replace(".pdf", "-mimic.pdf")
+            self.renderer.save_elsewhere(filename)
+            self.widget.open_requested.emit(filename, self.view.page, self.view.get_ratio())
+            self.placeholder.close()
+
+        self.placeholder.start(apply)
+
+    def colorize_btn_clicked(self):
+        self.colorize(self.sender().isChecked())
+        self.generate_btn.setEnabled(not self.sender().isChecked())
+
+    def colorize(self, checked: bool):
         colors = [Qt.red, Qt.green, Qt.blue, Qt.yellow, Qt.magenta, Qt.cyan, Qt.darkRed, Qt.darkGreen,
                   Qt.darkBlue, Qt.darkYellow, Qt.darkMagenta, Qt.darkCyan, Qt.gray, Qt.darkGray, Qt.lightGray]
 
-        if self.sender().isChecked():
+        if checked:
 
             fonts = list()
             self.placeholder = Progressing(self.view, self.view.get_page_count(), "Analyzing PDF", cancel=True)
@@ -112,6 +161,7 @@ class ToolMimicPDF(Tool):
             self.squares.clear()
 
     def generate(self):
+
         translate = {}
 
         for i in range(self.tree.topLevelItemCount()):
@@ -134,54 +184,41 @@ class ToolMimicPDF(Tool):
                     break
                 page: Page = self.view.pages[i]
 
+                items = page.items(SwikTextReplace)
+                for item in items:
+                    self.view.scene().removeItem(item)
+
                 page.gather_words()
-                '''
+
                 for word in page.get_words():
-                    font, size, color = self.renderer.get_word_font_info(word)
-                    span = Span()
-                    span.font = font
-                    span.size = size
-                    span.color = color
-                    span.text = word.get_text()
-                    span.rect = QRectF(word.pos().x(), word.pos().y(), word.rect().width(), word.rect().height())
-                    span.ascender = 0
-                    span.descender = 0
-                '''
-
-                spans = self.renderer.extract_spans(i)
-                for span in spans:
-
-                    new_font_name = translate.get(span.font)
+                    font_name, size, color = self.renderer.get_word_font_info(word)
+                    new_font_name = translate.get(font_name)
                     font = self.font_manager.filter(nickname=new_font_name, pos=0)
-                    # redact = RedactAnnotation(page, brush=Qt.white, pen=Qt.transparent)
-                    # redact.setRect(span.rect)
-
-                    # self.renderer.add_redact_annot(page.index, span.rect, minimize=True, apply=False)
-                    if font is None or font.supported is False:
-                        font = self.font_manager.filter(nickname='helv', pos=0)
-                        color = QColor(255, 0, 0)
+                    if font:
+                        border = Qt.blue
                     else:
-                        color = span.color
-                        color = QColor(255, 0, 0)
+                        font = Arial()
+                        border = Qt.red
+                    mimic = SwikTextMimic(word, self.font_manager, font, size / (96.0 / 72.0), QColor(color))
+                    mimic.set_border_color(border)
 
-                    swik_text = SwikText(span.text, page, self.font_manager, font, span.size * 72.0 / 96.0)
-                    self.texts.append(swik_text)
+                    if self.transparent_btn.isChecked():
+                        mimic.set_bg_color(QColor(0, 0, 0, 0))
+                    else:
+                        mimic.set_bg_color(QColor(255, 255, 255, 255))
 
-                    swik_text.setToolTip(font.full_name)
-                    swik_text.setPos(span.rect.topLeft())
-
-                    swik_text.setPos(swik_text.pos().x(),
-                                     swik_text.pos().y() - (span.ascender + span.descender) * 72.0 / 96.0)
-                    swik_text.setDefaultTextColor(color)
-                try:
-                    self.renderer.apply_redactions(i)
-                except:
-                    pass
-
-                self.view.pages[i].invalidate()
             self.progressing.setValue(self.view.get_page_count())
+
+            self.clear_btn.setEnabled(True)
+            self.widget.set_protected_interaction(False)
+            self.apply_btn.setEnabled(True)
+            self.generate_btn.setEnabled(False)
+            self.transparent_btn.setEnabled(True)
+            self.colorize_btn.setEnabled(False)
 
         self.progressing.start(process)
 
     def finish(self):
+        self.clear()
+        self.colorize(False)
         self.widget.remove_app_widget()

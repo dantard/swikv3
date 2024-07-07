@@ -1,5 +1,6 @@
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QGraphicsScene
+from swik import utils
 
 from swik.action import Action
 from swik.changes_tracker import ChangesTracker
@@ -18,19 +19,26 @@ class Scene(QGraphicsScene):
         self.poses = {}
 
     def selection_changed(self):
+        # Necessary because if I move multiple
+        # items at the same time the "dragged"
+        # items position is not stored anywhere
         self.poses.clear()
         for elem in self.selectedItems():
             self.poses[elem] = elem.pos()
 
     def notify_change(self, item, kind, old, new):
         action = Action(item, kind, old, new)
-        self.tracker().item_changed(action)
-        full_state = item.get_full_state()
+
+        item_state = utils.get_different_keys(old, new, ["pos", "text", "rect", "content"])
+
         for elem in self.selectedItems():
-            if elem is not item and type(elem) == type(item):
-                old = elem.get_full_state()
-                elem.set_full_state(full_state)
-                action.push(elem, kind, old, elem.get_full_state())
+            if elem is not item:
+                cur_state = elem.get_full_state().copy()
+                cur_state["pos"] = self.poses[elem]
+                elem.set_full_state(item_state)
+                action.push(elem, kind, cur_state, elem.get_full_state())
+
+        self.tracker().item_changed(action)
 
     def item_added(self, item):
         self.tracker().item_added(item)

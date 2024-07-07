@@ -1,7 +1,7 @@
 import typing
 
 from PyQt5 import QtGui
-from PyQt5.QtCore import Qt, QPointF, QRectF, pyqtSignal, QObject
+from PyQt5.QtCore import Qt, QPointF, QRectF, pyqtSignal, QObject, QTimer
 from PyQt5.QtGui import QFont, QColor, QPen
 from PyQt5.QtWidgets import QGraphicsTextItem, QMenu, QGraphicsRectItem, QGraphicsItem
 
@@ -15,6 +15,8 @@ class SwikText(QGraphicsTextItem, Undoable):
 
     def __init__(self, text, parent, font_manager, font_info, size=11):
         super(SwikText, self).__init__()
+        self.bg_color = Qt.transparent
+        self.border_color = Qt.transparent
         # Necessary because of ReplaceSwikText
         self.check_parent_limits = True
         self.font_manager = font_manager
@@ -29,16 +31,20 @@ class SwikText(QGraphicsTextItem, Undoable):
         self.setFlag(QGraphicsTextItem.ItemSendsGeometryChanges, True)
         self.apply_font(size)
         self.current_state = None
-        self.bg_color = Qt.transparent
+        self.hover_color = None
         self.notify_creation()
 
     def set_bg_color(self, color: QColor):
         self.bg_color = QColor(color)
         self.update()
 
+    def set_border_color(self, color: QColor):
+        self.border_color = QColor(color)
+        self.update()
+
     def paint(self, painter, o, w):
         painter.setBrush(self.bg_color)
-        painter.setPen(Qt.transparent)
+        painter.setPen(self.border_color)
         rect = self.boundingRect()
         # rect.setWidth(rect.width())
         painter.drawRect(rect)
@@ -177,28 +183,31 @@ class SwikText(QGraphicsTextItem, Undoable):
         self.setDefaultTextColor(state["text_color"] if "text_color" in state else self.defaultTextColor())
         self.setPos(state["pos"] if "pos" in state else self.pos())
 
+    def set_hover_color(self, color):
+        self.hover_color = color
+        self.set_border_color(self.hover_color)
+        QTimer.singleShot(2500, lambda: self.set_border_color(QColor(0, 0, 0, 0)))
+
+    def hoverEnterEvent(self, event: 'QGraphicsSceneHoverEvent') -> None:
+        super().hoverEnterEvent(event)
+        if self.hover_color is not None:
+            self.set_border_color(self.hover_color)
+
+    def hoverLeaveEvent(self, event: 'QGraphicsSceneHoverEvent') -> None:
+        super().hoverLeaveEvent(event)
+        if self.hover_color is not None:
+            self.set_border_color(QColor(0, 0, 0, 0))
+
 
 class SwikTextReplace(SwikText):
     def __init__(self, word, font_manager, font, size, color=Qt.black):
         super(SwikTextReplace, self).__init__(word.get_text(), word.parentItem(), font_manager, font, size)
         self.setFlag(QGraphicsItem.ItemIsMovable, False)
         self.setZValue(1)
-        self.setPos(word.pos() - QPointF(size / 3.5, size / 3.4))
-        self.bg = QGraphicsRectItem(self)
-        self.bg.setFlag(QGraphicsItem.ItemNegativeZStacksBehindParent)
-        self.bg.setPen(QPen(Qt.red))
-        self.bg.setBrush(QColor(Qt.white))
-        self.bg.setZValue(-1)
-        self.bg.setRect(word.rect())
-        self.bg.setPos(QPointF(size / 3.5, size / 3.5))
+        self.setPos(word.pos())
         self.setDefaultTextColor(QColor(color))
-
-    def get_patch_on_page(self):
-        pos_on_page = self.parentItem().mapFromScene(self.bg.scenePos())
-        return QRectF(pos_on_page, self.bg.rect().size())
-
-    def get_patch_color(self):
-        return self.bg.brush().color()
+        # self.set_bg_color(QColor(255, 255, 255))
+        self.set_border_color(QColor(255, 0, 0))
 
 
 class SwikTextNumerate(SwikText):
@@ -277,6 +286,18 @@ class SwikTextNumerate(SwikText):
 
         if self.current_state != self.get_full_state():
             self.signals.state_changed.emit(self, self.current_state, self.get_full_state())
+
+    def notify_deletion(self):
+        pass
+
+    def notify_change(self, kind, old, new):
+        pass
+
+    def notify_creation(self):
+        pass
+
+
+class SwikTextMimic(SwikTextReplace):
 
     def notify_deletion(self):
         pass

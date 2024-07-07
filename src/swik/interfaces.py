@@ -49,3 +49,6 @@ class Shell(QWidget):
 
     def remove_app_widget(self):
         pass
+
+    def set_protected_interaction(self, value):
+        pass

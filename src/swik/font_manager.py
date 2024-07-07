@@ -54,9 +54,7 @@ class Font(SwikFont):
         self.subset = '+' in path
 
         try:
-            print("uno")
             font = ttLib.TTFont(path)
-            print("dos")
             if font.has_key('name'):
                 self.family_name = font['name'].getDebugName(1)
                 self.full_name = font['name'].getDebugName(4) if font['name'].getDebugName(4) else self.full_name
@@ -180,6 +178,7 @@ class FontManager(QObject):
             fonts = self.swik_fonts + self.base14_fonts + self.system_fonts + self.document_fonts
 
         pos = kwargs.pop('pos', None)
+        fallback = kwargs.pop('fallback', None)
 
         for key, value in kwargs.items():
             fonts = [f for f in fonts if getattr(f, key) == value]
@@ -191,7 +190,7 @@ class FontManager(QObject):
             else:
                 fonts = None
 
-        return fonts
+        return fonts if fonts is not None else fallback
 
     @staticmethod
     def update_swik_fonts():

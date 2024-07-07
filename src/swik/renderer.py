@@ -358,6 +358,7 @@ class MuPDFRenderer(QLabel):
 
     def get_word_font_info(self, word: Word):
         data = self.document[word.page_id].get_text("dict", sort=False, flags=TEXTFLAGS_DICT & ~TEXT_PRESERVE_IMAGES)
+        print("LEEEEEEEEEEEEEEEEEE", len(data))
         if data is not None:
             blocks = data.get('blocks', [])
             # print(blocks)
@@ -381,7 +382,7 @@ class MuPDFRenderer(QLabel):
                                 g = (h >> 8) & 255
                                 r = (h >> 16) & 255
                                 return span.get('font'), span.get('size'), QColor(r, g, b)
-        return None, None, None
+        return "helv", 11, QColor(0, 0, 0)
 
     def rearrange_pages(self, order, emit):
         self.document.select(order)
@@ -574,15 +575,16 @@ class MuPDFRenderer(QLabel):
 
         # tw.append((x,y + h), item.get_text(), font=font, fontsize=item.font().pointSizeF()*1.32)
         rect = utils.qrectf_and_pos_to_fitz_rect(item.get_rect_on_parent(), item.pos())
+
         rect.x1 = rect.x1 + 5
         rect.x0 = rect.x0 - item.font().pointSizeF() / 3.5
-        # rect.y0 += item.font().pointSizeF() / 3.5
-        # rect.y1 += item.font().pointSizeF() / 3.5
+        # rect.y0 += item.font().pointSizeF() / 4
+        # rect.y1 += item.font().pointSizeF() / 4
 
         page: pymupdf.Page = self.document[index]
 
         # align=pymupdf.TEXT_ALIGN_JUSTIFY
-        if True:
+        if False:
             css = """
             @font-face {font-family: comic; src: url(""" + item.get_font_info().path + """);}            
             * {font-family: comic; font-size: """ + str(item.font().pointSizeF() * 96.0 / 72.0) + """px; color: rgb(255,0,0);}
@@ -597,34 +599,14 @@ class MuPDFRenderer(QLabel):
             # css=)
 
         else:
-            spaces = 0
-            for c in item.get_text():
-                spaces += 1 if c == " " else 0
-
-            sentence_len = font.text_length(item.get_text(), item.font().pointSizeF() * 1.34)
-            rectangle_len = rect.x1 - rect.x0
-            diff = rectangle_len - sentence_len
-            padding = diff / (spaces + 1)
-
-            rect.x1 = rect.x0 + 100
-            for c in item.get_text():
-                tw.fill_textbox(rect, c, font=font, fontsize=item.font().pointSizeF() * 1.34)
-                rect.x0 += font.text_length(c, item.font().pointSizeF() * 1.34) + (padding if c == " " else 0)
-                rect.x1 = rect.x0 + 100
-
-        tw.write_text(self.document[index])
+            tw.fill_textbox(rect, item.get_text(), font=font, fontsize=item.font().pointSizeF() * 96 / 72)
+            tw.write_text(self.document[index])
         # page: pymupdf.Page = self.document[index]
         # page.draw_rect(rect, color=(1, 0, 0), width=1)
 
     def replace_word(self, index, text: SwikTextReplace):
         self.document[index].clean_contents()
-        # Make the patch just 2 pixels high
-        # This will remove the word but won't
-        # remove the adjacent words
-        patch = text.get_patch_on_page()
-        patch.setY(patch.center().y() - 1)
-        patch.setHeight(2)
-        self.add_redact_annot(index, patch)
+        self.add_redact_annot(index, text.get_rect_on_parent(), minimize=True)
         self.add_text(index, text)
 
     def get_widgets(self, index):

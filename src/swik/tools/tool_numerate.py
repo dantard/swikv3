@@ -54,8 +54,7 @@ class ToolNumerate(BasicTool):
                         num = utils.int_to_roman(start + j).lower()
 
                     number = SwikTextNumerate(text.replace("$i", num), self.view.pages[i], self.font_manager, Arial(), 12)
-
-                    number.set_bg_color(utils.get_color(self.view.scene().get_bunches_count(), 0.3))
+                    number.set_hover_color(utils.get_color(self.view.scene().get_bunches_count(), 1))
                     bunch.add(number)
 
             bunch.notify_creation()

@@ -18,6 +18,7 @@ from PyQt5.QtNetwork import QUdpSocket, QHostAddress
 from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog
 
 import swik.utils as utils
+from swik.dialogs import DeveloperInfoDialog
 from swik.layout_manager import LayoutManager
 from swik.magnifier import Magnifier
 from swik.progressing import Progressing
@@ -89,6 +90,9 @@ class MainWindow(QMainWindow):
         self.tool_menu.addAction('Extract Fonts', self.extract_fonts)
         # end setup tools menu
 
+        self.about_menu = menu_bar.addMenu('Help')
+        self.about_menu.addAction('About', self.about)
+
         self.setWindowTitle("Swik")
         self.setGeometry(100, 100, 640, 480)
 
@@ -120,6 +124,9 @@ class MainWindow(QMainWindow):
         self.config.apply_window_config(self)
         self.update_interaction_status()
         self.show()
+
+    def about(self):
+        DeveloperInfoDialog().exec()
 
     def show_magnifier(self):
         self.magnifier = Magnifier(self.current())

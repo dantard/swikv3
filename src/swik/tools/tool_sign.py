@@ -25,6 +25,12 @@ class SignerRectItem(ResizableRectItem):
         super().__init__(parent, **kwargs)
         self.signature = signature
 
+    def notify_change(self, kind, old, new):
+        pass
+
+    def notify_deletion(self):
+        pass
+
 
 class SignatureConf:
     def __init__(self, config, section_name, p12_file=None):
@@ -231,12 +237,13 @@ class ToolSign(Tool):
         self.check_interaction()
 
     def sign_btn_clicked(self):
-        cont = QMessageBox.question(self.helper, "Sign Document", "Original file will be saved before signing",
-                                    QMessageBox.Ok | QMessageBox.Cancel)
-        if cont == QMessageBox.Cancel:
-            return
+        if self.widget.is_dirty():
+            cont = QMessageBox.question(self.helper, "Sign Document", "Original file will be saved before signing",
+                                        QMessageBox.Ok | QMessageBox.Cancel)
+            if cont == QMessageBox.Cancel:
+                return
 
-        # self.renderer.save_pdf(self.renderer.get_filename(), False)
+            self.renderer.save_pdf(self.renderer.get_filename(), False)
 
         filename = self.sign_document(self.rubberband, self.renderer.get_filename(), self.view)
         if filename:

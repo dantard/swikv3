@@ -94,19 +94,12 @@ class FontAndColorDialog(ComposableDialog):
         self.color_picker = self.add_row("Text Color", Color(text_color))
         self.set_ok_enabled(False)
         self.progressing = None
+        print("FONTS SIZE", font_size)
         utils.delayed(100, self.update_fonts, font_name, font_size)
 
     def update_fonts(self, default, font_size):
         def process():
             self.font_manager.update_fonts()
-            parent = self.font_picker.add_section("Document Fonts")
-            sec1 = self.font_picker.add_section("Fully embedded", parent)
-            sec2 = self.font_picker.add_section("Subset", parent)
-            sec3 = self.font_picker.add_section("Unsupported", parent)
-            self.font_picker.add_elements(sec1, self.font_manager.filter('document', subset=False, supported=True))
-            self.font_picker.add_elements(sec2, self.font_manager.filter('document', subset=True, supported=True))
-            self.font_picker.add_elements(sec3, self.font_manager.filter('document', supported=False),
-                                          use_own_font=False)
 
             parent = self.font_picker.add_section("Base14 Fonts")
             self.font_picker.add_elements(parent, self.font_manager.get_base14_fonts())
@@ -116,6 +109,14 @@ class FontAndColorDialog(ComposableDialog):
 
             parent = self.font_picker.add_section("System Fonts")
             self.font_picker.add_elements(parent, self.font_manager.get_system_fonts())
+
+            parent = self.font_picker.add_section("Document Fonts")
+            sec1 = self.font_picker.add_section("Fully embedded", parent)
+            sec2 = self.font_picker.add_section("Subset", parent)
+            sec3 = self.font_picker.add_section("Unsupported", parent)
+            self.font_picker.add_elements(sec1, self.font_manager.filter('document', subset=False, supported=True))
+            self.font_picker.add_elements(sec2, self.font_manager.filter('document', subset=True, supported=True))
+            self.font_picker.add_elements(sec3, self.font_manager.filter('document', supported=False), use_own_font=False)
 
             # Set the default font and highlight it
             self.font_picker.set_default(default, font_size)
@@ -373,3 +374,42 @@ class EnumerateDialog(QDialog):
         self.to_cb.clear()
         self.to_cb.addItems(str(i) for i in range(index + 1, len(self.view.pages) + 1))
         self.to_cb.setCurrentIndex(self.to_cb.count() - 1)
+
+
+class DeveloperInfoDialog(QDialog):
+    def __init__(self):
+        super().__init__()
+
+        self.setWindowTitle("About Swik")
+        self.setFixedSize(400, 220)
+
+        layout = QVBoxLayout()
+
+        # Program name and description
+        program_name_label = QLabel("<h2>Swik - PDF Swiss Knife</h2>")
+        description_label = QLabel("Swik is a user-friendly PDF reader designed to provide\na seamless reading experience with advanced features.")
+
+        # Developer information
+        developer_info_label = QLabel("<b>Developed by</b>")
+        developer_name_label = QLabel("Danilo Tardioli")
+        contact_label = QLabel("Contact: dantard@unizar.es")
+
+        # Adding widgets to layout
+        layout.addWidget(program_name_label)
+        layout.addWidget(description_label)
+        layout.addSpacing(10)
+        layout.addWidget(developer_info_label)
+        layout.addWidget(developer_name_label)
+        layout.addWidget(contact_label)
+        layout.addStretch()
+
+        # Close button
+        button_layout = QHBoxLayout()
+        button_layout.addStretch()
+        close_button = QPushButton("Close")
+        close_button.clicked.connect(self.close)
+        button_layout.addWidget(close_button)
+
+        layout.addLayout(button_layout)
+
+        self.setLayout(layout)

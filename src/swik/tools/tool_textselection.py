@@ -113,10 +113,10 @@ class ToolTextSelection(Tool):
 
             if self.selection_mode == ToolTextSelection.SELECTION_MODE_NATURAL:
                 self.rubberband = SelectorRectItem(pen=Qt.transparent)
-                self.view.setCursor(Qt.IBeamCursor)
+                self.view.viewport().setCursor(Qt.IBeamCursor)
             else:
                 self.rubberband = SelectorRectItem()
-                self.view.setCursor(Qt.CrossCursor)
+                self.view.viewport().setCursor(Qt.CrossCursor)
 
             self.view.scene().addItem(self.rubberband)
             self.rubberband.signals.creating.connect(self.selecting)
@@ -126,6 +126,7 @@ class ToolTextSelection(Tool):
     def mouse_released(self, event):
         if self.rubberband is not None:
             self.rubberband.view_mouse_release_event(self.view, event)
+        self.view.viewport().setCursor(Qt.ArrowCursor)
 
     def selection_done(self, rb):
         if rb.get_rect_on_parent().width() > 5 and rb.get_rect_on_parent().height() > 5:
@@ -141,11 +142,9 @@ class ToolTextSelection(Tool):
 
     def context_menu(self, event):
         page = self.view.get_page_at_pos(event.pos())
+
         if page is None:
             return
-
-        # if not self.view.top_is(event.pos(), [SimplePage, SimplePage.MyImage, Word]):
-        #    return
 
         if self.view.there_is_any_other_than(event.pos(), (SimplePage, Word)):
             return
@@ -189,6 +188,7 @@ class ToolTextSelection(Tool):
             for word in self.selected:  # type: Word
                 r = RedactAnnotation(word.parentItem(), brush=Qt.black)
                 r.setRect(word.get_rect_on_parent())
+                r.notify_creation()
             self.clear_selection()
 
         elif res == highlight:
@@ -214,19 +214,17 @@ class ToolTextSelection(Tool):
                     QMessageBox.warning(self.view, "Warning", "Selected words have different font, size or color.")
                     break
 
-            print("WWWWW Font: ", first_font)
-
             dialog = FontAndColorDialog(self.font_manager, first_font, first_size, first_color)
             if dialog.exec() == QDialog.Accepted:
                 for word in self.selected:
-                    print("AAAAAAAAAAAAAPPPPPPPPPPPPPPP", dialog.get_font())
-
-                    SwikTextReplace(word, self.font_manager, dialog.get_font(), dialog.get_font_size() / 1.34,
-                                    dialog.get_text_color())
-                    self.clear_selection()
+                    sw = SwikTextReplace(word, self.font_manager, dialog.get_font(), dialog.get_font_size() / (96 / 72), dialog.get_text_color())
+                    sw.set_border_color(Qt.blue)
+                    sw.set_bg_color(Qt.white)
+                self.clear_selection()
 
     def mouse_double_clicked(self, event):
         page = self.view.get_page_at_pos(event.pos())
+
         page.gather_words()
 
         scene_pos = self.view.mapToScene(event.pos())

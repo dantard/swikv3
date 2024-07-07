@@ -47,5 +47,5 @@ class RedactAnnotation(ResizableRectItem, Copyable):
         delete = menu.addAction("Delete")
         res = menu.exec(event.screenPos())
         if res == delete:
-            self.notify_deletion(self)
+            self.notify_deletion()
             self.scene().removeItem(self)
