@@ -13,7 +13,7 @@ from swik.interfaces import Undoable
 
 class SwikText(QGraphicsTextItem, Undoable):
 
-    def __init__(self, text, parent, font_manager, font_info, size=11, manage_changes=True):
+    def __init__(self, text, parent, font_manager, font_info, size=11):
         super(SwikText, self).__init__()
         # Necessary because of ReplaceSwikText
         self.check_parent_limits = True
@@ -29,10 +29,8 @@ class SwikText(QGraphicsTextItem, Undoable):
         self.setFlag(QGraphicsTextItem.ItemSendsGeometryChanges, True)
         self.apply_font(size)
         self.current_state = None
-        self.manage_changes = manage_changes
         self.bg_color = Qt.transparent
-        if self.manage_changes:
-            self.notify_creation(self)
+        self.notify_creation()
 
     def set_bg_color(self, color: QColor):
         self.bg_color = QColor(color)
@@ -45,9 +43,6 @@ class SwikText(QGraphicsTextItem, Undoable):
         # rect.setWidth(rect.width())
         painter.drawRect(rect)
         super().paint(painter, o, w)
-
-    def set_manage_changes(self, value):
-        self.manage_changes = value
 
     def get_font_info(self):
         return self.font_info
@@ -89,9 +84,7 @@ class SwikText(QGraphicsTextItem, Undoable):
                 font, color = font_dialog.get("Font"), font_dialog.get("Text Color")
                 self.set_font_info(font.get_font(), font.get_font_size())
                 self.setDefaultTextColor(color.get_color())
-
-                if self.manage_changes and self.current_state != self.get_full_state():
-                    self.notify_change(Action.FULL_STATE, self.current_state, self.get_full_state())
+                self.notify_change(Action.FULL_STATE, self.current_state, self.get_full_state())
 
         return res
 
@@ -106,9 +99,7 @@ class SwikText(QGraphicsTextItem, Undoable):
 
     def mouseReleaseEvent(self, event) -> None:
         super().mouseReleaseEvent(event)
-
-        if self.manage_changes and self.current_state != self.get_full_state():
-            self.notify_change(Action.FULL_STATE, self.current_state, self.get_full_state())
+        self.notify_change(Action.FULL_STATE, self.current_state, self.get_full_state())
 
     def undo(self, kind, info):
         self.set_full_state(info)
@@ -130,7 +121,7 @@ class SwikText(QGraphicsTextItem, Undoable):
     def focusOutEvent(self, event: QtGui.QFocusEvent) -> None:
         super().focusOutEvent(event)
         self.setTextInteractionFlags(Qt.NoTextInteraction)
-        if self.manage_changes and self.current_state != self.get_full_state():
+        if self.current_state != self.get_full_state():
             self.notify_change(Action.FULL_STATE, self.current_state, self.get_full_state())
         self.update()
 
@@ -226,7 +217,7 @@ class SwikTextNumerate(SwikText):
         move_finished = pyqtSignal(object)
 
     def __init__(self, text, parent, font_manager, path, size):
-        super(SwikTextNumerate, self).__init__(text, parent, font_manager, path, size, manage_changes=False)
+        super(SwikTextNumerate, self).__init__(text, parent, font_manager, path, size)
         self.signals = self.Signals()
         self.current_pose = None
         self.anchor = SwikTextNumerate.ANCHOR_TOP_LEFT
@@ -286,3 +277,12 @@ class SwikTextNumerate(SwikText):
 
         if self.current_state != self.get_full_state():
             self.signals.state_changed.emit(self, self.current_state, self.get_full_state())
+
+    def notify_deletion(self):
+        pass
+
+    def notify_change(self, kind, old, new):
+        pass
+
+    def notify_creation(self):
+        pass

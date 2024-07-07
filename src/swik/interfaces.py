@@ -9,20 +9,14 @@ class Copyable:
 
 class Undoable:
 
-    def notify_creation(self, item=None, scene=None):
-        scene = self.scene() if scene is None else scene
-        if scene is not None:
-            scene.tracker().item_added(item if item is not None else self)
+    def notify_creation(self):
+        self.scene().item_added(self)
 
-    def notify_deletion(self, item=None, scene=None):
-        scene = self.scene() if scene is None else scene
-        scene.tracker().item_removed(item if item is not None else self)
+    def notify_deletion(self):
+        self.scene().item_removed(self)
 
-    def notify_change(self, kind, old, new, scene=None):
-        if old != new:
-            scene = self.scene() if scene is None else scene
-            # scene.tracker().item_changed(Action(self, kind, old, new))
-            scene.notify_change(self, kind, old, new)
+    def notify_change(self, kind, old, new):
+        self.scene().notify_change(self, kind, old, new)
 
     def undo(self, kind, info):
         pass

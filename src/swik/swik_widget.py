@@ -1,5 +1,8 @@
 import os
 import time
+
+from swik.changes_tracker import ChangesTracker
+
 import swik.resources
 
 from PyQt5 import QtGui
@@ -63,6 +66,7 @@ class SwikWidget(Shell):
     open_requested = pyqtSignal(str, int, float)
     close_requested = pyqtSignal(Shell)
     file_changed = pyqtSignal(Shell)
+    dirtiness_changed = pyqtSignal(object, bool)
     progress = pyqtSignal(float)
 
     def __init__(self, window, config):
@@ -74,7 +78,10 @@ class SwikWidget(Shell):
         self.renderer.document_changed.connect(self.document_changed)
         self.renderer.file_changed.connect(self.file_modified)
 
-        self.scene = Scene()
+        self.changes_tracker = ChangesTracker()
+        self.changes_tracker.dirty.connect(self.dirtiness_has_changed)
+
+        self.scene = Scene(self.changes_tracker)
         self.manager = Manager(self.renderer, self.config)
         self.view = SwikGraphView(self.manager, self.renderer, self.scene, page=Page,
                                   mode=self.config.private.get('mode', default=LayoutManager.MODE_VERTICAL))
@@ -220,6 +227,13 @@ class SwikWidget(Shell):
         self.preferences_changed()
         QApplication.processEvents()
 
+    def dirtiness_has_changed(self, dirty):
+        self.dirtiness_changed.emit(self, dirty)
+        self.save_btn.setEnabled(dirty)
+
+    def is_dirty(self):
+        return self.changes_tracker.is_dirty()
+
     def reload_file(self):
         self.file_changed_frame.setVisible(False)
         self.open_file(self.renderer.get_filename())
@@ -360,6 +374,7 @@ class SwikWidget(Shell):
 
     def document_changed(self):
         # Clear views and fonts
+        self.changes_tracker.clear()
         self.manager.clear()
         self.view.clear()
         self.miniature_view.clear()
@@ -385,7 +400,7 @@ class SwikWidget(Shell):
             self.load_progress.setValue(i + 1)
 
         self.load_progress_action.setVisible(False)
-        self.update_tab_text()
+        self.mode_group.reset()
         self.update_toc()
 
         pdf_widgets = [item for item in self.view.scene().items() if isinstance(item, PdfWidget)]
@@ -409,10 +424,6 @@ class SwikWidget(Shell):
             else:
                 parents[item.level].addChild(twi)
                 parents[item.level + 1] = twi
-
-    def update_tab_text(self):
-        # Update the tab name
-        self.mode_group.reset()
 
     def get_filename(self):
         return self.renderer.get_filename()
@@ -456,7 +467,8 @@ class SwikWidget(Shell):
             self.saved(result, name)
 
         self.file_changed.emit(self)
-        self.update_tab_text()
+        self.changes_tracker.clear()
+        self.mode_group.reset()
 
     def apply_post_save_artifacts(self, filename):
         # Signature

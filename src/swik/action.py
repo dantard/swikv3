@@ -4,6 +4,7 @@ class Atom:
         self.item = item
         self.old = old
         self.new = new
+        self.parent = old
 
 
 class Action(list):

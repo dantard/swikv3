@@ -8,17 +8,19 @@ from swik.utils import Signals
 
 class Scene(QGraphicsScene):
 
-    def __init__(self):
+    def __init__(self, changes_tracker: ChangesTracker):
         super().__init__()
         self.signals = Signals()
-        self.changes_tracker = ChangesTracker(self)
+        self.changes_tracker = changes_tracker
         self.bunches = []
         self.selectionChanged.connect(self.selection_changed)
         self.group = None
         self.poses = {}
 
-    def get_bunches_count(self):
-        return len(self.bunches)
+    def selection_changed(self):
+        self.poses.clear()
+        for elem in self.selectedItems():
+            self.poses[elem] = elem.pos()
 
     def notify_change(self, item, kind, old, new):
         action = Action(item, kind, old, new)
@@ -30,17 +32,33 @@ class Scene(QGraphicsScene):
                 elem.set_full_state(full_state)
                 action.push(elem, kind, old, elem.get_full_state())
 
-    def mousePressEvent(self, event: 'QGraphicsSceneMouseEvent') -> None:
-        # print("mouse press on scene", event.scenePos())
-        super(Scene, self).mousePressEvent(event)
+    def item_added(self, item):
+        self.tracker().item_added(item)
 
-    def selection_changed(self):
-        self.poses.clear()
-        for elem in self.selectedItems():
-            self.poses[elem] = elem.pos()
+    def items_removed(self, items):
+        self.tracker().item_removed(items)
 
     def tracker(self) -> ChangesTracker:
         return self.changes_tracker
+
+    def remove_bunches(self, kind):
+        bunches = [b for b in self.bunches if type(b) == kind]
+        for bunch in bunches:
+            self.bunches.remove(bunch)
+
+    def get_bunches(self, kind):
+        return [b for b in self.bunches if type(b) == kind]
+
+    def get_bunches_count(self):
+        return len(self.bunches)
+
+    def delete_objects(self):
+        items = self.selectedItems()
+        self.tracker().items_removed(items)
+        for item in items:
+            if hasattr(item, "deleted"):
+                item.deleted()
+            self.removeItem(item)
 
     def addItem(self, item) -> None:
         super().addItem(item)
@@ -51,13 +69,9 @@ class Scene(QGraphicsScene):
         if item is not None:
             self.signals.item_removed.emit(item)
 
-    def remove_bunches(self, kind):
-        bunches = [b for b in self.bunches if type(b) == kind]
-        for bunch in bunches:
-            self.bunches.remove(bunch)
-
-    def get_bunches(self, kind):
-        return [b for b in self.bunches if type(b) == kind]
+    def mousePressEvent(self, event: 'QGraphicsSceneMouseEvent') -> None:
+        # print("mouse press on scene", event.scenePos())
+        super(Scene, self).mousePressEvent(event)
 
     def keyPressEvent(self, event) -> None:
         items = self.selectedItems()
@@ -95,14 +109,6 @@ class Scene(QGraphicsScene):
             self.delete_objects()
         else:
             super().keyPressEvent(event)
-
-    def delete_objects(self):
-        items = self.selectedItems()
-        self.tracker().items_removed(items)
-        for item in items:
-            if hasattr(item, "deleted"):
-                item.deleted()
-            self.removeItem(item)
 
     def keyReleaseEvent(self, event) -> None:
         super(Scene, self).keyReleaseEvent(event)

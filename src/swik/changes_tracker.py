@@ -34,13 +34,22 @@ class ChangesTracker(QObject):
             self.signals.dirty.emit(len(self) > 0)
             return action
 
-    def __init__(self, scene):
+        def clear(self) -> None:
+            super(ChangesTracker.Stack, self).clear()
+            self.signals.dirty.emit(False)
+
+    def __init__(self):
         super(ChangesTracker, self).__init__()
         self.undo_stack = self.Stack()
         self.redo_stack = self.Stack()
         self.undo_stack.signals.dirty.connect(self.dirty.emit)
-        # self.redo_stack.signals.dirty.connect(self.dirty.emit)
-        self.scene = scene
+
+    def is_dirty(self):
+        return len(self.undo_stack) > 0
+
+    def clear(self):
+        self.undo_stack.clear()
+        self.redo_stack.clear()
 
     def undo(self):
         print("undo stack", len(self.undo_stack))
@@ -49,13 +58,9 @@ class ChangesTracker(QObject):
             self.redo_stack.append(action)
             for atom in action:
                 if atom.kind == Action.ACTION_CREATE:
-                    self.scene.removeItem(atom.item)
+                    atom.item.scene().removeItem(atom.item)
                 elif atom.kind == Action.ACTION_REMOVE:
-                    if atom.old is not None:
-                        print("set parent", atom.item, atom.old, "undo remove")
-                        atom.item.setParentItem(atom.old)
-                    else:
-                        self.scene.addItem(atom.item)
+                    atom.item.setParentItem(atom.parent)
                 else:
                     atom.item.undo(atom.kind, atom.old)
 
@@ -66,12 +71,9 @@ class ChangesTracker(QObject):
             for atom in action:
                 print("item redo", atom.item, atom.kind, atom.old, atom.new)
                 if atom.kind == Action.ACTION_CREATE:
-                    if atom.old is not None:
-                        atom.item.setParentItem(atom.old)
-                    else:
-                        self.scene.addItem(atom.item)
+                    atom.item.setParentItem(atom.parent)
                 elif atom.kind == Action.ACTION_REMOVE:
-                    self.scene.removeItem(atom.item)
+                    atom.item.scene().removeItem(atom.item)
                 else:
                     atom.item.redo(atom.kind, atom.new)
             self.undo_stack.append(action)
