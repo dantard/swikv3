@@ -44,8 +44,12 @@ dependencies = [
   "pyhanko",
   "psutil",
   "pyHanko[image-support]",
-  "easyconfig@git+https://github.com/dantard/easyconfig.git@revolution"
-
+  "easyconfig@git+https://github.com/dantard/easyconfig.git@revolution",
+  "pycairo",
+  "fonttools",
+  "glib",
+  "dbus-python",
+  "pyopenssl"
 ]
 
 [project.optional-dependencies]

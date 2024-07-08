@@ -231,7 +231,7 @@ class MainWindow(QMainWindow):
         clipboard.setText(self.current().get_filename())
 
     def update_title(self):
-        asterisk = "*" if self.current().is_dirty() else ""
+        asterisk = "*" if self.current() and self.current().is_dirty() else ""
         title = "Swik"
         if self.tab_widget.currentWidget() is not None and self.tab_widget.currentWidget().get_filename() is not None:
             title += " - " + self.tab_widget.currentWidget().get_filename() + asterisk
@@ -239,7 +239,7 @@ class MainWindow(QMainWindow):
         self.update_interaction_status()
 
     def update_tab_text(self, widget):
-        asterisk = "*" if widget.is_dirty() else ""
+        asterisk = "*" if widget and widget.is_dirty() else ""
         my_index = self.tab_widget.indexOf(widget)
         text = os.path.basename(widget.get_filename())
         font_metrics = self.tab_widget.fontMetrics()
