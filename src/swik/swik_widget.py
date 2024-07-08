@@ -183,7 +183,7 @@ class SwikWidget(Shell):
         self.mode_group.add(tool_sigi, icon=":/icons/image.png", text="Insert Image")
         self.mode_group.add(tool_rear, icon=":/icons/shuffle.png", text="Shuffle Pages")
         self.mode_group.add(tool_mimi, icon=":/icons/mimic.png", text="Mimic PDF")
-        self.tool_form_btn = self.mode_group.add(tool_form, icon=":/icons/form.png", text="Mimic PDF")
+        self.tool_form_btn = self.mode_group.add(tool_form, icon=":/icons/form.png", text="Forms")
         self.mode_group.add(tool_nume, icon=":/icons/number.png", text="Number pages")
 
         # self.mode_group.append(self.toolbar)

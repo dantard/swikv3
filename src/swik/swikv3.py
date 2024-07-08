@@ -173,6 +173,7 @@ class MainWindow(QMainWindow):
 
         self.tab_widget.setCurrentIndex(0)
         self.update_title()
+        self.progress.close()
 
     def plus_clicked(self):
         filename, _ = QFileDialog.getOpenFileName(self, "Open PDF", "", "PDF Files (*.pdf)")
@@ -181,9 +182,11 @@ class MainWindow(QMainWindow):
             self.open_new_tab(widget, filename)
 
     def open_requested_by_dbus(self, filename):
-        print("aiaiia")
-        widget = self.create_widget()
-        self.open_new_tab(widget, filename)
+        filenames = filename.split("*")
+        for filename in filenames:
+            widget = self.create_widget()
+            self.open_new_tab(widget, filename)
+        self.raise_()
 
     def create_widget(self, mode=LayoutManager.MODE_VERTICAL):
         widget = SwikWidget(self, self.config)
@@ -366,7 +369,10 @@ def main():
     parser.add_argument('-f', '--force-new-instance', action='store_true')
     args, unknown = parser.parse_known_args()
 
-    print(args, unknown, args.force_new_instance, sys.argv)
+    f=open("/home/danilo/Desktop/test.txt", "w")
+    line = "{} {} {} {}".format(args, unknown, args.force_new_instance,sys.argv)
+    f.write(line)
+    f.close()
 
     if len(unknown) > 0 and not args.force_new_instance:
         DBusGMainLoop(set_as_default=True)
@@ -376,7 +382,7 @@ def main():
             proxy = bus.get_object('com.swik.server', '/com/swik/server')
             interface = dbus.Interface(proxy, 'com.swik.server_interface')
             print("Requesting running instance to open2222", unknown[0])
-            response = interface.open(unknown[0])
+            response = interface.open('*'.join(unknown))
             print("response:", response)
             sys.exit(0)
         except Exception as e:
@@ -396,8 +402,9 @@ def main():
 
     if len(unknown) > 0:
         def open_new():
-            widget = window.create_widget()
-            window.open_new_tab(widget, unknown[0])
+            for u in unknown:
+                widget = window.create_widget()
+                window.open_new_tab(widget, u)
 
         # Delayed to avoid it to be opened
         # before the restored windows

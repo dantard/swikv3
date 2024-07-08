@@ -27,7 +27,7 @@ class DBusServerThread(QThread):
         super().__init__()
 
     def callback(self, filename):
-        utils.delayed(50, self.open_requested.emit,filename)
+        utils.delayed(50, self.open_requested.emit, filename)
 
     def run(self):
         dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
