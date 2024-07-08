@@ -369,11 +369,6 @@ def main():
     parser.add_argument('-f', '--force-new-instance', action='store_true')
     args, unknown = parser.parse_known_args()
 
-    f=open("/home/danilo/Desktop/test.txt", "w")
-    line = "{} {} {} {}".format(args, unknown, args.force_new_instance,sys.argv)
-    f.write(line)
-    f.close()
-
     if len(unknown) > 0 and not args.force_new_instance:
         DBusGMainLoop(set_as_default=True)
 
