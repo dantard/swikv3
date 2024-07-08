@@ -377,7 +377,7 @@ def main():
             proxy = bus.get_object('com.swik.server', '/com/swik/server')
             interface = dbus.Interface(proxy, 'com.swik.server_interface')
             print("Requesting running instance to open2222", unknown[0])
-            response = interface.open('*'.join(unknown))
+            response = interface.open("*".join([os.path.abspath(u) for u in unknown]))
             print("response:", response)
             sys.exit(0)
         except Exception as e:
