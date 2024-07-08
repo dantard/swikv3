@@ -201,10 +201,11 @@ def get_font_path(name):
     return str(pkg_resources.path(package_name, name))
 
 
-def get_warning_messagebox(text, parent=None):
+def get_warning_messagebox(text, icon=QMessageBox.Warning, title=None, parent=None):
     msg = QMessageBox()
+    msg.setWindowTitle(title if title else "Warning")
     msg.setParent(parent)
-    msg.setIcon(QMessageBox.Warning)
+    msg.setIcon(icon)
     msg.setText(text)
     msg.setStandardButtons(QMessageBox.Yes)
     msg.addButton(QMessageBox.Cancel)

@@ -62,7 +62,6 @@ class GraphView(QGraphicsView):
         self.hhh.setPos(0, 0)
         self.scene().addItem(self.hhh)
 
-
     def set_mode(self, mode, force=False):
         print("Setting mode", mode, force)
         self.mode = mode
@@ -374,11 +373,17 @@ class GraphView(QGraphicsView):
             elif elem.current_pos != elem.prev_pos:
                 elem.page.invalidate()
 
-    def append_blank_page(self):
-        last_page = len(self.pages)
-        page = self.page_object(last_page, self, self.manager, self.renderer, self.ratio)
-        self.pages[last_page] = page
-        self.scene().addItem(page)
-        return last_page
+    def insert_page(self, index):
+        pages = {}
+        for i in range(len(self.pages) + 1):
+            if i < index:
+                pages[i] = self.pages[i]
+            elif i == index:
+                pages[i] = self.page_object(index, self, self.manager, self.renderer, self.get_ratio())
+                pages[i].update_image(self.ratio)
+                self.scene().addItem(pages[i])
+            else:
+                pages[i] = self.pages[i - 1]
+                pages[i].index = i
 
-
+        self.pages = pages

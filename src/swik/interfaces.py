@@ -24,6 +24,9 @@ class Undoable:
     def redo(self, kind, info):
         self.undo(kind, info)
 
+    def notify_not_undoable(self):
+        self.scene().notify_not_undoable()
+
 
 class Shell(QWidget):
     def get_renderer(self):

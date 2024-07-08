@@ -18,9 +18,6 @@ from swik.tools.tool_insert_image import InsertImageRectItem
 from swik.widgets.pdf_widget import PdfWidget
 
 
-
-
-
 class SwikGraphView(GraphView):
     drop_event = pyqtSignal(list)
 

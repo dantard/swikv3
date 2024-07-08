@@ -5,6 +5,7 @@ from PyQt5.QtCore import QRect, Qt
 # from Dialogs import TextDontShowAgainDialog
 # from gi.overrides.Gio import Gio
 # from gi.overrides.Gtk import Gtk
+from PyQt5.QtWidgets import QMessageBox
 from easyconfig.EasyConfig import EasyConfig
 
 # gi.require_version('Gtk', '3.0')
@@ -131,9 +132,9 @@ class SwikConfig(EasyConfig):
             for r in recent:
                 open_recent.addAction(r, lambda x=r: window.open_file(x))
 
-    def should_continue(self, key, message):
+    def should_continue(self, key, message, icon=QMessageBox.Question, title="Warning", parent=None):
         if not self.been_warned(key):
-            ok, do_not_show_again = utils.get_warning_messagebox(message)
+            ok, do_not_show_again = utils.get_warning_messagebox(message, icon, title=title, parent=parent)
             if not ok:
                 return False
             if do_not_show_again:

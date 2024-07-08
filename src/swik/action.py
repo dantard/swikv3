@@ -17,6 +17,8 @@ class Action(list):
     TEXT_CHANGED = 7
     PAGE_ORDER_CHANGED = 8
     FULL_STATE = 9
+    PAGES_ADDED = 10
+    PAGES_ROTATED = 11
 
     def __init__(self, item=None, kind=None, old=None, new=None):
         super().__init__()

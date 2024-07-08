@@ -43,13 +43,22 @@ class ChangesTracker(QObject):
         self.undo_stack = self.Stack()
         self.redo_stack = self.Stack()
         self.undo_stack.signals.dirty.connect(self.dirty.emit)
+        self.not_undoable = 0
+
+    def add_not_undoable(self):
+        self.undo_stack.clear()
+        self.redo_stack.clear()
+        self.not_undoable += 1
+        self.dirty.emit(True)
 
     def is_dirty(self):
-        return len(self.undo_stack) > 0
+        return len(self.undo_stack) > 0 or self.not_undoable > 0
 
     def clear(self):
         self.undo_stack.clear()
         self.redo_stack.clear()
+        self.not_undoable = 0
+        self.dirty.emit(False)
 
     def undo(self):
         print("undo stack", len(self.undo_stack))
@@ -102,3 +111,4 @@ class ChangesTracker(QObject):
     def saved(self):
         self.undo_stack.clear()
         self.redo_stack.clear()
+        self.not_undoable = 0

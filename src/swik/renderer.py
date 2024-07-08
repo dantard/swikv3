@@ -760,6 +760,9 @@ class MuPDFRenderer(QLabel):
             return False
         return True
 
+    def insert_blank_page(self, index, width, height):
+        self.document.new_page(index, width=width, height=height)
+
     def insert_image(self, index, rect, qimage):
         self.document[index].clean_contents()
         rect = Rect(rect.x(), rect.y(), rect.x() + rect.width(), rect.y() + rect.height())
@@ -783,7 +786,7 @@ class MuPDFRenderer(QLabel):
         self.set_document(self.document, False)
 
     def rotate_page(self, index, angle):
-        self.document[index].set_rotation(angle)
+        self.document[index].set_rotation(self.document[index].rotation + angle)
         self.set_document(self.document, False)
 
     def get_links(self, index):
