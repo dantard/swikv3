@@ -191,6 +191,10 @@ class SwikWidget(Shell):
         self.manager.tool_done.connect(self.tool_done)
 
         self.zoom_toolbar = ZoomToolbar(self.view, self.toolbar)
+        self.toolbar.addSeparator()
+        self.toolbar.addAction("ɱ", self.iterate_mode)
+        self.toolbar.addSeparator()
+
         self.nav_toolbar = NavigationToolbar(self.view, self.toolbar)
         self.finder_toolbar = TextSearchToolbar(self.view, self.renderer, self.toolbar)
         self.load_progress = QProgressBar()
