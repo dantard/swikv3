@@ -460,9 +460,23 @@ class SwikWidget(Shell):
 
             if ext in ['.doc', '.docx', '.odt', '.rtf', '.html',
                        '.htm', '.xml', '.pptx', '.ppt', '.xls', '.xlsx']:
-
-                if utils.word_to_pdf(filename) != 0:
-                    QMessageBox.warning(self, "Error", "Error converting file (is libreoffice installed?)")
+                result = utils.word_to_pdf(filename)
+                if result == 0:
+                    pass
+                elif result == -4:
+                    QMessageBox.warning(self, "Error", "Libreoffice does not seem to be installed.")
+                    return
+                elif result == -1:
+                    QMessageBox.warning(self, "Error", "Libreoffice Writer does not seem to be installed.")
+                    return
+                elif result == -2:
+                    QMessageBox.warning(self, "Error", "Libreoffice Draw does not seem to be installed.")
+                    return
+                elif result == -3:
+                    QMessageBox.warning(self, "Error", "Libreoffice Calc does not seem to be installed.")
+                    return
+                else:
+                    QMessageBox.warning(self, "Error", "Error converting file")
                     return
                 filename = filename.replace(ext, '.pdf')
 

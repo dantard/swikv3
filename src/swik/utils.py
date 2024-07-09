@@ -268,10 +268,20 @@ def get_different_keys(old: dict, new: dict, ignore_keys=None):
 def word_to_pdf(doc):
     office = shutil.which("soffice")
     if not office:
+        return -4
+    real_path = os.path.realpath(office)
+    office_dir = os.path.dirname(real_path)
+
+    _, ext = os.path.splitext(doc)
+    if ext in ['.docx', '.doc'] and not os.path.exists(office_dir + os.sep + "swriter"):
         return -1
+    if ext in ['.pptx', '.ppt'] and not os.path.exists(office_dir + os.sep + "sdraw"):
+        return -2
+    if ext in ['.xlsx', '.xls'] and not os.path.exists(office_dir + os.sep + "scalc"):
+        return -3
 
     out_dir = os.path.dirname(doc)
-    print([office, '--headless', '--convert-to', 'pdf', '--outdir', out_dir, doc])
+    print(" ".join([office, '--headless', '--convert-to', 'pdf', '--outdir', out_dir, doc]))
     p = Popen([office, '--headless', '--convert-to', 'pdf', '--outdir', out_dir, doc])
     p.communicate()
 
