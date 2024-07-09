@@ -354,12 +354,12 @@ class GraphView(QGraphicsView):
         for i in range(len(indices)):
             elem = buffer[indices[i]]
             if elem.count == 0:
-                print("page", i, "copy")
+                # print("page", i, "copy")
                 self.pages[i] = elem.page
                 self.pages[i].index = i
             else:
                 # Going to duplicate the page
-                print("page", i, "create")
+                # print("page", i, "create")
                 page = self.page_object(i, self, self.manager, self.renderer, self.ratio)
                 page.update_image(self.ratio)
                 self.pages[i] = page

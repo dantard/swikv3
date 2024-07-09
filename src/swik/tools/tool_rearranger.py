@@ -225,7 +225,7 @@ class ToolRearrange(Tool, Undoable):
         if kind == Action.PAGE_ORDER_CHANGED:
             ask = self.config.should_continue("ask_undo_shuffle", "Proceed with undoing page reordering?")
             if ask:
-                self.undo_redo_order_change(kind, info)
+                self.undo_order_change(kind, info)
 
         elif kind == Action.PAGES_ADDED:
             whole = list(range(len(self.view.pages)))
@@ -248,7 +248,7 @@ class ToolRearrange(Tool, Undoable):
         if kind == Action.PAGE_ORDER_CHANGED:
             ask = self.config.should_continue("ask_undo_shuffle", "Proceed with redoing page reordering?")
             if ask:
-                self.undo_redo_order_change(kind, info)
+                self.redo_order_change(kind, info)
         elif kind == Action.PAGES_ADDED:
             pages_added = info["pages_added"]
             for index, w, h in sorted(pages_added, reverse=True):
@@ -264,12 +264,20 @@ class ToolRearrange(Tool, Undoable):
             angle = info["angle"]
             self.action_rotate(indices, angle)
 
-    def undo_redo_order_change(self, kind, info):
+    def undo_order_change(self, kind, info):
         order = info["indices"]
+
+        # !!! self.view.pages are the index of the pages !!!
         zipped = list(zip(order, self.view.pages))
         zipped.sort(key=lambda x: x[0])
         _, new_order = zip(*zipped)
         self.rearrange(new_order)
+        for view in self.views:
+            view.update_layout()
+
+    def redo_order_change(self, kind, info):
+        order = info["indices"]
+        self.rearrange(order)
         for view in self.views:
             view.update_layout()
 
