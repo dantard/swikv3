@@ -66,6 +66,12 @@ class GroupBox:
     def click(self, value):
         self.actions[value].click()
 
+    def select(self, name):
+        for action in self.actions:
+            if action.button.toolTip() == name:
+                action.button.click()
+                break
+
     def reset(self):
         self.default_action.button.click()
 

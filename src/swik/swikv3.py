@@ -136,13 +136,13 @@ class MainWindow(QMainWindow):
         utils.add_mimeapps_entry("[Default Applications]", "swik0.3.desktop")
         utils.add_mimeapps_entry("[Added Associations]", "swik0.3.desktop")
 
-    def restore(self):
+    def restore(self, tool):
         if self.config.general.get("open_last"):
             self.progress = Progressing(None, 0, "Opening", True)
             # utils.delayed(100, self.open_tabs)
-            self.progress.start(self.open_tabs)
+            self.progress.start(self.open_tabs, tool)
 
-    def open_tabs(self):
+    def open_tabs(self, tool):
 
         # Open last files if required. This is done
         # with a delay to allow the window to create
@@ -170,6 +170,8 @@ class MainWindow(QMainWindow):
                 widget.view.set_scroll_value(values[3])
             else:
                 widget.view.move_to_page(values[3])
+
+            widget.set_tool(tool)
 
         self.tab_widget.setCurrentIndex(0)
         self.update_title()
@@ -367,6 +369,7 @@ def main():
 
     parser = argparse.ArgumentParser(description='PDF Swik')
     parser.add_argument('-f', '--force-new-instance', action='store_true')
+    parser.add_argument('-t', '--tool', default=None, type=str)
     args, unknown = parser.parse_known_args()
 
     if len(unknown) > 0 and not args.force_new_instance:
@@ -393,7 +396,7 @@ def main():
     app.installEventFilter(window)
 
     if not args.force_new_instance:
-        window.restore()
+        window.restore(args.tool)
 
     if len(unknown) > 0:
         def open_new():

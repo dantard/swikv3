@@ -125,7 +125,7 @@ class ToolRearrange(Tool, Undoable):
     def scene(self):
         return self.view.scene()
 
-    def do_rearrange(self, ids):
+    def rearrange(self, ids):
         for view in self.views:
             # pages = [view.get_page_item(i) for i in range(view.get_page_count())]
             # for i, idx in enumerate(ids):
@@ -154,7 +154,7 @@ class ToolRearrange(Tool, Undoable):
                 ids = [i for i in range(self.view.get_page_count())]
                 ids = move_numbers(ids, selected_index, self.insert_at_page)
 
-                self.do_rearrange(ids)
+                self.rearrange(ids)
                 self.operation_done()
                 self.notify_change(Action.PAGE_ORDER_CHANGED, {"indices": ids}, {"indices": ids})
 
@@ -228,14 +228,17 @@ class ToolRearrange(Tool, Undoable):
                 self.undo_redo_order_change(kind, info)
 
         elif kind == Action.PAGES_ADDED:
-            all = list(range(len(self.view.pages)))
-            for i, page in enumerate(reversed(info["pages_added"])):
-                all.pop(page)
-            self.do_rearrange(all)
+            whole = list(range(len(self.view.pages)))
+            for index, w, h in reversed(info["pages_added"]):
+                whole.pop(index)
+
+            self.rearrange(whole)
+
             for view in self.views:
                 for p in view.pages.values():
                     p.invalidate()
                 view.update_layout()
+
         elif kind == Action.PAGES_ROTATED:
             indices = info["indices"]
             angle = info["angle"]
@@ -247,17 +250,15 @@ class ToolRearrange(Tool, Undoable):
             if ask:
                 self.undo_redo_order_change(kind, info)
         elif kind == Action.PAGES_ADDED:
-            inserted = info["pages_added"]
-            for index in sorted(inserted, reverse=True):
-                w, h = self.renderer.get_page_size(index)
+            pages_added = info["pages_added"]
+            for index, w, h in sorted(pages_added, reverse=True):
                 self.renderer.insert_blank_page(index, w, h)
 
             for view in self.views:
-                for index in sorted(inserted, reverse=True):
+                for index, w, h in sorted(pages_added, reverse=True):
                     view.insert_page(index)
-
-            for view in self.views:
                 view.update_layout()
+
         elif kind == Action.PAGES_ROTATED:
             indices = info["indices"]
             angle = info["angle"]
@@ -268,7 +269,7 @@ class ToolRearrange(Tool, Undoable):
         zipped = list(zip(order, self.view.pages))
         zipped.sort(key=lambda x: x[0])
         _, new_order = zip(*zipped)
-        self.do_rearrange(new_order)
+        self.rearrange(new_order)
         for view in self.views:
             view.update_layout()
 
@@ -329,7 +330,7 @@ class ToolRearrange(Tool, Undoable):
         for index in sorted(indices, reverse=True):
             w, h = self.renderer.get_page_size(index)
             self.renderer.insert_blank_page(index + 1, w, h)
-            pages_added.append(index + 1)
+            pages_added.append((index + 1, w, h))
 
         for view in self.views:
             for index in sorted(indices, reverse=True):

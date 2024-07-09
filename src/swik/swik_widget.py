@@ -536,3 +536,7 @@ class SwikWidget(Shell):
         dialog = TextBoxDialog(self.renderer.get_xml_metadata(), parent=self, title="Edit XML Metadata")
         if dialog.exec() == QDialog.Accepted:
             self.renderer.set_xml_metadata(dialog.get_text())
+
+    def set_tool(self, tool):
+        print("kjsdlfkdlskjkldshgkldjshg")
+        self.mode_group.select("Shuffle Pages")

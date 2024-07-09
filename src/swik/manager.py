@@ -69,11 +69,14 @@ class Manager(QObject):
         self.current = name
         self.current.init()
 
+    def select_tool(self, name):
+        self.use_tool(self.tools[name])
+
     def mouse_pressed(self, event):
         # TODO:if not self.top_is(event.pos(), [SimplePage, SimplePage.MyImage, Word]):
         # return
         # if event.modifiers() & Qt.ShiftModifier:
-        
+
         if self.current is not None:
             self.current.mouse_pressed(event)
 
