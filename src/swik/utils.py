@@ -1,6 +1,8 @@
 import os
 import importlib.resources as pkg_resources
+import shutil
 from pathlib import Path
+from subprocess import Popen
 
 import psutil
 from PyQt5.QtCore import QObject, pyqtSignal, QRectF, QRect, Qt, QTimer
@@ -261,3 +263,16 @@ def filter_out_dict(d, keys):
 
 def get_different_keys(old: dict, new: dict, ignore_keys=None):
     return {k: v for k, v in new.items() if new[k] != old[k] and k not in (ignore_keys if ignore_keys else [])}
+
+
+def word_to_pdf(doc):
+    office = shutil.which("soffice")
+    if not office:
+        return -1
+
+    out_dir = os.path.dirname(doc)
+    print([office, '--headless', '--convert-to', 'pdf', '--outdir', out_dir, doc])
+    p = Popen([office, '--headless', '--convert-to', 'pdf', '--outdir', out_dir, doc])
+    p.communicate()
+
+    return p.returncode

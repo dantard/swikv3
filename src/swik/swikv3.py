@@ -45,6 +45,7 @@ class MainWindow(QMainWindow):
         file_menu = menu_bar.addMenu('File')
         file_menu.addAction('Open', self.open_file)
         open_recent = file_menu.addMenu("Open Recent")
+        file_menu.addAction("Import", self.import_file)
         file_menu.addSeparator()
         open_recent.aboutToShow.connect(lambda: self.config.fill_recent(self, open_recent))
         save = file_menu.addAction('Save', self.save_file)
@@ -122,6 +123,13 @@ class MainWindow(QMainWindow):
         self.config.apply_window_config(self)
         self.update_interaction_status()
         self.show()
+
+    def import_file(self):
+        file_name, _ = QFileDialog.getOpenFileName(self, "Import file", "",
+                                                   "Supported files (*.doc *.docx *.odt *.rtf *.html *.htm *.xml *.pptx *.ppt *.xls *.xlsx *.png *.jpg *.jpeg "
+                                                   "*.bmp *.gif *.tiff *.pnm *.pgm *.ppm *.xps *.svg *.epub *.mobi *.txt)")
+        if file_name:
+            self.open_file(file_name)
 
     def about(self):
         DeveloperInfoDialog().exec()
@@ -310,7 +318,6 @@ class MainWindow(QMainWindow):
 
         if filename:
             if self.current() is not None:
-                # self.current().set_ratio(1)
                 self.current().open_file(filename)
             else:
                 self.open_new_tab(self.create_widget(), filename)

@@ -1,6 +1,10 @@
 import os
 import time
 
+import pymupdf
+
+from swik import utils
+
 from swik.changes_tracker import ChangesTracker
 
 import swik.resources
@@ -449,9 +453,35 @@ class SwikWidget(Shell):
     def open_file(self, filename=None):
         if filename is None:
             last_dir_for_open = self.config.private.get('last_dir_for_open')
-            filename, _ = QFileDialog.getOpenFileName(self, 'Open file', last_dir_for_open, 'PDF (*.pdf)')
+            filename, ext = QFileDialog.getOpenFileName(self, 'Open file', last_dir_for_open, 'PDF (*.pdf)')
 
         if filename:
+            _, ext = os.path.splitext(filename)
+
+            if ext in ['.doc', '.docx', '.odt', '.rtf', '.html',
+                       '.htm', '.xml', '.pptx', '.ppt', '.xls', '.xlsx']:
+
+                if utils.word_to_pdf(filename) != 0:
+                    QMessageBox.warning(self, "Error", "Error converting file (is libreoffice installed?)")
+                    return
+                filename = filename.replace(ext, '.pdf')
+
+            elif ext in ['.png', '.jpg', '.jpeg', '.bmp', '.gif', '.tiff', '.pnm',
+                         '.pgm', '.ppm', '.xps', '.svg', '.epub', '.mobi', '.txt']:
+                try:
+                    file = pymupdf.open(filename)
+                    pdf_bytes = file.convert_to_pdf()
+                    pdf = pymupdf.open("pdf", pdf_bytes)
+                    filename = filename.replace(ext, '.pdf')
+                    pdf.save(filename)
+                except:
+                    QMessageBox.warning(self, "Error", "Error converting file")
+                    return
+
+            if not os.path.exists(filename):
+                QMessageBox.warning(self, "Error", "File does not exist")
+                return
+
             self.mode_group.reset()
             res = self.renderer.open_pdf(filename)
             if res == MuPDFRenderer.OPEN_REQUIRES_PASSWORD:
