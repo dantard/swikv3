@@ -6,7 +6,9 @@ from pathlib import Path
 
 from PyQt5.QtCore import Qt, pyqtSignal, QPointF
 from PyQt5.QtGui import QImage, QPixmap
-from PyQt5.QtWidgets import QMenu, QMessageBox, QFileDialog, QVBoxLayout, QWidget, QComboBox, QHBoxLayout, QPushButton, QLabel
+from PyQt5.QtWidgets import QMenu, QMessageBox, QFileDialog, QVBoxLayout, QWidget, QComboBox, QHBoxLayout, QPushButton, QLabel, QGraphicsItem
+from swik.annotations.redact_annotation import RedactAnnotation
+
 from swik.interfaces import Copyable
 
 from swik import utils
@@ -162,8 +164,6 @@ class ToolInsertSignatureImage(Tool):
         frame = utils.framed(self.image_lb, "Current Image")
         v_layout.addWidget(frame)
 
-        # v_layout.addWidget(frame)
-
         self.save_btn = QPushButton("+")
         self.save_btn.setMaximumSize(25, 25)
         self.save_btn.clicked.connect(self.save_image)
@@ -183,6 +183,11 @@ class ToolInsertSignatureImage(Tool):
         hh_layout.addWidget(self.draw_btn)
         # hh_layout.setAlignment(Qt.AlignRight)
         v_layout.addLayout(hh_layout)
+
+        raise_images_btn = QPushButton("Raise Image")
+        raise_images_btn.clicked.connect(self.raise_images)
+        frame = utils.framed(raise_images_btn, "Raise Image")
+        v_layout.addWidget(frame)
 
         # v_layout.addWidget(self.draw_btn)
         self.helper.setLayout(v_layout)
@@ -214,6 +219,19 @@ class ToolInsertSignatureImage(Tool):
 
     def on_resize_event(self):
         self.update_image()
+
+    def raise_images(self):
+        images = self.renderer.get_images(0)
+        print("oooooooooooooo", images)
+        for image, x, y, rect in images:
+            patch = RedactAnnotation(self.view.pages[0], brush=Qt.white, pen=Qt.white)
+            patch.setRect(rect)
+            patch.setPos(x, y)
+            patch.setFlag(QGraphicsItem.ItemIsMovable, False)
+
+            item = InsertImageRectItem(self.view.pages[0], pen=Qt.transparent, brush=Qt.transparent, image=image, image_mode=self.image_mode)
+            item.setRect(rect)
+            item.setPos(x, y)
 
     def configure(self):
         self.images.clear()

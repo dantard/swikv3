@@ -859,3 +859,34 @@ class MuPDFRenderer(QLabel):
 
     def set_xml_metadata(self, xml):
         self.document.set_xml_metadata(xml)
+
+    def get_images(self, index):
+        images = list()
+
+        p = self.document[index]
+        image_list = p.get_images(full=True)
+        for image_index, img in enumerate(image_list):
+            # get the XREF of the image
+            xref = img[0]
+            rect = p.get_image_bbox(img)
+            rect2 = QRectF(0, 0, rect.x1 - rect.x0, rect.y1 - rect.y0)
+
+            # extract the image bytes
+            base_image = self.document.extract_image(xref)
+            image_bytes = base_image["image"]
+            w, h = base_image["width"], base_image["height"]
+            # get the image extension
+            image_ext = base_image["ext"]
+
+            pix = pymupdf.Pixmap(image_bytes)
+            # doc[-1].insert_image(rect, pixmap=fitz.Pixmap(image_bytes))
+            image = QImage(pix.samples, pix.width, pix.height, pix.stride, QImage.Format_RGB888)
+            images.append((image, rect.x0, rect.y0, rect2))
+
+        # for _, _, _, rect in images:
+        #    p.add_redact_annot(rect)  # cover top-left image with aredaction
+        #    p.apply_redactions(images=fitz.PDF_REDACT_IMAGE_REMOVE)
+        #    # p.delete_image(img[0])
+
+        # self.refresh()
+        return images
