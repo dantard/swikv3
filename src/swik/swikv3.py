@@ -169,6 +169,7 @@ class MainWindow(QMainWindow):
             else:
                 widget.view.move_to_page(values[3])
 
+            widget.splitter.setSizes(values[4])
             widget.set_tool(tool)
 
         self.tab_widget.setCurrentIndex(0)
@@ -290,7 +291,7 @@ class MainWindow(QMainWindow):
                     value = swik_widget.view.get_scroll_value()
                 else:
                     value = swik_widget.view.page
-                tabs[index] = [filename, swik_widget.view.get_mode(), swik_widget.view.get_ratio(), value]
+                tabs[index] = [filename, swik_widget.view.get_mode(), swik_widget.view.get_ratio(), value, swik_widget.splitter.sizes()]
 
         if self.magnifier is not None:
             self.magnifier.close()
