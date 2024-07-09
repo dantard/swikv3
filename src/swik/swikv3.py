@@ -85,8 +85,6 @@ class MainWindow(QMainWindow):
         self.tool_menu.addAction('Flatten', lambda: self.flatten(False))
         self.tool_menu.addAction('Flatten and Open', lambda: self.flatten(True))
         self.tool_menu.addSeparator()
-        self.tool_menu.addAction('Append PDF', self.append_pdf)
-        self.tool_menu.addSeparator()
         self.tool_menu.addAction('Extract Fonts', self.extract_fonts)
         # end setup tools menu
 
@@ -338,29 +336,11 @@ class MainWindow(QMainWindow):
     def open_with_other(self, command):
         self.current().open_with_other(command)
 
-    def append_pdf(self):
-        filename, _ = QFileDialog.getOpenFileName(self, "Open PDF", "", "PDF Files (*.pdf)")
-        if filename:
-            self.current().append_pdf(filename)
-
     def eventFilter(self, a0, a1) -> bool:
-        if a1.type() == QEvent.KeyPress:
-            a = self.current().key_manager.key_pressed(a1)
-            if not a:
-                a = self.current().manager.key_released(a1)
-            return a
-        elif a1.type() == QEvent.KeyRelease:
-            a = self.current().key_manager.key_released(a1)
-            if not a:
-                a = self.current().manager.key_released(a1)
-            return a
 
         return False
 
     def keyPressEvent(self, a0: QtGui.QKeyEvent) -> None:
-        print("aooooo")
-        if a0.key() == Qt.Key_Right:
-            self.current().set_page(self.current().view.page + 1)
         super().keyPressEvent(a0)
 
 

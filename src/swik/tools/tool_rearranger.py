@@ -1,6 +1,11 @@
-from PyQt5.QtCore import QPointF, Qt
-from PyQt5.QtGui import QColor
-from PyQt5.QtWidgets import QGraphicsRectItem, QMenu, QFileDialog, QMessageBox
+from PyQt5.QtCore import QPointF, Qt, QTimer
+from PyQt5.QtGui import QColor, QCursor
+from PyQt5.QtWidgets import QGraphicsRectItem, QMenu, QFileDialog, QMessageBox, QVBoxLayout, QWidget, QPushButton, QApplication, QGraphicsView
+from pymupdf import Page
+
+from swik.progressing import Progressing
+
+from swik import utils
 
 from swik.action import Action
 from swik.interfaces import Undoable
@@ -43,6 +48,7 @@ class ToolRearrange(Tool, Undoable):
         self.orig_ratio = None
         self.rb = None
         self.views = [self.view] + widget.get_other_views()
+        self.append_id = 0
 
     def init(self):
         self.collider = QGraphicsRectItem()
@@ -53,7 +59,83 @@ class ToolRearrange(Tool, Undoable):
         self.orig_ratio = self.view.get_ratio()
         self.view.set_ratio(0.25, True)
 
+        v_layout = QVBoxLayout()
+        self.helper = QWidget()
+        self.helper.setLayout(v_layout)
+        self.append_btn = QPushButton("Append PDF")
+        self.show_numbers_btn = QPushButton("Show Info")
+        self.show_numbers_btn.setCheckable(True)
+        self.show_numbers_btn.clicked.connect(self.show_numbers)
+
+        self.append_btn.clicked.connect(self.append_pdf)
+        v_layout.addWidget(self.append_btn)
+        v_layout.addWidget(self.show_numbers_btn)
+
+        self.widget.set_app_widget(self.helper, 150, title="Rearrange")
+
+        for page in self.view.pages.values():
+            page.update_original_info({"append_id": self.append_id})
+
+    def show_numbers(self):
+        for page in self.view.pages.values():
+            info = page.get_original_info()
+            page.set_visual_info("{}".format(info.get("page", "")), utils.get_color(info.get("append_id", 0)))
+            page.show_visual_info(self.show_numbers_btn.isChecked())
+
+    def append_pdf(self):
+
+        filename, _ = QFileDialog.getOpenFileName(self.widget, "Open PDF", "", "PDF Files (*.pdf)")
+        if not filename:
+            return
+
+        pd = Progressing(self.view, 100, "Appending PDF...")
+
+        def append():
+            self.append_id = self.append_id + 1
+            index = self.renderer.get_num_of_pages()
+            num_of_pages_added = self.renderer.append_pdf(filename)
+
+            for i in range(num_of_pages_added):
+                page = self.view.create_page(index + i, self.view.get_ratio())
+                page.update_original_info({"page": i, "append_id": self.append_id})
+                page.update_image(self.view.get_ratio())
+                self.view.layout_manager.update_layout(page)
+
+                page = self.miniature_view.create_page(index + i)
+                page.update_image(self.miniature_view.get_ratio())
+                self.miniature_view.layout_manager.update_layout(page)
+
+                pd.set_progress(i * 100 / num_of_pages_added)
+
+            pd.set_progress(100)
+            self.view.update_layout()
+            self.miniature_view.update_layout()
+            self.show_numbers()
+
+        pd.start(append)
+
+    def update_cursor(self, event):
+        self.view: QGraphicsView
+        pos = self.view.mapFromGlobal(QCursor.pos())
+
+        item = self.view.itemAt(pos)
+        if item is None:
+            cursor = Qt.ArrowCursor
+        elif event.modifiers() == Qt.ControlModifier:
+            cursor = Qt.PointingHandCursor if isinstance(item, (SimplePage, SimplePage.Box)) else Qt.ArrowCursor
+        elif isinstance(item, SimplePage):
+            cursor = Qt.ArrowCursor
+        elif isinstance(item, SimplePage.Box):
+            cursor = Qt.ClosedHandCursor if QApplication.mouseButtons() == Qt.LeftButton else Qt.OpenHandCursor
+        else:
+            cursor = Qt.ArrowCursor
+        # self.view.viewport().setCursor(cursor)
+        self.view.viewport().setCursor(cursor)
+
     def mouse_pressed(self, event):
+
+        self.update_cursor(event)
+
         if event.button() != Qt.LeftButton:
             return
 
@@ -84,6 +166,9 @@ class ToolRearrange(Tool, Undoable):
                 page.setZValue(100 + i)
 
     def mouse_moved(self, event):
+
+        self.update_cursor(event)
+
         if self.state == self.STATE_RECT_SELECTION:
             self.rb.view_mouse_move_event(self.view, event)
 
@@ -126,6 +211,8 @@ class ToolRearrange(Tool, Undoable):
         return self.view.scene()
 
     def rearrange(self, ids):
+        self.renderer.rearrange_pages(ids, False)
+
         for view in self.views:
             # pages = [view.get_page_item(i) for i in range(view.get_page_count())]
             # for i, idx in enumerate(ids):
@@ -133,9 +220,16 @@ class ToolRearrange(Tool, Undoable):
             #     view.pages[i].index = i
             view.rearrange(ids)
 
-        self.renderer.rearrange_pages(ids, False)
+    def key_pressed(self, event):
+        self.update_cursor(event)
+
+    def key_released(self, event):
+        self.update_cursor(event)
+        if event.key() == Qt.Key_Escape:
+            self.clear_selected()
 
     def mouse_released(self, event):
+
         if self.state == self.STATE_PAGE_MOVING:
             self.collider.setVisible(False)
             for page in self.selected:
@@ -147,15 +241,17 @@ class ToolRearrange(Tool, Undoable):
             else:
                 # I'm actually changing
                 # the order of the pages
-                for page in self.selected:
-                    page.set_selected(False)
 
                 selected_index = [page.index for page in self.selected]
                 ids = [i for i in range(self.view.get_page_count())]
                 ids = move_numbers(ids, selected_index, self.insert_at_page)
 
+                # Must be before rearrange otherwise
+                # shine will restore the selection
+                self.clear_selected()
+
                 self.rearrange(ids)
-                self.operation_done()
+                self.operation_done(False)
                 self.notify_change(Action.PAGE_ORDER_CHANGED, {"indices": ids}, {"indices": ids})
 
         elif self.state == self.STATE_RECT_SELECTION:
@@ -163,6 +259,7 @@ class ToolRearrange(Tool, Undoable):
             self.rb = None
 
         self.state = None
+        self.update_cursor(event)
 
     def rect_selection(self, rubberband):
         ci = self.rb.collidingItems()
@@ -178,15 +275,13 @@ class ToolRearrange(Tool, Undoable):
                 self.selected.append(page)
         print("rubberband", rubberband, ci)
 
-    def operation_done(self):
+    def operation_done(self, clear=True):
         for view in self.views:
             view.update_layout()
         self.leader_page = None
         self.insert_at_page = None
         self.pickup_point = None
-        for p in self.selected:
-            p.set_selected(False)
-        self.selected.clear()
+        clear and self.clear_selected()
 
     def context_menu(self, event):
         if len(self.selected) == 0:
@@ -204,22 +299,22 @@ class ToolRearrange(Tool, Undoable):
         rotate.addAction("180°", lambda: self.action_rotate([p.index for p in self.selected], 180))
         menu.addSeparator()
         insert_blank = menu.addAction("Insert a blank pages after")
-        stack_blank = menu.addAction("Stack blank pages after")
+        # stack_blank = menu.addAction("Stack blank pages after")
         res = menu.exec_(event.globalPos())
         if res == delete:
-            self.action_delete()
+            self.action_delete([p.index for p in self.selected])
         elif res == export:
             self.action_export(False)
         elif res == export_and_open:
             self.action_export(True)
         elif res == duplicate:
-            self.action_duplicate()
+            self.action_duplicate([page.index for page in self.selected])
         elif res == insert_blank:
             self.action_insert_blank([page.index for page in self.selected])
         elif res == rotate:
             self.action_rotate([p.index for p in self.selected], 90)
-        elif res == stack_blank:
-            self.action_stack_blank([page.index for page in self.selected])
+        # elif res == stack_blank:
+        #    self.action_stack_blank([page.index for page in self.selected])
 
     def undo(self, kind, info):
         if kind == Action.PAGE_ORDER_CHANGED:
@@ -243,6 +338,18 @@ class ToolRearrange(Tool, Undoable):
             indices = info["indices"]
             angle = info["angle"]
             self.action_rotate(indices, -angle)
+        elif kind == Action.PAGES_DUPLICATED:
+            indices = info["indices"]
+            helper, pages = [], []
+            for i, index in enumerate(indices):
+                if index not in helper:
+                    helper.append(index)
+                    pages.append(i)
+            self.rearrange(pages)
+            for p in self.view.pages.values():
+                print(p.index)
+            for view in self.views:
+                view.update_layout()
 
     def redo(self, kind, info):
         if kind == Action.PAGE_ORDER_CHANGED:
@@ -263,6 +370,12 @@ class ToolRearrange(Tool, Undoable):
             indices = info["indices"]
             angle = info["angle"]
             self.action_rotate(indices, angle)
+        elif kind == Action.PAGES_DUPLICATED:
+            indices = info["indices"]
+            print("indiceees", indices)
+            self.rearrange(indices)
+            for view in self.views:
+                view.update_layout()
 
     def undo_order_change(self, kind, info):
         order = info["indices"]
@@ -295,24 +408,28 @@ class ToolRearrange(Tool, Undoable):
         if self.view.get_ratio() == 0.25:
             self.view.set_ratio(self.orig_ratio, True)
 
-    def action_duplicate(self):
-        if self.config.should_continue("ask_duplicate", "This operation is not undoable and will clear the undo stack.\nProceed?"):
-            indices = [page.index for page in self.selected]
-            list_of_pages = list(range(len(self.view.pages)))
-            for index in indices:
-                where = list_of_pages.index(index)
-                list_of_pages.insert(where, index)
+        self.widget.remove_app_widget()
+        self.helper.deleteLater()
 
-            self.renderer.rearrange_pages(list_of_pages, False)
-            for view in self.views:
-                view.rearrange(list_of_pages)
-                view.update_layout()
+    def action_duplicate(self, indices):
 
-    def action_delete(self):
+        list_of_pages = list(range(len(self.view.pages)))
+        for index in indices:
+            where = list_of_pages.index(index)
+            list_of_pages.insert(where, index)
+
+        self.renderer.rearrange_pages(list_of_pages, False)
+        for view in self.views:
+            view.rearrange(list_of_pages)
+            view.update_layout()
+
+        self.notify_change(Action.PAGES_DUPLICATED, {"indices": list_of_pages}, {"indices": list_of_pages})
+        self.show_numbers()
+
+    def action_delete(self, deleting):
         if self.config.should_continue("ask_delete", "This operation is not undoable and will clear the undo stack.\nProceed?"):
 
             # Delete the selected pages
-            deleting = [p.index for p in self.selected]
             remaining = [i for i in range(len(self.view.pages)) if i not in deleting]
             self.renderer.rearrange_pages(remaining, False)
             for view in self.views:
@@ -346,6 +463,7 @@ class ToolRearrange(Tool, Undoable):
 
         self.operation_done()
         self.notify_change(Action.PAGES_ADDED, {"pages_added": pages_added}, {"pages_added": pages_added})
+        self.show_numbers()
 
     def action_export(self, open_pdf):
         filename, _ = QFileDialog.getSaveFileName(self.view, "Save PDF Document", self.renderer.get_filename(),

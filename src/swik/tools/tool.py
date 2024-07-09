@@ -10,6 +10,7 @@ class BasicTool(QObject):
     def __init__(self, widget: Shell, **kwargs):
         super(BasicTool, self).__init__()
         self.view = widget.get_view()
+        self.miniature_view = widget.miniature_view
         self.renderer = widget.get_renderer()
         self.config = widget.get_config()
         self.widget = widget
@@ -46,4 +47,10 @@ class Tool(BasicTool):
         pass
 
     def mouse_double_clicked(self, event):
+        pass
+
+    def key_pressed(self, event):
+        pass
+
+    def key_released(self, event):
         pass

@@ -356,14 +356,22 @@ class GraphView(QGraphicsView):
             if elem.count == 0:
                 # print("page", i, "copy")
                 self.pages[i] = elem.page
+
+                if self.pages[i].index != i:
+                    self.pages[i].shine()
+
                 self.pages[i].index = i
+
             else:
                 # Going to duplicate the page
                 # print("page", i, "create")
                 page = self.page_object(i, self, self.manager, self.renderer, self.ratio)
+                page.update_original_info({"page": "+"})
                 page.update_image(self.ratio)
                 self.pages[i] = page
                 self.scene().addItem(page)
+                page.shine(QColor(255, 0, 0, 100))
+
             elem.current_pos = i
             elem.count += 1
 
@@ -380,10 +388,13 @@ class GraphView(QGraphicsView):
                 pages[i] = self.pages[i]
             elif i == index:
                 pages[i] = self.page_object(index, self, self.manager, self.renderer, self.get_ratio())
+                pages[i].update_original_info({"page": "+"})
                 pages[i].update_image(self.ratio)
                 self.scene().addItem(pages[i])
+                pages[i].shine(QColor(255, 0, 0, 100))
             else:
                 pages[i] = self.pages[i - 1]
                 pages[i].index = i
 
         self.pages = pages
+        return self.pages[index]

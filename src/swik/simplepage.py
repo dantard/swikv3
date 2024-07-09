@@ -73,6 +73,24 @@ class SimplePage(QGraphicsRectItem):
         self.request_image_timer.timeout.connect(self.process_requested_image)
         self.requested_image_ratio = 1
         self.image_ratio = 0
+        self.original_info = {"page": index}
+
+    def update_original_info(self, info):
+        self.original_info.update(info)
+
+    def shine(self, color=QColor(0, 255, 0, 60), delay=1000):
+        visible, brush = self.box.isVisible(), self.box.brush()
+        self.box.setBrush(QBrush(color))
+        self.box.setVisible(True)
+
+        def restore():
+            self.box.setBrush(brush)
+            self.box.setVisible(visible)
+
+        QTimer.singleShot(delay, restore)
+
+    def get_original_info(self):
+        return self.original_info
 
     def get_index(self):
         return self.index

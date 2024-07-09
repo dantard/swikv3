@@ -231,6 +231,16 @@ class SwikWidget(Shell):
         self.dirtiness_changed.emit(self, dirty)
         self.save_btn.setEnabled(dirty)
 
+    def keyPressEvent(self, a0: QtGui.QKeyEvent) -> None:
+        super(SwikWidget, self).keyPressEvent(a0)
+        print("oooooooooooooo1")
+        self.manager.key_pressed(a0)
+
+    def keyReleaseEvent(self, a0: QtGui.QKeyEvent) -> None:
+        super(SwikWidget, self).keyReleaseEvent(a0)
+        print("oooooooooooooo2")
+        self.manager.key_released(a0)
+
     def is_dirty(self):
         return self.changes_tracker.is_dirty()
 
@@ -503,18 +513,23 @@ class SwikWidget(Shell):
             self.config.edit()
 
     # TODO::::CONVERT
-    def append_pdf(self, filename):
-        pd = Progressing(self, 100)
+    def append_pdf(self, filename, append_id):
+        pd = Progressing(self, 100, "Appending PDF...")
 
         def append():
             index = self.renderer.get_num_of_pages()
             num_of_pages_added = self.renderer.append_pdf(filename)
 
             for i in range(num_of_pages_added):
-                self.view.create_page(index + i, self.view.get_ratio())
-                self.miniature_view.create_page(index + i)
+                page = self.view.create_page(index + i, self.view.get_ratio())
+                page.update_original_info({"page": i, "append_id": append_id})
+                page.update_image(self.view.get_ratio())
+                self.view.layout_manager.update_layout(page)
 
-                time.sleep(0.01)
+                page = self.miniature_view.create_page(index + i)
+                page.update_image(self.miniature_view.get_ratio())
+                self.miniature_view.layout_manager.update_layout(page)
+
                 pd.set_progress(i * 100 / num_of_pages_added)
 
             pd.set_progress(100)

@@ -97,13 +97,12 @@ class Manager(QObject):
             self.current.context_menu(event)
 
     def key_pressed(self, event):
-        return False
+        if self.current is not None:
+            self.current.key_pressed(event)
 
     def key_released(self, event):
-        if event.key() == Qt.Key_Escape:
-            self.tool_done.emit(Manager.FINISHED, None)
-            return True
-        return False
+        if self.current is not None:
+            self.current.key_released(event)
 
     def reset(self):
         self.tool_done.emit(Manager.FINISHED, None)

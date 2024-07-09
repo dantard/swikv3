@@ -1,4 +1,4 @@
-from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt5.QtCore import QObject, pyqtSignal, Qt
 from PyQt5.QtWidgets import QGraphicsItem, QGraphicsTextItem
 
 from swik.annotations.hyperlink import InternalLink
@@ -24,10 +24,17 @@ class Page(SimplePage):
         self.info.setVisible(False)
         self.info.setFlag(QGraphicsItem.ItemIgnoresTransformations)
 
-
         self.read_widgets()
         self.read_annotations()
         self.read_links()
+
+    def set_visual_info(self, text, color=Qt.black):
+        self.info.setPlainText(text)
+        self.info.setDefaultTextColor(color)
+        self.show_visual_info(True)
+
+    def show_visual_info(self, value):
+        self.info.setVisible(value)
 
     def read_annotations(self):
         annotations = self.renderer.get_annotations(self.index)
