@@ -1,5 +1,5 @@
-from PyQt5.QtCore import Qt, QPointF
-from PyQt5.QtWidgets import QDialog, QMenu
+from PyQt5.QtCore import Qt, QPointF, QRectF
+from PyQt5.QtWidgets import QDialog, QMenu, QGraphicsRectItem
 
 from swik.action import Action
 from swik.color_widget import Color
@@ -51,19 +51,15 @@ class RedactAnnotation(ResizableRectItem, Copyable):
             self.scene().removeItem(self)
 
 
-class Patch(RedactAnnotation):
+class Patch(QGraphicsRectItem):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.setBrush(Qt.white)
+        self.setPen(Qt.white)
 
-    def mousePressEvent(self, event: 'QGraphicsSceneMouseEvent') -> None:
-        pass
-
-    def mouseDoubleClickEvent(self, event: 'QGraphicsSceneMouseEvent') -> None:
-        pass
-
-    def contextMenuEvent(self, event: 'QGraphicsSceneContextMenuEvent') -> None:
-        pass
-
-    def mouseMoveEvent(self, event):
-        pass
-
-    def mouseReleaseEvent(self, event):
-        pass
+    def get_rect_on_parent(self):
+        if self.parentItem() is None:
+            return self.sceneBoundingRect()
+        else:
+            rect = QRectF(self.rect().x()-1, self.rect().y()-1, self.rect().width()+2, self.rect().height()+2)
+            return self.parentItem().mapRectFromItem(self, rect)

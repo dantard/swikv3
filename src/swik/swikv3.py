@@ -142,13 +142,13 @@ class MainWindow(QMainWindow):
         utils.add_mimeapps_entry("[Default Applications]", "swik0.3.desktop")
         utils.add_mimeapps_entry("[Added Associations]", "swik0.3.desktop")
 
-    def restore(self, tool):
+    def restore(self):
         if self.config.general.get("open_last"):
             self.progress = Progressing(None, 0, "Opening", True)
             # utils.delayed(100, self.open_tabs)
-            self.progress.start(self.open_tabs, tool)
+            self.progress.start(self.open_tabs)
 
-    def open_tabs(self, tool):
+    def open_tabs(self):
 
         # Open last files if required. This is done
         # with a delay to allow the window to create
@@ -177,8 +177,8 @@ class MainWindow(QMainWindow):
             else:
                 widget.view.move_to_page(values[3])
 
-            widget.splitter.setSizes(values[4])
-            widget.set_tool(tool)
+            if len(values) > 4:
+                widget.splitter.setSizes(values[4])
 
         self.tab_widget.setCurrentIndex(0)
         self.update_title()
@@ -384,16 +384,17 @@ def main():
     app.installEventFilter(window)
 
     if not args.force_new_instance:
-        window.restore(args.tool)
+        window.restore()
 
     if len(unknown) > 0:
         def open_new():
             for u in unknown:
                 widget = window.create_widget()
                 window.open_new_tab(widget, u)
+                widget.set_tool(args.tool)
 
         # Delayed to avoid it to be opened
-        # before the restored windows
+        # before the restored tabs
         utils.delayed(25, open_new)
 
     app.exec_()

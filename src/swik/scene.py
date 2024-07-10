@@ -4,6 +4,7 @@ from swik import utils
 
 from swik.action import Action
 from swik.changes_tracker import ChangesTracker
+from swik.resizeable import HandleItem
 from swik.utils import Signals
 
 
@@ -35,7 +36,7 @@ class Scene(QGraphicsScene):
         item_state = utils.get_different_keys(old, new, ["pos", "text", "rect", "content"])
 
         for elem in self.selectedItems():
-            if elem is not item:
+            if elem is not item and type(elem) != HandleItem:
                 cur_state = elem.get_full_state().copy()
                 cur_state["pos"] = self.poses[elem]
                 elem.set_full_state(item_state)

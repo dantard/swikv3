@@ -601,5 +601,9 @@ class SwikWidget(Shell):
             self.renderer.set_xml_metadata(dialog.get_text())
 
     def set_tool(self, tool):
-        print("kjsdlfkdlskjkldshgkldjshg")
-        self.mode_group.select("Shuffle Pages")
+        if tool == "shuffle":
+            self.mode_group.select("Shuffle Pages")
+        elif tool == "sign":
+            self.mode_group.select("Sign")
+        elif tool == "crop":
+            self.mode_group.select("Crop")

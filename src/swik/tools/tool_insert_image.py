@@ -4,7 +4,7 @@ import os
 import shutil
 from pathlib import Path
 
-from PyQt5.QtCore import Qt, pyqtSignal, QPointF
+from PyQt5.QtCore import Qt, pyqtSignal, QPointF, QPoint, QRectF
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtWidgets import QMenu, QMessageBox, QFileDialog, QVBoxLayout, QWidget, QComboBox, QHBoxLayout, QPushButton, QLabel, QGraphicsItem
 from swik.annotations.redact_annotation import RedactAnnotation, Patch
@@ -187,7 +187,7 @@ class ToolInsertSignatureImage(Tool):
         raise_images_btn = QPushButton("Raise Image")
         raise_images_btn.clicked.connect(self.raise_images)
         frame = utils.framed(raise_images_btn, "Raise Image")
-        v_layout.addWidget(frame)
+        # v_layout.addWidget(frame)
 
         # v_layout.addWidget(self.draw_btn)
         self.helper.setLayout(v_layout)
@@ -220,17 +220,58 @@ class ToolInsertSignatureImage(Tool):
     def on_resize_event(self):
         self.update_image()
 
+    def context_menu(self, event):
+        pos_on_view = self.view.mapFromGlobal(event.globalPos())
+        page = self.view.get_page_at_pos(pos_on_view)
+        pos_on_scene = self.view.mapToScene(pos_on_view)
+        pos_on_page = page.mapFromScene(pos_on_scene)
+        pos_on_page = QPoint(int(pos_on_page.x()), int(pos_on_page.y()))
+
+        images = self.renderer.get_images(page.index)
+
+        selected = None
+        for image, x, y, rect in images:
+            rect_on_page = QRectF(x, y, rect.width(), rect.height())
+            if rect_on_page.contains(pos_on_page):
+                selected = (image, x, y, rect)
+
+        if selected is not None:
+            image, x, y, rect = selected
+            menu = QMenu()
+            move_action = menu.addAction("Move Image")
+            remove_action = menu.addAction("Remove Image")
+            save_action = menu.addAction("Save Image")
+            res = menu.exec(event.globalPos())
+            if res == move_action:
+                patch = Patch(page)
+                patch.setRect(QRectF(0, 0, rect.width() + 2, rect.height() + 2))
+                patch.setPos(x - 1, y - 1)
+
+                item = InsertImageRectItem(self.view.pages[0], pen=Qt.transparent, brush=Qt.transparent, image=image, image_mode=self.image_mode)
+                item.setRect(rect)
+                item.setPos(x, y)
+                item.setZValue(100)
+            elif res == remove_action:
+                patch = Patch(page)
+                patch.setRect(QRectF(0, 0, rect.width() + 2, rect.height() + 2))
+                patch.setPos(x - 1, y - 1)
+            elif res == save_action:
+                filename, _ = QFileDialog.getSaveFileName(None, "Save Image", "", "Image files (*.png *.jpg *.jpeg *.bmp *.gif *.tiff *.tif)")
+                if filename:
+                    image.save(filename)
+
     def raise_images(self):
         images = self.renderer.get_images(0)
         print("oooooooooooooo", images)
         for image, x, y, rect in images:
-            patch = Patch(self.view.pages[0], brush=Qt.white, pen=Qt.white)
+            patch = Patch(self.view.pages[0])
             patch.setRect(rect)
             patch.setPos(x, y)
 
             item = InsertImageRectItem(self.view.pages[0], pen=Qt.transparent, brush=Qt.transparent, image=image, image_mode=self.image_mode)
             item.setRect(rect)
             item.setPos(x, y)
+            item.setZValue(100)
 
     def configure(self):
         self.images.clear()

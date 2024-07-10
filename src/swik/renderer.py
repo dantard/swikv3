@@ -429,7 +429,7 @@ class MuPDFRenderer(QLabel):
             color = utils.qcolor_to_fitz_color(QColor(color))
         page.add_redact_annot(rect, fill=color)
         if apply:
-            page.apply_redactions()
+            page.apply_redactions(1)
 
     def apply_redactions(self, index):
         self.document[index].apply_redactions()
@@ -780,6 +780,17 @@ class MuPDFRenderer(QLabel):
         self.document[index].clean_contents()
         rect = Rect(rect.x(), rect.y(), rect.x() + rect.width(), rect.y() + rect.height())
         self.document[index].insert_image(rect, filename=filename, keep_proportion=False)
+
+    def insert_image2(self, index, rect, qimage):
+        rect = pymupdf.Rect(rect.x(), rect.y(), rect.x() + rect.width(), rect.y() + rect.height())
+        byte_array = QByteArray()
+        buffer = QBuffer(byte_array)
+        buffer.open(QIODevice.WriteOnly)
+        qimage.save(buffer, "PNG")
+
+        # Create a fitz.Pixmap from the bytes
+        pixmap = pymupdf.Pixmap(byte_array.data())
+        self.document[index].insert_image(rect, pixmap=pixmap)
 
     def append_blank_page(self, width=595, height=842):
         self.document.new_page(-1, width=width, height=height)
