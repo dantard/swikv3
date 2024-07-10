@@ -1,5 +1,6 @@
 import os
 import time
+from os.path import expanduser
 
 import pymupdf
 
@@ -17,6 +18,7 @@ from PyQt5.QtWidgets import QApplication, QFileDialog, QDialog, QMessageBox, QHB
     QSplitter, QGraphicsScene, QProgressBar, QTreeWidget, QTreeWidgetItem, QPushButton, QLabel, QFrame, QSizePolicy
 from pymupdf import Document
 
+from swik.file_browser import FileBrowser
 from swik.layout_manager import LayoutManager
 from swik.swik_graphview import SwikGraphView
 from swik.dialogs import PasswordDialog, DictDialog, TextBoxDialog
@@ -225,10 +227,15 @@ class SwikWidget(Shell):
         self.outline.setHeaderHidden(True)
         self.outline.itemSelectionChanged.connect(self.toc_selected)
 
+        self.file_browser = FileBrowser(expanduser("~"))
+        self.file_browser.signals.file_selected.connect(self.open_file)
+
         tab = QTabWidget()
         tab.addTab(self.miniature_view, "Miniature")
         tab.addTab(self.outline, "ToC")
+        tab.addTab(self.file_browser, "Files")
         tab.setMaximumWidth(self.miniature_view.maximumWidth())
+
         self.splitter.addWidget(tab)
         self.splitter.addWidget(helper)
         self.set_interactable(False)
@@ -510,6 +517,7 @@ class SwikWidget(Shell):
                 self.view.page_scrolled()
                 self.config.update_recent(self.renderer.get_filename())
                 self.config.flush()
+                self.file_browser.select(self.renderer.get_filename(), False)
 
             else:
                 QMessageBox.warning(self, "Error", "Error opening file")
