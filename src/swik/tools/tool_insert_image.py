@@ -7,7 +7,7 @@ from pathlib import Path
 from PyQt5.QtCore import Qt, pyqtSignal, QPointF
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtWidgets import QMenu, QMessageBox, QFileDialog, QVBoxLayout, QWidget, QComboBox, QHBoxLayout, QPushButton, QLabel, QGraphicsItem
-from swik.annotations.redact_annotation import RedactAnnotation
+from swik.annotations.redact_annotation import RedactAnnotation, Patch
 
 from swik.interfaces import Copyable
 
@@ -224,10 +224,9 @@ class ToolInsertSignatureImage(Tool):
         images = self.renderer.get_images(0)
         print("oooooooooooooo", images)
         for image, x, y, rect in images:
-            patch = RedactAnnotation(self.view.pages[0], brush=Qt.white, pen=Qt.white)
+            patch = Patch(self.view.pages[0], brush=Qt.white, pen=Qt.white)
             patch.setRect(rect)
             patch.setPos(x, y)
-            patch.setFlag(QGraphicsItem.ItemIsMovable, False)
 
             item = InsertImageRectItem(self.view.pages[0], pen=Qt.transparent, brush=Qt.transparent, image=image, image_mode=self.image_mode)
             item.setRect(rect)

@@ -49,3 +49,21 @@ class RedactAnnotation(ResizableRectItem, Copyable):
         if res == delete:
             self.notify_deletion()
             self.scene().removeItem(self)
+
+
+class Patch(RedactAnnotation):
+
+    def mousePressEvent(self, event: 'QGraphicsSceneMouseEvent') -> None:
+        pass
+
+    def mouseDoubleClickEvent(self, event: 'QGraphicsSceneMouseEvent') -> None:
+        pass
+
+    def contextMenuEvent(self, event: 'QGraphicsSceneContextMenuEvent') -> None:
+        pass
+
+    def mouseMoveEvent(self, event):
+        pass
+
+    def mouseReleaseEvent(self, event):
+        pass
