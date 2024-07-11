@@ -20,6 +20,7 @@ from pymupdf import Document
 
 from swik.file_browser import FileBrowser
 from swik.layout_manager import LayoutManager
+from swik.rclone_browser import RCloneBrowser
 from swik.swik_graphview import SwikGraphView
 from swik.dialogs import PasswordDialog, DictDialog, TextBoxDialog
 from swik.font_manager import FontManager
@@ -230,10 +231,13 @@ class SwikWidget(Shell):
         self.file_browser = FileBrowser(expanduser("~"))
         self.file_browser.signals.file_selected.connect(self.open_file)
 
+        self.rclone_browser = RCloneBrowser()
+
         tab = QTabWidget()
         tab.addTab(self.miniature_view, "Miniature")
         tab.addTab(self.outline, "ToC")
         tab.addTab(self.file_browser, "Files")
+        tab.addTab(self.rclone_browser, "RClone")
         tab.setMaximumWidth(self.miniature_view.maximumWidth())
 
         self.splitter.addWidget(tab)
