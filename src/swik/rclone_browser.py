@@ -6,7 +6,7 @@ from time import sleep
 
 from PyQt5 import QtGui
 from PyQt5.QtCore import QTimer, pyqtSignal, QMimeData, Qt
-from PyQt5.QtGui import QDrag
+from PyQt5.QtGui import QDrag, QDragLeaveEvent
 from PyQt5.QtWidgets import QTreeWidget, QMainWindow, QWidget, QVBoxLayout, QApplication, QTreeWidgetItem, QMenu, QFileDialog, QComboBox, QLabel, QToolBar, \
     QProgressBar, QAbstractItemView, QHBoxLayout
 from swik.progressing import Progressing
@@ -40,19 +40,118 @@ class RCloneApi:
         command = ["rclone", "listremotes"]
         return self.run_rclone_command(command)
 
+    def copy2(self, src, dest):
+        self.src = str(src)
+        print("into copy", src, dest)
+        self.command = ["rclone", "copy", self.rclone_path + self.src, self.rclone_path + dest]
+        print(self.command, "kkk", " ".join(self.command))
+        self.run_rclone_command(self.command)
+        # os.system(" ".join(self.command))
+
+
+class RCloneTreeItem(QTreeWidgetItem):
+    def __init__(self, parent, elem=None):
+        super().__init__(parent)
+        self.setText(0, elem["Name"])
+        self.path = elem.get("Path")
+        self.is_dir = elem.get("IsDir", False)
+        self.size = elem.get("Size", -1)
+        self.mime_type = elem.get("MimeType")
+        if self.is_dir:
+            self.setIcon(0, QtGui.QIcon.fromTheme("folder"))
+            self.setText(1, "folder")
+        elif self.mime_type == "application/pdf":
+            self.setIcon(0, QtGui.QIcon.fromTheme("application-pdf"))
+            self.setText(1, "pdf")
+        elif self.mime_type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+            self.setIcon(0, QtGui.QIcon.fromTheme("application-msword"))
+            self.setText(1, "Word")
+        elif self.mime_type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+            self.setIcon(0, QtGui.QIcon.fromTheme("application-vnd.ms-excel"))
+            self.setText(1, "Excel")
+        elif self.mime_type == "application/vnd.openxmlformats-officedocument.presentationml.presentation":
+            self.setIcon(0, QtGui.QIcon.fromTheme("application-vnd.ms-powerpoint"))
+            self.setText(1, "PowerPoint")
+        elif self.mime_type in ["image/jpeg", "image/png", "image/gif", "image/bmp"]:
+            self.setIcon(0, QtGui.QIcon.fromTheme("image-x-generic"))
+            self.setText(1, self.mime_type.split("/")[-1])
+        else:
+            self.setText(1, "file")
+            self.setIcon(0, QtGui.QIcon.fromTheme("text-x-generic"))
+
+        if self.size == -1:
+            text_size = "?"
+        elif self.size < 1024:
+            text_size = f"{self.size} B"
+        elif self.size < 1024 * 1024:
+            text_size = f"{self.size / 1024:.2f} KB"
+        elif self.size < 1024 * 1024 * 1024:
+            text_size = f"{self.size / 1024 / 1024:.2f} MB"
+        else:
+            text_size = f"{self.size / 1024 / 1024 / 1024:.2f} GB"
+
+        self.setText(2, text_size)
+
+    def __lt__(self, other):
+        column = self.treeWidget().sortColumn()
+        if column == 1:
+            if self.is_dir and not other.is_dir:
+                return True
+            if not self.is_dir and other.is_dir:
+                return False
+            return self.text(1).lower() < other.text(1).lower()
+        elif column == 2:
+            return self.size < other.size
+        return super().__lt__(other)
+
+    def get_absolute_path(self):
+        path = self.path
+        parent = self.parent()
+        while parent:
+            path = parent.path + "/" + path
+            parent = parent.parent()
+        return path
+
+
+class LoadingItem(RCloneTreeItem):
+    def __init__(self, parent):
+        super().__init__(parent, {"Name": "Loading..."})
+
 
 class TreeWidget(QTreeWidget):
     download_requested = pyqtSignal(str)
+    move_requested = pyqtSignal(object, object)
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.interactable = True
         self.setSortingEnabled(True)
         self.setDragEnabled(True)
+        self.setAcceptDrops(True)
+        self.setDragDropMode(QAbstractItemView.InternalMove)
+        self.aitem = None
+
+    def set_interactable(self, value):
+        self.interactable = value
+
+    def startDrag(self, supportedActions):
+        super(TreeWidget, self).startDrag(supportedActions)
 
     def dropEvent(self, a0: QtGui.QDropEvent):
-        print("dropEvent", a0.proposedAction(), a0.mimeData().text())
-        super().dropEvent(a0)
+        index = self.indexAt(a0.pos())
+        dest_item: RCloneTreeItem = self.itemFromIndex(index)
+        source_items = self.selectedItems()
+        if dest_item is not None and source_items is not None and dest_item.is_dir:
+            a0.acceptProposedAction()
+            self.move_requested.emit(source_items, dest_item)
+        else:
+            a0.ignore()
+
+    # super().dropEvent(a0)
+
+    def dragLeaveEvent(self, event: QDragLeaveEvent):
+        super().dragLeaveEvent(event)
+        self.aitem is not None and self.aitem.setBackground(0, QtGui.QBrush(QtGui.QColor(255, 255, 255)))
 
     def dragEnterEvent(self, event):
         super().dragEnterEvent(event)
@@ -61,18 +160,6 @@ class TreeWidget(QTreeWidget):
     def dragMoveEvent(self, event):
         super().dragMoveEvent(event)
         event.accept()
-
-    def startDrag(self, supportedActions):
-        item = self.currentItem()
-        if item:
-            mimeData = QMimeData()
-            mimeData.setText(item.text(0))
-            drag = QDrag(self)
-            drag.setMimeData(mimeData)
-            drag.exec_(Qt.MoveAction)
-
-    def set_interactable(self, value):
-        self.interactable = value
 
     def mousePressEvent(self, e):
         if not self.interactable:
@@ -104,6 +191,7 @@ class RCloneBrowser(QWidget):
     def __init__(self):
         super().__init__()
 
+        self.emit_enabled = True
         self.api = RCloneApi("gdrive:")
 
         # Set up the main window
@@ -143,26 +231,21 @@ class RCloneBrowser(QWidget):
         self.tree = TreeWidget()
         self.tree.setHeaderLabels(["File", "Type", "Size"])
         self.tree.itemExpanded.connect(self.item_expanded)
+        self.tree.itemCollapsed.connect(self.item_collapsed)
         self.tree.download_requested.connect(self.download_requested)
+        self.tree.move_requested.connect(self.move_requested)
         self.tree.doubleClicked.connect(self.on_double_clicked)
         self.tree.setDragEnabled(True)
         self.tree.setDropIndicatorShown(True)
-        self.tree.setDragDropMode(QAbstractItemView.InternalMove)
+        # self.tree.setDragDropMode(QAbstractItemView.InternalMove)
 
-        # Add some items to the tree
-        # for i in range(5):
-        #     parent = QTreeWidgetItem(self.tree)
-        #     parent.setText(0, f"Parent {i}")
-        #     parent.setText(1, f"Parent {i} Value")
-        #     for j in range(3):
-        #         child = QTreeWidgetItem(parent)
-        #         child.setText(0, f"Child {i}-{j}")
-        #         child.setText(1, f"Child {i}-{j} Value")
-
-        # Add the tree widget to the layout
         layout.addWidget(tb)
         layout.addWidget(self.tree)
         QTimer.singleShot(100, self.begin)
+
+    def move_requested(self, source_items, dest_item):
+        for item in source_items:
+            self.copy(item, dest_item)
 
     def set_accept_drops(self, value):
         self.tree.viewport().setAcceptDrops(value)
@@ -179,12 +262,8 @@ class RCloneBrowser(QWidget):
         self.ls()
 
     def on_double_clicked(self, index):
-        item = self.tree.itemFromIndex(index)
-        path = item.path
-        while item.parent():
-            path = item.parent().path + "/" + path
-            item = item.parent()
-        self.download(path, "/tmp", True)
+        item: RCloneTreeItem = self.tree.itemFromIndex(index)
+        self.download(item.get_absolute_path(), "/tmp", True)
 
     def download_requested(self, path):
         print("Download requested", path)
@@ -193,17 +272,10 @@ class RCloneBrowser(QWidget):
     def download_btn_clicked(self, run):
         indexes = self.tree.selectedIndexes()
         if indexes:
-            index = indexes[0]
-            if index.isValid():
-                item = self.tree.itemFromIndex(index)
-                path = item.path
-                while item.parent():
-                    path = item.parent().path + "/" + path
-                    item = item.parent()
-                if run:
-                    self.download(path, "/tmp", run)
-                else:
-                    self.download(path, None, run)
+            for index in indexes:
+                if index.isValid():
+                    item: RCloneTreeItem = self.tree.itemFromIndex(index)
+                    self.download(item.get_absolute_path(), "/tmp" if run else None, run)
 
     def on_filter_changed(self, index):
         self.on_remote_changed(0)
@@ -213,8 +285,8 @@ class RCloneBrowser(QWidget):
         self.pb.setFormat(text)
         self.pb.setMaximum(100)
         self.pb.setValue(10)
-        for i in self.protected:
-            i.setEnabled(False)
+        # for i in self.protected:
+        #    i.setEnabled(False)
 
     def set_pb_percent(self, value):
         self.pb.setValue(int(value))
@@ -226,73 +298,44 @@ class RCloneBrowser(QWidget):
         for i in self.protected:
             i.setEnabled(True)
 
+    def copy(self, source_item, dest_item):
+        self.pb_start("Copying...")
+        if dest_item.is_dir:
+            dest_dir = dest_item.get_absolute_path()
+        else:
+            dest_dir = os.path.dirname(dest_item.get_absolute_path())
+
+        self.api.copy2(source_item.get_absolute_path(), dest_dir)
+        self.tree.blockSignals(True)
+        # self.emit_enabled = False
+        dest_item.takeChildren()
+        LoadingItem(dest_item)
+        # self.emit_enabled = True
+        self.tree.blockSignals(False)
+
+        self.ls(dest_item.get_absolute_path(), dest_item)
+
     def ls(self, path=None, parent1=None):
         self.pb_start("Loading...")
 
         def do_ls():
-
+            print("do ls", path)
             res = self.api.ls(path)
             try:
                 data = json.loads(res)
             except:
-                QTimer.singleShot(100, do_ls)
                 return
 
             data.sort(key=lambda x: not x["IsDir"])
+
             for elem in data:
                 self.set_pb_percent(100 * data.index(elem) / len(data))
 
-                if self.filter_cb.currentText() == "*" or elem["IsDir"]:
-                    pass
-                elif self.filter_cb.currentText() == "PDF":
-                    if elem["MimeType"] != "application/pdf":
-                        continue
+                parent = RCloneTreeItem(parent1 if parent1 else self.tree, elem)
 
-                print(elem)
-                parent = QTreeWidgetItem(self.tree if parent1 is None else parent1)
-                parent.setText(1, "dir")
-                if elem["IsDir"]:
-                    parent.setIcon(0, QtGui.QIcon.fromTheme("folder"))
-                elif elem["MimeType"] == "application/pdf":
-                    parent.setIcon(0, QtGui.QIcon.fromTheme("application-pdf"))
-                    parent.setText(1, "pdf")
-                elif elem["MimeType"] == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-                    parent.setIcon(0, QtGui.QIcon.fromTheme("application-msword"))
-                    parent.setText(1, "Word")
-                elif elem["MimeType"] == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
-                    parent.setIcon(0, QtGui.QIcon.fromTheme("application-vnd.ms-excel"))
-                    parent.setText(1, "Excel")
-                elif elem["MimeType"] == "application/vnd.openxmlformats-officedocument.presentationml.presentation":
-                    parent.setIcon(0, QtGui.QIcon.fromTheme("application-vnd.ms-powerpoint"))
-                    parent.setText(1, "PowerPoint")
-                elif elem["MimeType"] in ["image/jpeg", "image/png", "image/gif", "image/bmp"]:
-                    parent.setIcon(0, QtGui.QIcon.fromTheme("image-x-generic"))
-                    parent.setText(1, elem["MimeType"].split("/")[-1])
-                else:
-                    parent.setText(1, "file")
-                    parent.setIcon(0, QtGui.QIcon.fromTheme("text-x-generic"))
+                if parent.is_dir:
+                    LoadingItem(parent)
 
-                parent.setText(0, elem["Name"])
-                size = elem.get("Size")
-                if size == -1:
-                    text_size = "?"
-                elif size < 1024:
-                    text_size = f"{size} B"
-                elif size < 1024 * 1024:
-                    text_size = f"{size / 1024:.2f} KB"
-                elif size < 1024 * 1024 * 1024:
-                    text_size = f"{size / 1024 / 1024:.2f} MB"
-                else:
-                    text_size = f"{size / 1024 / 1024 / 1024:.2f} GB"
-
-                parent.setText(2, text_size)
-                parent.path = elem["Name"]
-                # parent.setText(1, "[dir]" if elem["IsDir"] else "")
-
-                if elem["IsDir"]:
-                    child = QTreeWidgetItem(parent)
-                    child.setText(0, "Loading...")
-                    child.path = elem["Path"]
             if parent1 is not None:
                 parent1.takeChild(0)
 
@@ -301,6 +344,8 @@ class RCloneBrowser(QWidget):
                 header.resizeSection(0, self.width() - 250)
                 self.tree.resizeColumnToContents(1)
                 self.tree.resizeColumnToContents(2)
+
+            self.tree.sortByColumn(1, Qt.AscendingOrder)
             self.pb_finish()
 
         QTimer.singleShot(100, do_ls)
@@ -330,14 +375,14 @@ class RCloneBrowser(QWidget):
         QTimer.singleShot(100, do_download)
 
     def item_expanded(self, item):
-        orig_item = item
-        path = item.path
-        while item.parent():
-            path = item.parent().path + "/" + path
-            item = item.parent()
+        if self.emit_enabled:
+            path = item.get_absolute_path()
+            print("putoexpanded")
+            self.ls(path, item)
 
-        print("Expanded", path)
-        self.ls(path, orig_item)
+    def item_collapsed(self, item):
+        item.takeChildren()
+        item.addChild(LoadingItem(item))
 
 
 class MainWindow(QMainWindow):
@@ -347,10 +392,9 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(widget)
         widget.setLayout(QHBoxLayout())
         self.browser1 = RCloneBrowser()
-        self.browser2 = RCloneBrowser()
-        self.browser2.set_accept_drops(True)
+        #        self.browser2.set_accept_drops(True)
         widget.layout().addWidget(self.browser1)
-        widget.layout().addWidget(self.browser2)
+        # widget.layout().addWidget(self.browser2)
 
 
 if __name__ == "__main__":

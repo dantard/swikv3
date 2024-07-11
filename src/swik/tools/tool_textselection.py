@@ -92,14 +92,14 @@ class ToolTextSelection(Tool):
         if event.button() == Qt.RightButton:
             return
 
-        if event.modifiers() & Qt.ShiftModifier:
-            event.accept()
-            drag = QDrag(self)
-            mime_data = QMimeData()
-            mime_data.setUrls([QUrl.fromLocalFile(self.renderer.get_filename())])
-            drag.setMimeData(mime_data)
-            drag.exec_(Qt.CopyAction)
-            return
+        # if event.modifiers() & Qt.ShiftModifier:
+        #     event.accept()
+        #     drag = QDrag(self)
+        #     mime_data = QMimeData()
+        #     mime_data.setUrls([QUrl.fromLocalFile(self.renderer.get_filename())])
+        #     drag.setMimeData(mime_data)
+        #     drag.exec_(Qt.CopyAction)
+        #     return
 
         if self.view.there_is_any_other_than(event.pos(), (SimplePage, Word)):
             return

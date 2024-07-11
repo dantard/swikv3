@@ -1,4 +1,5 @@
-from PyQt5.QtCore import QObject, pyqtSignal, Qt
+from PyQt5.QtCore import QObject, pyqtSignal, Qt, QUrl, QMimeData
+from PyQt5.QtGui import QDrag
 from PyQt5.QtWidgets import QGraphicsRectItem
 from swik.word import Word
 
@@ -76,6 +77,15 @@ class Manager(QObject):
         # TODO:if not self.top_is(event.pos(), [SimplePage, SimplePage.MyImage, Word]):
         # return
         # if event.modifiers() & Qt.ShiftModifier:
+
+        if event.modifiers() & Qt.ShiftModifier:
+            event.accept()
+            drag = QDrag(self)
+            mime_data = QMimeData()
+            mime_data.setUrls([QUrl.fromLocalFile(self.renderer.get_filename())])
+            drag.setMimeData(mime_data)
+            drag.exec_(Qt.CopyAction)
+            return
 
         if self.current is not None:
             self.current.mouse_pressed(event)
