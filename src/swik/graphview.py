@@ -66,7 +66,8 @@ class GraphView(QGraphicsView):
         print("Setting mode", mode, force)
         self.mode = mode
         self.layout_manager.set_mode(mode, force)
-        # self.ratio_changed.emit(-1)
+        if mode == LayoutManager.MODE_FIT_WIDTH:
+            self.ratio_changed.emit(-1)
 
     def finish(self):
         self.pages.clear()

@@ -92,25 +92,27 @@ class RCloneTreeItem(QTreeWidgetItem):
 
         self.setText(2, text_size)
 
-    def __lt__(self, other):
-        column = self.treeWidget().sortColumn()
-        if column == 1:
-            if self.is_dir and not other.is_dir:
-                return True
-            if not self.is_dir and other.is_dir:
-                return False
-            return self.text(1).lower() < other.text(1).lower()
-        elif column == 2:
-            return self.size < other.size
-        return super().__lt__(other)
 
-    def get_absolute_path(self):
-        path = self.path
-        parent = self.parent()
-        while parent:
-            path = parent.path + "/" + path
-            parent = parent.parent()
-        return path
+def __lt__(self, other):
+    column = self.treeWidget().sortColumn()
+    if column == 1:
+        if self.is_dir and not other.is_dir:
+            return True
+        if not self.is_dir and other.is_dir:
+            return False
+        return self.text(1).lower() < other.text(1).lower()
+    elif column == 2:
+        return self.size < other.size
+    return super().__lt__(other)
+
+
+def get_absolute_path(self):
+    path = self.path
+    parent = self.parent()
+    while parent:
+        path = parent.path + "/" + path
+        parent = parent.parent()
+    return path
 
 
 class LoadingItem(RCloneTreeItem):

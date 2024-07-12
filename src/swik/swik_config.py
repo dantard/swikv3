@@ -15,6 +15,8 @@ from swik import utils
 
 class SwikConfig(EasyConfig):
     colors = [Qt.transparent, Qt.blue, Qt.red, Qt.green, Qt.black]
+    zooms = [1, 1.5, 2, 2.5, 3, -1]
+    lateral_bar_sizes = [200, 275, 350, 0]
 
     def __init__(self):
         super().__init__()
@@ -33,11 +35,14 @@ class SwikConfig(EasyConfig):
         self.general.addCheckbox("open_last", pretty="Reopen Last opened", default=True)
         self.general.addCombobox("lateral_bar_position", pretty="Lateral Bar Position", items=["Left", "Right", "Bottom", "Top"])
         self.general.addCheckbox("natural_hscroll", pretty="Natural H-Scroll")
-        self.zoom_on_open = self.general.addCombobox("zoom_on_open", pretty="Zoom on open new File",
-                                                     items=["100%", "150%", "200%", "250%", "300%", "Fit Width"])
 
-        self.open_other_pdf_in = self.general.addCombobox("open_other_pdf_in", pretty="When opening other PDFs", items=["Same Window", "Other Window", "Ask"])
-        self.flatten_before_sign = self.general.addCheckbox("flatten_before_sign", pretty="Flatten before signing", default=True)
+        self.zoom_on_open = self.general.addCombobox("zoom_on_open", pretty="Zoom on open new File",
+                                                     items=[str(int(z * 100)) + "%" if z > 0 else "Fit Width" for z in self.zooms], default=1)
+
+        self.mode_on_open = self.general.addCombobox("mode_on_open", pretty="Mode on open new File",
+                                                     items=['Vertical', 'Multi page', 'Horizontal', 'Single Page'],
+                                                     default=1)
+        self.lateral_bar_size = self.general.addCombobox("lateral_bar_size", pretty="Lateral Bar Size", items=["Small", "Medium", "Large", "Off"], default=0)
 
         encryption = self.root().addSubSection("Encryption")
         encryption.addString("enc_suffix", pretty="Encrypted File Suffix", default="-enc")
@@ -65,8 +70,15 @@ class SwikConfig(EasyConfig):
         self.warned = self.private.addDict("warned", default={})
 
         self.tabs = self.private.addDict("tabs")
-        # self.zoom = self.private.addList("zoom")
-        # self.pages = self.private.addList("pages")
+
+    def get_default_ratio(self):
+        return self.zooms[self.zoom_on_open.get_value()]
+
+    def get_default_mode(self):
+        return self.mode_on_open.get_value()
+
+    def get_default_bar_width(self):
+        return self.lateral_bar_sizes[self.lateral_bar_size.get_value()]
 
     def been_warned(self, key):
         warned_dict = self.warned.get_value()

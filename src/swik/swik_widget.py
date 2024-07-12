@@ -81,6 +81,7 @@ class SwikWidget(Shell):
         self.interaction_enabled = False
         self.win = window
         self.config = config
+        self.params = []
         self.renderer = MuPDFRenderer()
         self.renderer.document_changed.connect(self.document_changed)
         self.renderer.file_changed.connect(self.file_modified)
@@ -246,6 +247,9 @@ class SwikWidget(Shell):
         self.preferences_changed()
         QApplication.processEvents()
 
+    def push_params(self, mode=0, ratio=1, scroll=0, splitter=None):
+        self.params.append((mode, ratio, scroll, splitter))
+
     def dirtiness_has_changed(self, dirty):
         self.dirtiness_changed.emit(self, dirty)
         self.save_btn.setEnabled(dirty)
@@ -403,6 +407,7 @@ class SwikWidget(Shell):
         QMessageBox.information(self, "Fonts extracted", "Extracted " + str(len(fonts)) + "fonts")
 
     def document_changed(self):
+
         # Clear views and fonts
         self.changes_tracker.clear()
         self.manager.clear()
@@ -434,8 +439,37 @@ class SwikWidget(Shell):
         self.update_toc()
 
         pdf_widgets = [item for item in self.view.scene().items() if isinstance(item, PdfWidget)]
+
         if len(pdf_widgets) > 0:
             self.tool_form_btn.click()
+
+        # Important otherwise the
+        # view is not ready to be used
+        QApplication.processEvents()
+
+        # @Set parameters mode, ratio, scroll and splitter
+        # position after loading and setting up the document
+        if len(self.params) > 0:
+            mode, ratio, scroll, splitter = self.params.pop()
+        else:
+            scroll = 0
+            ratio = self.config.get_default_ratio()
+            mode = self.config.get_default_mode()
+            splitter = [self.config.get_default_bar_width(), self.width() - self.config.get_default_bar_width()]
+
+        if ratio > 0:
+            self.view.set_ratio(ratio, True)
+        else:
+            mode = LayoutManager.MODE_FIT_WIDTH
+
+        self.view.set_mode(mode)
+
+        if mode != LayoutManager.MODE_SINGLE_PAGE:
+            self.view.set_scroll_value(scroll)
+        else:
+            self.view.move_to_page(scroll)
+
+        self.splitter.setSizes(splitter)
 
     class TocWidgetItem(QTreeWidgetItem):
         def __init__(self, item):
@@ -460,13 +494,15 @@ class SwikWidget(Shell):
 
     def open_button(self):
         # self.set_ratio(1)
+
+        print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", self.view.mode, self.view.ratio, 0, self.splitter.sizes())
+        self.push_params(self.view.layout_manager.mode, self.view.ratio, 0, self.splitter.sizes())
         self.open_file()
 
-    def open_file(self, filename=None):
+    def open_file(self, filename=None, apply_default=True):
         if filename is None:
             last_dir_for_open = self.config.private.get('last_dir_for_open')
             filename, ext = QFileDialog.getOpenFileName(self, 'Open file', last_dir_for_open, 'PDF (*.pdf)')
-            # ["100%", "150%", "200%", "250%", "300%", "Fit Width"
 
         if filename:
             _, ext = os.path.splitext(filename)

@@ -160,25 +160,10 @@ class MainWindow(QMainWindow):
         for filename, values in tabs.items():
             if self.progress.wasCanceled():
                 break
+            filename, mode, ratio, scroll, splitter = values
             widget = self.create_widget()
-
-            # Not especially happy with this but it seems to work
-            # widget.view.append_on_document_ready(0, widget.view.set_ratio, zoom, True)
-            # widget.view.append_on_document_ready(0, widget.view.set_page, page)
-            # widget.miniature_view.append_on_document_ready(0, widget.miniature_view.set_page, page)
-            widget.view.set_mode(values[1])
-            if values[1] != LayoutManager.MODE_FIT_WIDTH:
-                widget.view.set_ratio(values[2], True)
-
-            self.open_new_tab(widget, values[0])
-
-            if values[1] != LayoutManager.MODE_SINGLE_PAGE:
-                widget.view.set_scroll_value(values[3])
-            else:
-                widget.view.move_to_page(values[3])
-
-            if len(values) > 4:
-                widget.splitter.setSizes(values[4])
+            widget.push_params(mode, ratio, scroll, splitter)
+            self.open_new_tab(widget, filename)
 
         self.tab_widget.setCurrentIndex(0)
         self.update_title()
@@ -197,9 +182,8 @@ class MainWindow(QMainWindow):
             self.open_new_tab(widget, filename)
         self.raise_()
 
-    def create_widget(self, mode=LayoutManager.MODE_VERTICAL):
+    def create_widget(self):
         widget = SwikWidget(self, self.config)
-        widget.set_mode(mode)
         widget.interaction_changed.connect(self.update_interaction_status)
         widget.open_requested.connect(self.open_requested_by_tab)
         widget.close_requested.connect(self.close_requested_by_tab)
