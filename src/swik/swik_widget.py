@@ -107,6 +107,7 @@ class SwikWidget(Shell):
         self.miniature_view.setRenderHint(QPainter.NonCosmeticDefaultPen)
         self.miniature_view.setMaximumWidth(350)
         self.miniature_view.setMinimumWidth(180)
+        self.miniature_view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.view.page_clicked.connect(self.miniature_view.set_page)
         self.miniature_view.page_clicked.connect(self.view.set_page)
         self.manager.set_view(self.view)
@@ -234,14 +235,14 @@ class SwikWidget(Shell):
 
         # self.rclone_browser = RCloneBrowser()
 
-        tab = QTabWidget()
-        tab.addTab(self.miniature_view, "Miniature")
-        tab.addTab(self.outline, "ToC")
-        tab.addTab(self.file_browser, "Files")
-        # tab.addTab(self.rclone_browser, "RClone")
-        tab.setMaximumWidth(self.miniature_view.maximumWidth())
+        self.tab = QTabWidget()
+        self.tab.addTab(self.miniature_view, "Miniature")
+        self.tab.addTab(self.outline, "ToC")
+        self.tab.addTab(self.file_browser, "Files")
+        self.tab.setTabVisible(1, False)
+        self.tab.setMaximumWidth(self.miniature_view.maximumWidth())
 
-        self.splitter.addWidget(tab)
+        self.splitter.addWidget(self.tab)
         self.splitter.addWidget(helper)
         self.set_interactable(False)
         self.preferences_changed()
@@ -415,6 +416,26 @@ class SwikWidget(Shell):
         self.miniature_view.clear()
         self.font_manager.clear_document_fonts()
 
+        if len(self.params) > 0:
+            mode, ratio, scroll, splitter = self.params.pop()
+        else:
+            scroll = 0
+            ratio = self.config.get_default_ratio()
+            mode = self.config.get_default_mode()
+            splitter = [self.config.get_default_bar_width(), self.width() - self.config.get_default_bar_width()]
+
+        self.splitter.setSizes(splitter)
+
+        # Force splitter adjustment
+        QApplication.processEvents()
+
+        if ratio > 0:
+            self.view.ratio = ratio
+        else:
+            mode = LayoutManager.MODE_FIT_WIDTH
+
+        self.view.set_mode(mode)
+
         self.load_progress_action.setVisible(True)
         self.load_progress.setMaximum(self.renderer.get_num_of_pages())
 
@@ -428,7 +449,7 @@ class SwikWidget(Shell):
             self.view.layout_manager.update_layout(page)
 
             # Create Miniature Page
-            mini_page = self.miniature_view.create_page(i)
+            mini_page = self.miniature_view.create_page(i, 1)
             self.miniature_view.layout_manager.update_layout(mini_page)
 
             # Update progress bar
@@ -447,29 +468,10 @@ class SwikWidget(Shell):
         # view is not ready to be used
         QApplication.processEvents()
 
-        # @Set parameters mode, ratio, scroll and splitter
-        # position after loading and setting up the document
-        if len(self.params) > 0:
-            mode, ratio, scroll, splitter = self.params.pop()
-        else:
-            scroll = 0
-            ratio = self.config.get_default_ratio()
-            mode = self.config.get_default_mode()
-            splitter = [self.config.get_default_bar_width(), self.width() - self.config.get_default_bar_width()]
-
-        if ratio > 0:
-            self.view.set_ratio(ratio, True)
-        else:
-            mode = LayoutManager.MODE_FIT_WIDTH
-
-        self.view.set_mode(mode)
-
         if mode != LayoutManager.MODE_SINGLE_PAGE:
             self.view.set_scroll_value(scroll)
         else:
             self.view.move_to_page(scroll)
-
-        self.splitter.setSizes(splitter)
 
     class TocWidgetItem(QTreeWidgetItem):
         def __init__(self, item):
@@ -479,6 +481,8 @@ class SwikWidget(Shell):
     def update_toc(self):
         self.outline.clear()
         items = self.renderer.get_toc()
+        self.tab.setTabVisible(1, len(items) > 0)
+
         parents = {}
         for item in items:
             twi = self.TocWidgetItem(item)
@@ -493,9 +497,6 @@ class SwikWidget(Shell):
         return self.renderer.get_filename()
 
     def open_button(self):
-        # self.set_ratio(1)
-
-        print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", self.view.mode, self.view.ratio, 0, self.splitter.sizes())
         self.push_params(self.view.layout_manager.mode, self.view.ratio, 0, self.splitter.sizes())
         self.open_file()
 

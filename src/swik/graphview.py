@@ -40,7 +40,6 @@ class GraphView(QGraphicsView):
         self.renderer = renderer
         self.manager = manager
         self.page = 0
-        self.mode = mode
         self.pages = SyncDict()
         self.immediate_resize = False
 
@@ -57,14 +56,9 @@ class GraphView(QGraphicsView):
         self.timer = QTimer()
         self.timer.setSingleShot(True)
         self.timer.timeout.connect(self.delayed_resize)
-        self.hhh = QGraphicsRectItem()
-        self.hhh.setBrush(QColor(10, 10, 10, 255))
-        self.hhh.setPos(0, 0)
-        self.scene().addItem(self.hhh)
 
     def set_mode(self, mode, force=False):
         print("Setting mode", mode, force)
-        self.mode = mode
         self.layout_manager.set_mode(mode, force)
         if mode == LayoutManager.MODE_FIT_WIDTH:
             self.ratio_changed.emit(-1)
@@ -89,7 +83,7 @@ class GraphView(QGraphicsView):
                 self.timer.start(50)
 
     def delayed_resize(self):
-        scrollbar = self.horizontalScrollBar() if self.mode == LayoutManager.MODE_HORIZONTAL else self.verticalScrollBar()
+        scrollbar = self.horizontalScrollBar() if self.layout_manager.get_mode() == LayoutManager.MODE_HORIZONTAL else self.verticalScrollBar()
         value = scrollbar.value()
         #        self.fully_update_layout2()
         self.layout_manager.fully_update_layout()
@@ -143,8 +137,9 @@ class GraphView(QGraphicsView):
         self.pages.clear()
         self.scene().clear()
 
-    def create_page(self, i):
-        self.pages[i] = self.page_object(i, self, self.manager, self.renderer, self.get_ratio())
+    def create_page(self, i, ratio):
+        print("Creating page", i, ratio)
+        self.pages[i] = self.page_object(i, self, self.manager, self.renderer, ratio)
         self.scene().addItem(self.pages[i])
         return self.pages[i]
 
@@ -195,7 +190,7 @@ class GraphView(QGraphicsView):
             self.layout_manager.move_to_page(page)
 
             # Must be here because of the fit_width that changes the scrollbars
-            if self.mode in [LayoutManager.MODE_VERTICAL_MULTIPAGE, LayoutManager.MODE_VERTICAL]:
+            if self.layout_manager.get_mode() in [LayoutManager.MODE_VERTICAL_MULTIPAGE, LayoutManager.MODE_VERTICAL]:
                 print("SCROLLING", page.pos().y(), offset, self.get_ratio())
                 self.verticalScrollBar().setValue(int((page.pos().y() + offset * self.get_ratio())))
             else:
@@ -277,7 +272,7 @@ class GraphView(QGraphicsView):
 
         modifiers = QtWidgets.QApplication.keyboardModifiers()
         if modifiers != QtCore.Qt.ControlModifier:
-            if self.mode in LayoutManager.Vertical:
+            if self.layout_manager.get_mode() in LayoutManager.Vertical:
                 super().wheelEvent(event)
             else:
                 modifiers = QtWidgets.QApplication.keyboardModifiers()

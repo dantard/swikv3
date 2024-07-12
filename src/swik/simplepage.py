@@ -73,6 +73,7 @@ class SimplePage(QGraphicsRectItem):
         self.request_image_timer.timeout.connect(self.process_requested_image)
         self.requested_image_ratio = 1
         self.image_ratio = 0
+        self.setTransform(QTransform(ratio, 0, 0, 0, ratio, 0, 0, 0, 1))
         self.original_info = {"page": index}
 
     def update_original_info(self, info):

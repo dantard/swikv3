@@ -118,8 +118,7 @@ class SwikGraphView(GraphView):
             self.pages[index].invalidate()
 
     def create_page(self, page, ratio=1):
-        page = super().create_page(page)
-        page.update_image(ratio)
+        page = super().create_page(page, ratio)
         return page
 
     def link_hovered(self, kind, page, pos):

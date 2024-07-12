@@ -39,6 +39,7 @@ class LayoutManager:
         return self.mode in self.Vertical
 
     def set_mode(self, mode, update=True):
+        print("UPDAAAAAAAAAAAAAAAAAAAAAATE MODEEEEEEEEE")
         self.mode = mode
         if update:
             self.reset()
