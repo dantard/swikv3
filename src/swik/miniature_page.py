@@ -25,8 +25,8 @@ class MiniaturePage(SimplePage):
         self.number.setPos(center, self.boundingRect().height() + 10)
         self.number.setFlag(QGraphicsItem.ItemIgnoresTransformations)
 
-    def update_image(self, ratio):
-        super().update_image(ratio)
+    def update_ratio(self, ratio):
+        super().update_ratio(ratio)
         if self.background is not None:
             self.background.setPos(0, self.rect().height() + 10 / self.ratio)
             self.background.setRect(QRectF(0, 0, self.get_scaled_width(), 35))

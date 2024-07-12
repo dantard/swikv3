@@ -93,6 +93,7 @@ class SwikWidget(Shell):
         self.manager = Manager(self.renderer, self.config)
         self.view = SwikGraphView(self.manager, self.renderer, self.scene, page=Page,
                                   mode=self.config.private.get('mode', default=LayoutManager.MODE_VERTICAL))
+        self.view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.view.setRenderHint(QPainter.Antialiasing)
         self.view.setRenderHint(QPainter.TextAntialiasing)
         self.view.set_natural_hscroll(self.config.general.get('natural_hscroll'))
@@ -432,6 +433,9 @@ class SwikWidget(Shell):
         if ratio > 0:
             self.view.ratio = ratio
         else:
+            # Precompute ratio for
+            # fit width to avoid flickering
+            self.view.ratio = (self.view.viewport().width() - 20) / self.renderer.get_page_width(0)
             mode = LayoutManager.MODE_FIT_WIDTH
 
         self.view.set_mode(mode)
@@ -622,11 +626,9 @@ class SwikWidget(Shell):
             for i in range(num_of_pages_added):
                 page = self.view.create_page(index + i, self.view.get_ratio())
                 page.update_original_info({"page": i, "append_id": append_id})
-                page.update_image(self.view.get_ratio())
                 self.view.layout_manager.update_layout(page)
 
-                page = self.miniature_view.create_page(index + i)
-                page.update_image(self.miniature_view.get_ratio())
+                page = self.miniature_view.create_page(index + i, self.miniature_view.get_ratio())
                 self.miniature_view.layout_manager.update_layout(page)
 
                 pd.set_progress(i * 100 / num_of_pages_added)

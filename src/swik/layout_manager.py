@@ -39,7 +39,6 @@ class LayoutManager:
         return self.mode in self.Vertical
 
     def set_mode(self, mode, update=True):
-        print("UPDAAAAAAAAAAAAAAAAAAAAAATE MODEEEEEEEEE")
         self.mode = mode
         if update:
             self.reset()
@@ -90,8 +89,8 @@ class LayoutManager:
         page.setPos(x_pos, self.max_height * page.get_scaling_ratio() / 2 - page.get_scaled_height() / 2)
 
     def single_column_fit_width(self, page):
-        ratio = page.get_orig_width() / (self.view.viewport().width() - 20)
-        page.update_image(1 / ratio)
+        ratio = page.get_orig_width() / (self.view.viewport().width() - 17)
+        page.update_ratio(1 / ratio)
         y_pos = 20 if page.index == 0 else self.view.pages[page.index - 1].pos().y() + self.view.pages[page.index - 1].get_scaled_height() + self.page_sep
         self.scene_height = max(self.scene_height, y_pos + page.get_scaled_height() + self.page_sep)
         # self.view.scene().setSceneRect(0, 0, page.get_scaled_width(), self.scene_height)

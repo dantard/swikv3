@@ -197,6 +197,12 @@ class MuPDFRenderer(QLabel):
     def get_page_size(self, index):
         return self.document[index].rect[2], self.document[index].rect[3]
 
+    def get_page_width(self, index):
+        return self.document[index].rect[2]
+
+    def get_page_height(self, index):
+        return self.document[index].rect[3]
+
     def set_image(self, index, image, ratio):
         self.images[index].set_image(image, ratio)
         self.images[index].loaded = True

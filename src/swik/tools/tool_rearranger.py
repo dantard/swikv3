@@ -98,11 +98,9 @@ class ToolRearrange(Tool, Undoable):
             for i in range(num_of_pages_added):
                 page = self.view.create_page(index + i, self.view.get_ratio())
                 page.update_original_info({"page": i, "append_id": self.append_id})
-                page.update_image(self.view.get_ratio())
                 self.view.layout_manager.update_layout(page)
 
-                page = self.miniature_view.create_page(index + i)
-                page.update_image(self.miniature_view.get_ratio())
+                page = self.miniature_view.create_page(index + i, self.miniature_view.get_ratio())
                 self.miniature_view.layout_manager.update_layout(page)
 
                 pd.set_progress(i * 100 / num_of_pages_added)

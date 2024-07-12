@@ -58,10 +58,15 @@ class GraphView(QGraphicsView):
         self.timer.timeout.connect(self.delayed_resize)
 
     def set_mode(self, mode, force=False):
-        print("Setting mode", mode, force)
-        self.layout_manager.set_mode(mode, force)
+
         if mode == LayoutManager.MODE_FIT_WIDTH:
             self.ratio_changed.emit(-1)
+        elif self.layout_manager.get_mode() == LayoutManager.MODE_FIT_WIDTH:
+            self.ratio_changed.emit(self.ratio)
+            for page in self.pages.values():
+                page.update_ratio(self.ratio)
+
+        self.layout_manager.set_mode(mode, force)
 
     def finish(self):
         self.pages.clear()
@@ -123,7 +128,7 @@ class GraphView(QGraphicsView):
             self.horizontalScrollBar().setValue(int(self.scene().width() * percent))
 
         for page in self.pages.values():
-            page.update_image(self.ratio)
+            page.update_ratio(self.ratio)
             self.layout_manager.update_layout(page)
 
         if inform:
@@ -363,7 +368,6 @@ class GraphView(QGraphicsView):
                 # print("page", i, "create")
                 page = self.page_object(i, self, self.manager, self.renderer, self.ratio)
                 page.update_original_info({"page": "+"})
-                page.update_image(self.ratio)
                 self.pages[i] = page
                 self.scene().addItem(page)
                 page.shine(QColor(255, 0, 0, 100))
@@ -385,7 +389,6 @@ class GraphView(QGraphicsView):
             elif i == index:
                 pages[i] = self.page_object(index, self, self.manager, self.renderer, self.get_ratio())
                 pages[i].update_original_info({"page": "+"})
-                pages[i].update_image(self.ratio)
                 self.scene().addItem(pages[i])
                 pages[i].shine(QColor(255, 0, 0, 100))
             else:

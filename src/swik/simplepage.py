@@ -114,7 +114,7 @@ class SimplePage(QGraphicsRectItem):
     def get_scaled_height(self):
         return self.get_orig_height() * self.get_scaling_ratio()
 
-    def update_image(self, ratio):
+    def update_ratio(self, ratio):
         # print("Updating image for page", self.index, "with ratio", ratio, "and state", self.state)
         # No need to do anything else, the paint called in
         # response to the scale method will take care of it
