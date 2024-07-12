@@ -33,7 +33,8 @@ class SwikConfig(EasyConfig):
         self.general.addCheckbox("open_last", pretty="Reopen Last opened", default=True)
         self.general.addCombobox("lateral_bar_position", pretty="Lateral Bar Position", items=["Left", "Right", "Bottom", "Top"])
         self.general.addCheckbox("natural_hscroll", pretty="Natural H-Scroll")
-        self.general.addCheckbox("fit_width_on_open", pretty="Fit Width on Open")
+        self.zoom_on_open = self.general.addCombobox("zoom_on_open", pretty="Zoom on open new File",
+                                                     items=["100%", "150%", "200%", "250%", "300%", "Fit Width"])
 
         self.open_other_pdf_in = self.general.addCombobox("open_other_pdf_in", pretty="When opening other PDFs", items=["Same Window", "Other Window", "Ask"])
         self.flatten_before_sign = self.general.addCheckbox("flatten_before_sign", pretty="Flatten before signing", default=True)

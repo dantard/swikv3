@@ -312,6 +312,7 @@ class SwikWidget(Shell):
         self.app_handle.setDisabled(False)
 
     def remove_app_widget(self):
+        self.view.set_one_shot_immediate_resize()
         self.app_bar.remove_item()
         self.app_bar.setMaximumWidth(0)
         self.app_handle.setDisabled(True)
@@ -465,6 +466,7 @@ class SwikWidget(Shell):
         if filename is None:
             last_dir_for_open = self.config.private.get('last_dir_for_open')
             filename, ext = QFileDialog.getOpenFileName(self, 'Open file', last_dir_for_open, 'PDF (*.pdf)')
+            # ["100%", "150%", "200%", "250%", "300%", "Fit Width"
 
         if filename:
             _, ext = os.path.splitext(filename)
