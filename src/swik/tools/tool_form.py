@@ -1,5 +1,6 @@
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QVBoxLayout, QWidget, QPushButton, QApplication
+from PyQt5.QtGui import QKeySequence
+from PyQt5.QtWidgets import QVBoxLayout, QWidget, QPushButton, QApplication, QShortcut
 
 from swik.tools.tool import Tool
 from swik.widgets.pdf_widget import PdfWidget
@@ -34,6 +35,7 @@ class ToolForm(Tool):
         v_layout.addWidget(self.flatten_btn)
         self.helper.setLayout(v_layout)
         self.widget.set_app_widget(self.helper, 100, "Form")
+        self.preview_btn.setShortcut(QKeySequence("Ctrl+Q"))
 
     def flatten(self):
         self.widget.flatten()

@@ -13,7 +13,7 @@ from dbus.mainloop.glib import DBusGMainLoop
 
 from PyQt5 import QtGui
 from PyQt5.QtCore import QEvent, QThread, pyqtSignal, QObject, Qt
-from PyQt5.QtGui import QGuiApplication
+from PyQt5.QtGui import QGuiApplication, QIcon
 from PyQt5.QtNetwork import QUdpSocket, QHostAddress
 from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog
 
@@ -396,7 +396,7 @@ def main():
         # Delayed to avoid it to be opened
         # before the restored tabs
         utils.delayed(25, open_new)
-
+    app.setWindowIcon(QIcon(":/icons/swiss_knife.png"))
     app.exec_()
 
 

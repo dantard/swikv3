@@ -231,13 +231,13 @@ class SwikWidget(Shell):
         self.file_browser = FileBrowser(expanduser("~"))
         self.file_browser.signals.file_selected.connect(self.open_file)
 
-        self.rclone_browser = RCloneBrowser()
+        # self.rclone_browser = RCloneBrowser()
 
         tab = QTabWidget()
         tab.addTab(self.miniature_view, "Miniature")
         tab.addTab(self.outline, "ToC")
         tab.addTab(self.file_browser, "Files")
-        tab.addTab(self.rclone_browser, "RClone")
+        # tab.addTab(self.rclone_browser, "RClone")
         tab.setMaximumWidth(self.miniature_view.maximumWidth())
 
         self.splitter.addWidget(tab)

@@ -96,6 +96,7 @@ class PdfComboboxWidget(PdfTextWidget):
     def __init__(self, parent, content, rect, font_size, items):
         super().__init__(parent, content, rect, font_size)
         self.add_items(items)
+        self.widget.setCurrentText(content)
         self.setZValue(1)
 
     def set_widget(self, content):
@@ -107,6 +108,7 @@ class PdfComboboxWidget(PdfTextWidget):
         self.widget.addItems(items)
 
     def get_value(self):
+        print("Current Text: ", self.widget.currentText())
         return self.widget.currentText()
 
     def clear(self):

@@ -26,7 +26,9 @@
         <file>icons/number.png</file>
         <file>icons/mimic.png</file>
         <file>icons/form.png</file>
+        <file>icons/swiss_knife.png</file>
         <file>fonts/Arial.ttf</file>
+
 
     </qresource>
 </RCC>

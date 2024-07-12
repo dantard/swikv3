@@ -14,7 +14,7 @@ from PyQt5.QtWidgets import QLabel
 from pymupdf import TEXTFLAGS_DICT, TEXT_PRESERVE_IMAGES, TextWriter, Font, Point, Document, Rect, Quad, Annot
 from pymupdf.mupdf import PDF_ENCRYPT_KEEP, PDF_WIDGET_TYPE_TEXT, PDF_WIDGET_TYPE_CHECKBOX, PDF_ANNOT_IS_LOCKED, \
     PDF_ANNOT_HIGHLIGHT, \
-    PDF_ANNOT_SQUARE, PDF_WIDGET_TYPE_RADIOBUTTON
+    PDF_ANNOT_SQUARE, PDF_WIDGET_TYPE_RADIOBUTTON, PDF_WIDGET_TYPE_COMBOBOX
 
 import swik.utils as utils
 from swik.annotations.highlight_annotation import HighlightAnnotation
@@ -25,7 +25,7 @@ from swik.span import Span
 from swik.swik_text import SwikText, SwikTextReplace
 from swik.utils import fitz_rect_to_qrectf
 from swik.widgets.pdf_widget import PdfTextWidget, MultiLinePdfTextWidget, PdfCheckboxWidget, PdfWidget, \
-    PdfRadioButtonWidget
+    PdfRadioButtonWidget, PdfComboboxWidget
 from swik.word import Word
 
 
@@ -613,7 +613,7 @@ class MuPDFRenderer(QLabel):
         doc_page = self.document[index]
         pdf_widgets = list()
         widgets = doc_page.widgets()
-
+        count = 0
         for field in widgets:  # type: pymupdf.Widget
 
             swik_widget = None
@@ -635,6 +635,17 @@ class MuPDFRenderer(QLabel):
                 swik_widget = PdfRadioButtonWidget(None, field.field_value == field.on_state().replace("#20", " "),
                                                    rect, field.text_fontsize)
 
+            elif field.field_type == PDF_WIDGET_TYPE_COMBOBOX:
+                print("kakakakakaka", field.choice_values)
+                items = [str(item) for item in field.choice_values]
+                swik_widget = PdfComboboxWidget(None, field.field_value, rect, field.text_fontsize, items)
+                swik_widget.setZValue(1000 - count)
+                count = count + 1
+                # combo_field.set_info(field.field_name, field.field_flags)
+                # pdf_widgets.append(combo_field)
+                # self.document[page.index].delete_widget(field)
+                # self.to_remove.append(field)
+
             if swik_widget is not None:
                 '''swik_widget.set_info(field.field_name, field.field_flags)
                 swik_widget.user_data = field.__dict__.copy()                
@@ -646,14 +657,7 @@ class MuPDFRenderer(QLabel):
                 pdf_widgets.append(swik_widget)
 
             '''
-            elif field.field_type == PDF_WIDGET_TYPE_COMBOBOX:
-                rect = QRectF(field.rect[0], field.rect[1], field.rect[2] - field.rect[0],
-                              field.rect[3] - field.rect[1])
-                combo_field = PdfComboboxWidget(page, field.field_value, rect, field.text_fontsize, field.choice_values)
-                combo_field.set_info(field.field_name, field.field_flags)
-                pdf_widgets.append(combo_field)
-                # self.document[page.index].delete_widget(field)
-                self.to_remove.append(field)
+            
             '''
 
         return pdf_widgets
@@ -676,6 +680,7 @@ class MuPDFRenderer(QLabel):
                     except TypeError:
                         self.document.xref_set_key(field.xref, "AS", "/Yes")
                 else:
+                    print("siiiiiiiiiiiiiiiiiiiiiiiiii", value)
                     field.field_value = value
                     field.update()
 

@@ -103,13 +103,16 @@ class SwikGraphView(GraphView):
             page: Page = image.parentItem()
             if image.get_image_filename() is not None:
                 self.renderer.insert_image_from_file(page.get_index(), image.get_image_rect_on_parent(),
-                                                 image.get_image_filename())
+                                                     image.get_image_filename())
             else:
                 self.renderer.insert_image(page.get_index(), image.get_image_rect_on_parent(), image.get_image())
 
-
             pages_to_refresh.add(page.get_index())
             self.scene().removeItem(image)
+
+        widgets = [item for item in items if isinstance(item, PdfWidget)]
+        for widget in widgets:
+            self.renderer.add_widget(widget.parentItem().index, widget)
 
         for index in pages_to_refresh:
             self.pages[index].invalidate()
