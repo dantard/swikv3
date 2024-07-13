@@ -1,3 +1,4 @@
+import queue
 import threading
 import time
 
@@ -23,13 +24,15 @@ class Finder(QObject):
         self.confirmed_index = 0
         self.mode = Finder.MODE_NORMAL
         self.words_needed.connect(self.page_gather_words)
-        self.thread = None
+        self.queue = queue.Queue()
+        self.thread2 = None
+
         self.keep_running = True
 
     def finish(self):
-        self.keep_running = False
-        if self.thread is not None:
-            self.thread.join()
+        #        self.keep_running = False
+        #        if self.thread is not None:
+        #            self.thread.join()
         self.confirmed.clear()
         self.confirmed_index = 0
 
@@ -41,17 +44,11 @@ class Finder(QObject):
 
     def find(self, text, mode, first_page=0):
         self.mode = mode
+        if self.thread2 is None:
+            self.thread2 = threading.Thread(target=self.find_thread)
+            self.thread2.start()
 
-        # Joining hypothetical other thread
-        if self.thread is not None:
-            self.keep_running = False
-            print("Joining thread")
-            self.thread.join()
-
-        print("Thread joined")
-
-        self.thread = threading.Thread(target=self.find_thread, args=(text, first_page,))
-        self.thread.start()
+        self.queue.put((text, first_page))
 
     def check_words_case(self, w1, w2):
         if self.mode == Finder.MODE_NORMAL:
@@ -63,61 +60,66 @@ class Finder(QObject):
         elif self.mode == Finder.MODE_Cc_W:
             return w1 == w2
 
-    def find_thread(self, text, first_page):
-        if len(text) == 0:
-            return
+    def find_thread(self):
+        print("Finder thread started")
+        while True:
 
-        self.clear()
+            text, first_page = self.queue.get()
 
-        needles = text.split()
-        text = needles[0]
-        candidates, words = [], []
-        self.keep_running = True
+            if first_page == -1:
+                break
 
-        for jk in range(self.view.get_num_of_pages()):
+            self.clear()
 
-            if not self.keep_running:
-                return
+            needles = text.split()
+            text = needles[0]
+            candidates, words = [], []
+            self.keep_running = True
 
-            i = (first_page + jk) % self.view.get_num_of_pages()
+            for jk in range(self.view.get_num_of_pages()):
 
-            page = self.view.get_page_item(i)
-            self.progress.emit((jk + 1) / (self.view.get_num_of_pages()))
+                if not self.queue.empty():
+                    break
 
-            # This must be done with a signal
-            # because the words must be created
-            # in the main thread
-            if not page.has_words():
-                self.words_needed.emit(page)
+                i = (first_page + jk) % self.view.get_num_of_pages()
 
-            # Wait until the page is ready
-            while not page.has_words():
-                time.sleep(0.1)
+                page = self.view.get_page_item(i)
+                self.progress.emit((jk + 1) / (self.view.get_num_of_pages()))
 
-            # Check if the word is in the page
-            for word in page.get_words():
-                words.append(word)
-                if self.check_words_case(text, word.get_text()):
-                    candidates.append((word, len(words) - 1))
-                    print(word.get_text(), len(words) - 1)
+                # This must be done with a signal
+                # because the words must be created
+                # in the main thread
+                if not page.has_words():
+                    self.words_needed.emit(page)
 
-            # After processing every page we must check the candidates
-            # because the sentence can be split between pages
-            # WARNING: We are copying the list because we are going to remove elements
-            copy = candidates.copy()
-            for word, index in copy:
-                print(word.get_text(), index, "*")
-                sentence = [word]
-                for j, needle in enumerate(needles[1:]):
-                    if index + j + 1 >= len(words) or not self.check_words_case(needle,
-                                                                                words[index + j + 1].get_text()):
-                        print("break", needle, words[index + j + 1].get_text(), word.get_text())
-                        break
-                    sentence.append(words[index + j + 1])
-                else:
-                    candidates.remove((word, index))
-                    self.confirmed.append(sentence)
-                    self.found.emit(len(self.confirmed), sentence)
+                # Wait until the page is ready
+                while not page.has_words():
+                    time.sleep(0.1)
+
+                # Check if the word is in the page
+                for word in page.get_words():
+                    words.append(word)
+                    if self.check_words_case(text, word.get_text()):
+                        candidates.append((word, len(words) - 1))
+                        print(word.get_text(), len(words) - 1)
+
+                # After processing every page we must check the candidates
+                # because the sentence can be split between pages
+                # WARNING: We are copying the list because we are going to remove elements
+                copy = candidates.copy()
+                for word, index in copy:
+                    print(word.get_text(), index, "*")
+                    sentence = [word]
+                    for j, needle in enumerate(needles[1:]):
+                        if index + j + 1 >= len(words) or not self.check_words_case(needle,
+                                                                                    words[index + j + 1].get_text()):
+                            print("break", needle, words[index + j + 1].get_text(), word.get_text())
+                            break
+                        sentence.append(words[index + j + 1])
+                    else:
+                        candidates.remove((word, index))
+                        self.confirmed.append(sentence)
+                        self.found.emit(len(self.confirmed), sentence)
 
     def page_gather_words(self, page):
         page.gather_words()
@@ -145,3 +147,9 @@ class Finder(QObject):
         self.confirmed.clear()
         self.confirmed_index = 0
         self.progress.emit(0.0)
+
+    def die(self):
+        self.queue.put((None, -1))
+        print("Finder thread finished joining")
+        self.thread2.join()
+        print("Finder thread finished")

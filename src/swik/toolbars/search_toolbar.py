@@ -187,3 +187,6 @@ class TextSearchToolbar(Toolbar):
         self.view.ensureVisible(self.selected[0])
 
         self.find_label.setText(f"{self.finder.get_index() + 1}/{self.finder.get_count()}")
+
+    def die(self):
+        self.finder.die()

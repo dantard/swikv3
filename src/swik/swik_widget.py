@@ -75,6 +75,7 @@ class SwikWidget(Shell):
     file_changed = pyqtSignal(Shell)
     dirtiness_changed = pyqtSignal(object, bool)
     progress = pyqtSignal(float)
+    dying = pyqtSignal()
 
     def __init__(self, window, config):
         super().__init__()
@@ -208,8 +209,8 @@ class SwikWidget(Shell):
         self.nav_toolbar = NavigationToolbar(self.view, self.toolbar)
         self.finder_toolbar = TextSearchToolbar(self.view, self.renderer, self.toolbar)
         self.load_progress = QProgressBar()
-        self.load_progress.setMaximumWidth(250)
-        self.load_progress.setFormat("Loading...")
+        self.load_progress.setMaximumWidth(100)
+        # self.load_progress.setFormat("Loading...")
         self.load_progress_action = self.toolbar.addWidget(self.load_progress)
         self.load_progress_action.setVisible(False)
 
@@ -459,6 +460,11 @@ class SwikWidget(Shell):
             # Update progress bar
             self.load_progress.setValue(i + 1)
 
+            # Process events to avoid freezing
+            # every 20 pages
+            if i % 20 == 0:
+                QApplication.processEvents()
+
         self.load_progress_action.setVisible(False)
         self.mode_group.reset()
         self.update_toc()
@@ -660,3 +666,10 @@ class SwikWidget(Shell):
             self.mode_group.select("Sign")
         elif tool == "crop":
             self.mode_group.select("Crop")
+
+    def __del__(self):
+        print("Document deleted")
+
+    def die(self):
+        self.finder_toolbar.die()
+        self.dying.emit()

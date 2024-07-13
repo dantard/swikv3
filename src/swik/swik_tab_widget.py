@@ -72,6 +72,7 @@ class SwikTabWidget(QTabWidget):
         index = self.indexOf(widget)
         if index != -1:
             self.removeTab(index)
+            widget.die()
             widget.deleteLater()
 
     def removeTab(self, index: int) -> None:
