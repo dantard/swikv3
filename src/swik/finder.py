@@ -153,4 +153,5 @@ class Finder(QObject):
 
     def die(self):
         self.queue.put((None, -1))
-        self.worker.join()
+        if self.worker is not None:
+            self.worker.join()

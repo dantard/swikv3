@@ -36,7 +36,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
-
+        self.placeholder = None
         self.config = SwikConfig()
         self.config.read()
         menu_bar = self.menuBar()
@@ -144,21 +144,21 @@ class MainWindow(QMainWindow):
 
     def restore(self):
         if self.config.general.get("open_last"):
-            self.progress = Progressing(None, 0, "Opening", True)
-            # utils.delayed(100, self.open_tabs)
-            self.progress.start(self.open_tabs)
+            tabs = self.config.get_tabs()
+            if tabs is not None:
+                self.placeholder = Progressing(self, 0, "Restoring...", True)
+                self.placeholder.start(self.open_tabs, tabs)
 
-    def open_tabs(self):
+    def open_tabs(self, tabs):
 
         # Open last files if required. This is done
         # with a delay to allow the window to create
         # tabs first and ALSO to show the window if
         # some files has a password dialog to show
-        tabs = self.config.get_tabs()
         tabs = tabs if tabs is not None else {}
 
         for filename, values in tabs.items():
-            if self.progress.wasCanceled():
+            if self.placeholder.wasCanceled():
                 break
             filename, mode, ratio, scroll, splitter = values
             widget = self.create_widget()
@@ -167,7 +167,7 @@ class MainWindow(QMainWindow):
 
         self.tab_widget.setCurrentIndex(0)
         self.update_title()
-        self.progress.close()
+        self.placeholder.close()
 
     def plus_clicked(self):
         filename, _ = QFileDialog.getOpenFileName(self, "Open PDF", "", "PDF Files (*.pdf)")

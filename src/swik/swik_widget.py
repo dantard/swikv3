@@ -255,7 +255,7 @@ class SwikWidget(Shell):
 
     def dirtiness_has_changed(self, dirty):
         self.dirtiness_changed.emit(self, dirty)
-        self.save_btn.setEnabled(dirty)
+        # self.save_btn.setEnabled(dirty)
 
     def keyPressEvent(self, a0: QtGui.QKeyEvent) -> None:
         super(SwikWidget, self).keyPressEvent(a0)

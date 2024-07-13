@@ -70,7 +70,7 @@ class ResizeableWidget(QWidget):
 
 class ImageConf:
     def __init__(self, config, section_name, file=None):
-        header = config.root().getSubSection("images", "Images")
+        header = config.root().getSubSection("Images", "Images")
         self.image = header.getSubSection(section_name)
         self.stretch = self.image.getCombobox("stretch", pretty="Stretch", default=0, items=["Stretch", "Maintain Ratio", "Maintain Size"])
         self.image_file = self.image.getFile("file", pretty="Image File", extension=["png", "jpg", "jpeg", "bmp", "gif", "tiff", "tif"], extension_name="Image",

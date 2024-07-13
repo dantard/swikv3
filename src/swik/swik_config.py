@@ -20,32 +20,33 @@ class SwikConfig(EasyConfig):
 
     def __init__(self):
         super().__init__()
-        self.base_dir = os.path.expanduser('~') + os.sep + '.swik' + os.sep
+        self.base_dir = os.path.expanduser('~') + os.sep + '.config' + os.sep + 'swik'
         self.set_dialog_minimum_size(500, 500)
 
         if not os.path.exists(self.base_dir):
             os.makedirs(self.base_dir)
-        if not os.path.exists(self.base_dir + os.sep + "script"):
-            os.makedirs(self.base_dir + os.sep + "script")
+        # if not os.path.exists(self.base_dir + os.sep + "script"):
+        #    os.makedirs(self.base_dir + os.sep + "script")
 
         self.general = self.root().addSubSection("General")
         self.general.addString("file_browser", pretty="File Browser", default="/usr/bin/nautilus")
         self.general.addString("web_search", pretty="Web Search query", default="https://www.google.com/search?q=")
-        self.general.addEditBox("other_pdf", pretty="Other PDF readers", height=50)
+        self.general.addEditBox("other_pdf", pretty="Other PDF readers", height=50, default="/usr/bin/evince&&/usr/bin/okular")
         self.general.addCheckbox("open_last", pretty="Reopen Last opened", default=True)
         self.general.addCombobox("lateral_bar_position", pretty="Lateral Bar Position", items=["Left", "Right", "Bottom", "Top"])
         self.general.addCheckbox("natural_hscroll", pretty="Natural H-Scroll")
 
-        self.zoom_on_open = self.general.addCombobox("zoom_on_open", pretty="Zoom on open new File",
+        self.zoom_on_open = self.general.addCombobox("zoom_on_open", pretty="Default Zoom",
                                                      items=[str(int(z * 100)) + "%" if z > 0 else "Fit Width" for z in self.zooms], default=1)
 
-        self.mode_on_open = self.general.addCombobox("mode_on_open", pretty="Mode on open new File",
+        self.mode_on_open = self.general.addCombobox("mode_on_open", pretty="Default Mode",
                                                      items=['Vertical', 'Multi page', 'Horizontal', 'Single Page'],
                                                      default=1)
-        self.lateral_bar_size = self.general.addCombobox("lateral_bar_size", pretty="Lateral Bar Size", items=["Small", "Medium", "Large", "Off"], default=0)
+        self.lateral_bar_size = self.general.addCombobox("lateral_bar_size", pretty="Default Miniature Size", items=["Small", "Medium", "Large", "Off"],
+                                                         default=0)
 
-        encryption = self.root().addSubSection("Encryption")
-        encryption.addString("enc_suffix", pretty="Encrypted File Suffix", default="-enc")
+        # encryption = self.root().addSubSection("Encryption")
+        # encryption.addString("enc_suffix", pretty="Encrypted File Suffix", default="-enc")
 
         # Private
         self.private = self.root().addSubSection("Private", hidden=True)
@@ -90,10 +91,10 @@ class SwikConfig(EasyConfig):
         self.warned.set_value(warned_dict)
 
     def flush(self):
-        self.save(self.base_dir + "swikV3.yaml")
+        self.save(self.base_dir + "swik.yaml")
 
     def read(self):
-        self.load(self.base_dir + "swikV3.yaml")
+        self.load(self.base_dir + "swik.yaml")
 
     def get_tabs(self, index=None):
         return self.tabs.get_value()

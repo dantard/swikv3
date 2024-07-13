@@ -386,6 +386,7 @@ class DeveloperInfoDialog(QDialog):
 
         # Program name and description
         program_name_label = QLabel("<h2>Swik - PDF Swiss Knife</h2>")
+        version_label = QLabel("<h4>v0.3 Alpha</h4>")
         description_label = QLabel("Swik is a user-friendly PDF reader designed to provide\na seamless reading experience with advanced features.")
 
         # Developer information
@@ -395,6 +396,7 @@ class DeveloperInfoDialog(QDialog):
 
         # Adding widgets to layout
         layout.addWidget(program_name_label)
+        layout.addWidget(version_label)
         layout.addWidget(description_label)
         layout.addSpacing(10)
         layout.addWidget(developer_info_label)

@@ -1,5 +1,6 @@
 from PyQt5 import QtGui
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import Qt, pyqtSignal, QRect
+from PyQt5.QtGui import QPainter, QColor, QFont
 from PyQt5.QtWidgets import QTabWidget, QPushButton, QWidget, QHBoxLayout, QTabBar, QMenu, QAction, QLabel
 
 
@@ -19,6 +20,7 @@ class SwikTabWidget(QTabWidget):
         self.setMovable(True)
         self.menu = QMenu()
         self.menu_callback = None
+        self.paint_shortcuts = True
 
         class PB(QWidget):
             def __init__(self, text, parent=None):
@@ -37,6 +39,29 @@ class SwikTabWidget(QTabWidget):
         self.setCornerWidget(pb, Qt.TopRightCorner)
         self.plusButton = QPushButton("+", self)
         self.plusButton.clicked.connect(self.plus_clicked.emit)
+
+    def paintEvent(self, a0: QtGui.QPaintEvent) -> None:
+        if self.paint_shortcuts:
+            painter = QPainter(self)
+            painter.setFont(QFont('Monospace', 10))
+
+            # Example: Drawing text in the center of the tab widget
+            text = "Custom Paint on QTabWidget"
+            painter.drawText(QRect(30, 30, self.rect().width() - 30, self.rect().height() - 30),
+                             Qt.AlignLeft, "Shortcuts:\n"
+                                           " CTRL-B:  Change toolbar position\n"
+                                           " CTRL-F:  Search text\n"
+                                           " CTRL-M:  Change visualization mode\n"
+                                           " CTRL-R:  Reload current file\n\n"
+                                           "In Text Selection Tool:\n"
+                                           " CTRL-A:  Select all page text\n"
+                                           " CTRL-T:  Toggle text selection mode\n\n"
+                                           "In Form Tool:\n"
+                                           " CTRL-Q:  Toogle page preview\n")
+
+            painter.end()
+        else:
+            super().paintEvent(a0)
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
@@ -75,18 +100,27 @@ class SwikTabWidget(QTabWidget):
             widget.die()
             widget.deleteLater()
 
+        self.check_paint_shortcuts()
+
     def removeTab(self, index: int) -> None:
         super().removeTab(index)
         self.move_plus_button()
+        self.check_paint_shortcuts()
 
     def addTab(self, widget: QWidget, a1: str) -> int:
         index = super().addTab(widget, a1)
         self.move_plus_button()
+        self.check_paint_shortcuts()
         return index
+
+    def check_paint_shortcuts(self):
+        self.paint_shortcuts = self.count() == 0
+        self.paint_shortcuts and self.update()
 
     def insertTab(self, index: int, widget: QWidget, a1: str) -> None:
         index = super().insertTab(index, widget, a1)
         self.move_plus_button()
+        self.check_paint_shortcuts()
         return index
 
     def new_tab(self, widget, filename):
