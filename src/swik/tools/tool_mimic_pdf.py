@@ -1,7 +1,7 @@
-from PyQt5.QtCore import Qt, pyqtSignal, QPointF
+from PyQt5.QtCore import Qt, pyqtSignal, QPointF, QTimer
 from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QGraphicsRectItem, QTreeWidget, QTreeWidgetItem, QVBoxLayout, \
-    QPushButton, QWidget
+    QPushButton, QWidget, QApplication
 
 from swik import utils
 from swik.font_manager import FontManager, Arial
@@ -68,6 +68,12 @@ class ToolMimicPDF(Tool):
         self.v_layout.addLayout(utils.row(self.apply_btn, self.clear_btn, False))
 
         self.widget.set_app_widget(self.helper, 300, title="Mimic PDF")
+        QApplication.processEvents()
+
+        self.placeholder = Progressing(self.view, 0, "Processing", cancel=False)
+        self.placeholder.start(self.fill)
+
+    def fill(self):
         fonts = set()
         for i in range(0, self.view.get_page_count()):
             spans = self.renderer.extract_spans(i)

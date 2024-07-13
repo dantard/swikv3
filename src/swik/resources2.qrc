@@ -1,0 +1,32 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource>
+        <file alias="icons/crop.png">icons/Crop.svg</file>
+        <file alias="icons/shuffle.png">icons/Shuffle.svg</file>
+        <file alias="icons/annotate.png">icons/annotate.png</file>
+        <file alias="icons/sign.png">icons/Vector-Pen.svg</file>
+        <file alias="icons/open.png">icons/open.svg</file>
+        <file alias="icons/save.png">icons/save.svg</file>
+        <file alias="icons/ibeam.png">icons/ibeam.png</file>
+        <file alias="icons/text.png">icons/text.png</file>
+        <file alias="icons/zoom-in.png">icons/Plus-Circle.svg</file>
+        <file alias="icons/zoom-out.png">icons/Dash-Circle.svg</file>
+        <file alias="icons/left.png">icons/Arrow-Left-Circle.svg</file>
+        <file alias="icons/right.png">icons/Arrow-Right-Circle.svg</file>
+        <file alias="icons/anon.png">icons/anon.png</file>
+        <file alias="icons/signature.png">icons/signature.png</file>
+        <file alias="icons/print.png">icons/Crop.svg</file>
+        <file alias="icons/white.png">icons/Square.svg</file>
+        <file alias="icons/image.png">icons/Image.svg</file>
+        <file alias="icons/text_cursor.png">icons/text_cursor.png</file>
+        <file alias="icons/number.png">icons/1-Square.svg</file>
+        <file alias="icons/mimic.png">icons/Copy.svg</file>
+        <file alias="icons/form.png">icons/Pencil-Square.svg</file>
+        <file alias="icons/swiss_knife.png">icons/swiss_knife.png</file>
+        <file>fonts/Arial.ttf</file>
+
+
+        ">
+    </qresource>
+    ">
+</RCC>

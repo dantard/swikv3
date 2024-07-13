@@ -1,6 +1,6 @@
 from PyQt5.QtCore import QSize
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QButtonGroup, QPushButton, QToolBar
+from PyQt5.QtWidgets import QButtonGroup, QPushButton, QToolBar, QWidget, QSizePolicy
 
 
 class GroupBox:
@@ -82,8 +82,12 @@ class GroupBox:
 
     def append(self, toolbar: QToolBar):
         for action in self.actions:
-            action.button.setContentsMargins(0, 0, 0, 0)
+            # action.button.setContentsMargins(0, 40, 0, 0)
             toolbar.addWidget(action.button)
+            spacer2 = QWidget()
+            spacer2.setMinimumHeight(5)
+            spacer2.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+            toolbar.addWidget(spacer2)
             if action.separator:
                 toolbar.addSeparator()
 
