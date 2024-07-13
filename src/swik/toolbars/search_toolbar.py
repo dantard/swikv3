@@ -1,5 +1,5 @@
 from PyQt5 import QtGui
-from PyQt5.QtCore import Qt, pyqtSignal, QObject
+from PyQt5.QtCore import Qt, pyqtSignal, QObject, QTimer
 from PyQt5.QtGui import QKeySequence, QBrush, QColor, QPainter, QIcon
 from PyQt5.QtWidgets import QToolBar, QShortcut, QLineEdit, QLabel, QApplication, QGraphicsRectItem, QStyle
 
@@ -22,17 +22,22 @@ class ProgressLineEdit(QLineEdit):
     def __init__(self, parent=None):
         super(ProgressLineEdit, self).__init__(parent)
         self.percent = 0
+        self.color = Qt.red
 
     def paintEvent(self, a0: QtGui.QPaintEvent) -> None:
         super(ProgressLineEdit, self).paintEvent(a0)
-        if 0 < self.percent < 1:
+        if 0 < self.percent <= 1:
+            color = Qt.red if self.percent < 1 else Qt.green
             painter = QPainter(self)
-            painter.setBrush(QBrush(QColor(255, 0, 0, 100)))
+            painter.setBrush(QBrush(color))
             painter.setPen(Qt.transparent)
             visible_width = self.width() - (self.contentsMargins().left() + self.contentsMargins().right())
             visible_width -= (self.style().pixelMetric(QStyle.PM_DefaultFrameWidth) * 2)
-
             painter.drawRect(1, self.height() - 4, int(visible_width * self.percent), 3)
+
+        if self.percent == 1:
+            self.percent = 0
+            QTimer.singleShot(250, self.update)
 
     def set_percent(self, percent):
         self.percent = min(percent, 1)
@@ -66,7 +71,7 @@ class TextSearchToolbar(Toolbar):
         cm.setRight(10)
         self.find_edit.setContentsMargins(cm)
         self.find_edit.returnPressed.connect(self.find_text)
-        self.finder.progress.connect(self.find_edit.set_percent)
+        self.finder.progress.connect(self.progress)
 
         self.find_label = QLabel("Not found")
         self.find_label.setMinimumWidth(80)
@@ -90,23 +95,22 @@ class TextSearchToolbar(Toolbar):
         self.find_next_btn.setIcon(QIcon(":/icons/right.png"))
         self.widgets.append(self.find_next_btn)
         self.widgets.append(self.find_prev_btn)
-        self.widgets.append(self.find_tb.addAction("x", self.close))
+        self.widgets.append(self.find_tb.addAction("×", self.close))
         self.setVisible(False)
 
+    def progress(self, percent):
+        if percent < 0:
+            self.set_not_found()
+            self.prev_text = None
+        self.find_edit.set_percent(max(0, percent))
+
     def activated(self):
-        self.finder.finish()
-        self.find_edit.set_percent(0.0)
-
-        # We could still have events in the queue
-        # that will write something like 5/664
-        QApplication.processEvents()
-
-        self.set_not_found()
         self.setVisible(True)
+        self.finder.clear()
 
     def document_changed(self):
-        self.finder.clear()
-        self.close()
+        self.setVisible(False)
+        self.finder.discard()
 
     def setEnabled(self, value):
         for w in self.widgets:
@@ -151,11 +155,8 @@ class TextSearchToolbar(Toolbar):
         self.find_prev_btn.setEnabled(False)
 
     def close(self):
-        self.finder.finish()
-        self.set_not_found()
-        self.find_edit.set_percent(0.0)
+        self.finder.discard()
         self.setVisible(False)
-        print("closed")
 
     def found_word(self, count, sentence):
         for word in sentence:

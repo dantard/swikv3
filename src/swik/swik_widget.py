@@ -460,8 +460,8 @@ class SwikWidget(Shell):
             # Update progress bar
             self.load_progress.setValue(i + 1)
 
-            # Process events to avoid freezing
-            # every 20 pages
+            # Process events every 20 pages
+            # to avoid freezing the interface
             if i % 20 == 0:
                 QApplication.processEvents()
 

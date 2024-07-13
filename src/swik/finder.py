@@ -25,16 +25,16 @@ class Finder(QObject):
         self.mode = Finder.MODE_NORMAL
         self.words_needed.connect(self.page_gather_words)
         self.queue = queue.Queue()
-        self.thread2 = None
-
+        self.worker = None
         self.keep_running = True
 
+        print("Finder initialized")
+
     def finish(self):
+        pass
         #        self.keep_running = False
         #        if self.thread is not None:
         #            self.thread.join()
-        self.confirmed.clear()
-        self.confirmed_index = 0
 
     def set_mode(self, mode):
         self.set_mode(mode)
@@ -44,9 +44,10 @@ class Finder(QObject):
 
     def find(self, text, mode, first_page=0):
         self.mode = mode
-        if self.thread2 is None:
-            self.thread2 = threading.Thread(target=self.find_thread)
-            self.thread2.start()
+        if self.worker is None:
+            print("Create Thread")
+            self.worker = threading.Thread(target=self.find_thread)
+            self.worker.start()
 
         self.queue.put((text, first_page))
 
@@ -64,12 +65,17 @@ class Finder(QObject):
         print("Finder thread started")
         while True:
 
+            print("waiting for text")
+
             text, first_page = self.queue.get()
 
+            self.clear()
+
+            print("waiting for text2 ", text, first_page)
             if first_page == -1:
                 break
-
-            self.clear()
+            elif first_page == -2:
+                continue
 
             needles = text.split()
             text = needles[0]
@@ -120,6 +126,7 @@ class Finder(QObject):
                         candidates.remove((word, index))
                         self.confirmed.append(sentence)
                         self.found.emit(len(self.confirmed), sentence)
+            self.progress.emit(1)
 
     def page_gather_words(self, page):
         page.gather_words()
@@ -146,10 +153,16 @@ class Finder(QObject):
 
         self.confirmed.clear()
         self.confirmed_index = 0
-        self.progress.emit(0.0)
+        self.progress.emit(-1)
+
+    def discard(self):
+        if self.worker is not None:
+            self.queue.put((None, -2))
+            while not self.queue.empty():
+                time.sleep(0.1)
 
     def die(self):
         self.queue.put((None, -1))
         print("Finder thread finished joining")
-        self.thread2.join()
+        self.worker.join()
         print("Finder thread finished")
