@@ -1,8 +1,11 @@
-from PyQt5.QtCore import QRectF
+from PyQt5.QtCore import QRectF, Qt
 from PyQt5.QtWidgets import QGraphicsProxyWidget, QTextEdit, QLineEdit, QCheckBox, QComboBox, QRadioButton
+from swik.action import Action
+
+from swik.interfaces import Undoable
 
 
-class PdfWidget(QGraphicsProxyWidget):
+class PdfWidget(QGraphicsProxyWidget, Undoable):
     count = 0
 
     def __init__(self, parent, content, rect, font_size):
@@ -21,6 +24,7 @@ class PdfWidget(QGraphicsProxyWidget):
         self.flags = 0
         self.xref = -1
         self.on_state = "Yes"
+        self.current_state = content
         PdfWidget.count += 1
 
     def set_info(self, name, flags):
@@ -51,10 +55,27 @@ class PdfTextWidget(PdfWidget):
         super(PdfTextWidget, self).__init__(parent, content.strip(" "), rect, font_size)
         self.widget.setStyleSheet("background-color: lightblue;")
 
+    def keyPressEvent(self, event):
+        # Check if the key press is Ctrl+Z
+        print(event.key(), event.modifiers())
+        if event.key() == Qt.Key_Z and event.modifiers() == Qt.ControlModifier:
+            self.scene().tracker().undo()
+        elif event.key() == Qt.Key_Z and event.modifiers() | Qt.ControlModifier and event.modifiers() | Qt.ShiftModifier:
+            self.scene().tracker().redo()
+        super().keyPressEvent(event)  #
+
     def set_widget(self, content):
         le = QLineEdit()
+        le.textEdited.connect(self.text_changed)
         le.setText(content)
         return le
+
+    def text_changed(self, text):
+        self.notify_change(Action.FULL_STATE, {"text": self.current_state}, {"text": text})
+        self.current_state = text
+
+    def undo(self, kind, info):
+        self.widget.setText(info["text"])
 
     def get_value(self):
         return self.widget.text() if self.widget.text() != "" else " "
@@ -64,10 +85,20 @@ class PdfTextWidget(PdfWidget):
 
 
 class MultiLinePdfTextWidget(PdfTextWidget):
+    def __init__(self, parent, content, rect, font_size):
+        super().__init__(parent, content, rect, font_size)
+        # self.widget.setStyleSheet("background-color: #FFC0CB;")
+
     def set_widget(self, content):
         te = QTextEdit()
         te.setText(content)
+        te.textChanged.connect(self.te_text_changed)
         return te
+
+    def te_text_changed(self):
+        text = self.widget.document().toPlainText()
+        self.notify_change(Action.FULL_STATE, {"text": self.current_state}, {"text": text})
+        self.current_state = text
 
     def get_value(self):
         return self.widget.document().toPlainText()
@@ -75,20 +106,10 @@ class MultiLinePdfTextWidget(PdfTextWidget):
     def clear(self):
         self.widget.document().setPlainText(" ")
 
-
-class PdfCheckboxWidget(PdfWidget):
-    def set_widget(self, content):
-        # print("Content: ", content)
-        cb = QCheckBox()
-        cb.setChecked(content == "On" or content == "Yes" or content == "True" or content == "1" or content == True)
-        return cb
-
-    def get_value(self):
-        # return self.widget.isChecked()
-        return self.widget.isChecked()
-
-    def clear(self):
-        self.widget.setChecked(False)
+    def undo(self, kind, info):
+        self.widget.blockSignals(True)
+        self.widget.document().setPlainText(info["text"])
+        self.widget.blockSignals(False)
 
 
 class PdfComboboxWidget(PdfTextWidget):
@@ -102,10 +123,18 @@ class PdfComboboxWidget(PdfTextWidget):
     def set_widget(self, content):
         cb = QComboBox()
         cb.setCurrentText(content)
+        cb.currentTextChanged.connect(self.text_changed)
         return cb
 
+    def undo(self, kind, info):
+        self.widget.blockSignals(True)
+        self.widget.setCurrentText(info["text"])
+        self.widget.blockSignals(False)
+
     def add_items(self, items):
+        self.widget.blockSignals(True)
         self.widget.addItems(items)
+        self.widget.blockSignals(False)
 
     def get_value(self):
         return self.widget.currentText()
@@ -114,12 +143,49 @@ class PdfComboboxWidget(PdfTextWidget):
         self.widget.setCurrentIndex(0)
 
 
+class PdfCheckboxWidget(PdfWidget):
+    def set_widget(self, content):
+        # print("Content: ", content)
+        cb = QCheckBox()
+        cb.setChecked(content == "On" or content == "Yes" or content == "True" or content == "1" or content == True)
+        self.current_state = cb.isChecked()
+        cb.stateChanged.connect(self.checkbox_changed)
+        return cb
+
+    def checkbox_changed(self, state):
+        self.notify_change(Action.FULL_STATE, {"state": self.current_state}, {"state": self.widget.isChecked()})
+        self.current_state = self.widget.isChecked()
+
+    def undo(self, kind, info):
+        self.widget.blockSignals(True)
+        self.widget.setChecked(info["state"])
+        self.widget.blockSignals(False)
+
+    def get_value(self):
+        # return self.widget.isChecked()
+        return self.widget.isChecked()
+
+    def clear(self):
+        self.widget.setChecked(False)
+
+
 class PdfRadioButtonWidget(PdfWidget):
     def set_widget(self, content):
         cb = QRadioButton()
         cb.setChecked(content == "On" or content == "Yes" or content == "True" or content == "1" or content == True)
+        self.current_state = cb.isChecked()
         cb.setAutoExclusive(False)
+        cb.clicked.connect(self.radiobutton_changed)
         return cb
+
+    def radiobutton_changed(self, state):
+        self.notify_change(Action.FULL_STATE, {"state": self.current_state}, {"state": self.widget.isChecked()})
+        self.current_state = self.widget.isChecked()
+
+    def undo(self, kind, info):
+        self.widget.blockSignals(True)
+        self.widget.setChecked(info["state"])
+        self.widget.blockSignals(False)
 
     def get_value(self):
         return self.widget.isChecked()
