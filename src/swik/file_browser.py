@@ -15,7 +15,6 @@ class Tree(QTreeView):
     #         super().mousePressEvent(e)
 
     def contextMenuEvent(self, a0: QtGui.QContextMenuEvent) -> None:
-        print("contextMenuEvent")
         super().contextMenuEvent(a0)
         indexes = self.selectedIndexes()
         if indexes:
@@ -92,7 +91,6 @@ class FileBrowser(QWidget):
     def set_root_index(self, index):
         self.treeview.setRootIndex(index)
         path = self.dirModel.fileInfo(index).absoluteFilePath()
-        print("pathhaha", path)
         self.label.setText(path)
 
     def select(self, filename, emit=True):

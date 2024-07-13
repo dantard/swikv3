@@ -4,7 +4,6 @@ from PyQt5.QtWidgets import QGraphicsView, QPushButton
 
 
 class Magnifier(QGraphicsView):
-
     closed = pyqtSignal()
 
     def __init__(self, widget):
@@ -34,7 +33,7 @@ class Magnifier(QGraphicsView):
         self.minus.setParent(self)
         self.minus.setGeometry(65, 10, 20, 20)
         self.minus.clicked.connect(lambda: self.set_scale(-0.1))
-        self.square_width = int(300/self.scale)
+        self.square_width = int(300 / self.scale)
         self.update_scene_rect()
 
     def set_widget(self, widget):
@@ -45,7 +44,7 @@ class Magnifier(QGraphicsView):
     def set_scale(self, scale):
         self.scale += scale
         self.setTransform(QTransform().scale(self.scale, self.scale))
-        self.square_width = int(300/self.scale)
+        self.square_width = int(300 / self.scale)
         self.update_scene_rect()
 
     def mousePressEvent(self, event):
@@ -63,7 +62,6 @@ class Magnifier(QGraphicsView):
         self.closed.emit()
 
     def update_scene_rect(self):
-        print("pose1", self.pos())
         obj = self.main_view
         pose = QPoint(0, 0)
         while obj is not None:
@@ -72,7 +70,6 @@ class Magnifier(QGraphicsView):
 
         pose = self.pos() - pose
         pose = self.main_view.mapToScene(pose)
-        print("pose3", pose)
         self.setSceneRect(pose.x(), pose.y(), self.square_width, self.square_width)
 
     def mouseReleaseEvent(self, event):

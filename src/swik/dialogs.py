@@ -94,7 +94,6 @@ class FontAndColorDialog(ComposableDialog):
         self.color_picker = self.add_row("Text Color", Color(text_color))
         self.set_ok_enabled(False)
         self.progressing = None
-        print("FONTS SIZE", font_size)
         utils.delayed(100, self.update_fonts, font_name, font_size)
 
     def update_fonts(self, default, font_size):

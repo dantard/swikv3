@@ -78,7 +78,7 @@ class MultiLinePdfTextWidget(PdfTextWidget):
 
 class PdfCheckboxWidget(PdfWidget):
     def set_widget(self, content):
-        print("Content: ", content)
+        # print("Content: ", content)
         cb = QCheckBox()
         cb.setChecked(content == "On" or content == "Yes" or content == "True" or content == "1" or content == True)
         return cb
@@ -108,7 +108,6 @@ class PdfComboboxWidget(PdfTextWidget):
         self.widget.addItems(items)
 
     def get_value(self):
-        print("Current Text: ", self.widget.currentText())
         return self.widget.currentText()
 
     def clear(self):
@@ -117,7 +116,6 @@ class PdfComboboxWidget(PdfTextWidget):
 
 class PdfRadioButtonWidget(PdfWidget):
     def set_widget(self, content):
-        print("Content: ", content)
         cb = QRadioButton()
         cb.setChecked(content == "On" or content == "Yes" or content == "True" or content == "1" or content == True)
         cb.setAutoExclusive(False)

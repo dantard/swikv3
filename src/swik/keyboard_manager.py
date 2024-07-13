@@ -33,11 +33,9 @@ class KeyboardManager(object):
 
     def key_released(self, event):
         if event.key() in self.release_actions:
-            print("ibne")
             self.release_actions[event.key()]()
             return True
         elif event.key() in self.press_actions:
-            print("tqtq")
             return True
 
         return False

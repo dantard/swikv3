@@ -281,7 +281,6 @@ def word_to_pdf(doc):
         return -3
 
     out_dir = os.path.dirname(doc)
-    print(" ".join([office, '--headless', '--convert-to', 'pdf', '--outdir', out_dir, doc]))
     p = Popen([office, '--headless', '--convert-to', 'pdf', '--outdir', out_dir, doc])
     p.communicate()
 

@@ -259,12 +259,10 @@ class SwikWidget(Shell):
 
     def keyPressEvent(self, a0: QtGui.QKeyEvent) -> None:
         super(SwikWidget, self).keyPressEvent(a0)
-        print("oooooooooooooo1")
         self.manager.key_pressed(a0)
 
     def keyReleaseEvent(self, a0: QtGui.QKeyEvent) -> None:
         super(SwikWidget, self).keyReleaseEvent(a0)
-        print("oooooooooooooo2")
         self.manager.key_released(a0)
 
     def is_dirty(self):
@@ -297,7 +295,6 @@ class SwikWidget(Shell):
 
     def toc_selected(self):
         s: Document = self.renderer.document
-        print(s[1].rotation, s[1].rotation_matrix, "lalala")
         selected = self.outline.selectedItems()
         if len(selected) == 0:
             return
@@ -332,7 +329,6 @@ class SwikWidget(Shell):
             self.mode_group.reset()
 
     def set_ratio(self, ratio):
-        print("set_ratio_widget", ratio)
         self.view.set_ratio(ratio, True)
 
     def set_page(self, page):
@@ -600,7 +596,6 @@ class SwikWidget(Shell):
         # self.manager.clear()
 
     def saved(self, ret_code, name):
-        print("Saved file, applying post save artifacts", name)
         self.apply_post_save_artifacts(name)
 
     def save_file_as(self):
@@ -666,9 +661,6 @@ class SwikWidget(Shell):
             self.mode_group.select("Sign")
         elif tool == "crop":
             self.mode_group.select("Crop")
-
-    def __del__(self):
-        print("Document deleted")
 
     def die(self):
         self.finder_toolbar.die()

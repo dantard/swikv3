@@ -31,7 +31,6 @@ class ColoreableRectItem(SwikRect):
         self.setBrush(brush)
 
     def set_border_width(self, width: int):
-        print("set border width", width)
         pen = self.pen()
         pen.setWidth(int(width))
         self.setPen(pen)

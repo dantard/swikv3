@@ -232,9 +232,7 @@ class MuPDFRenderer(QLabel):
             self.document_changed.emit()
 
     def process_request_queue(self):
-        print("Processing request queue")
         for index, ratio in self.request_queue.items():
-            print("Processing", index, ratio)
             self.load(index, ratio, True)
         # self.request_queue.clear()
 
@@ -327,9 +325,6 @@ class MuPDFRenderer(QLabel):
                     r = (h >> 16) & 255
                     sp.color = QColor(r, g, b)
 
-                    print("span", span)
-                    if "Slanted" in sp.text:
-                        print(span)
                     '''
                     a = span["ascender"]
                     d = span["descender"]
@@ -364,7 +359,6 @@ class MuPDFRenderer(QLabel):
 
     def get_word_font_info(self, word: Word):
         data = self.document[word.page_id].get_text("dict", sort=False, flags=TEXTFLAGS_DICT & ~TEXT_PRESERVE_IMAGES)
-        print("LEEEEEEEEEEEEEEEEEE", len(data))
         if data is not None:
             blocks = data.get('blocks', [])
             # print(blocks)
@@ -404,16 +398,11 @@ class MuPDFRenderer(QLabel):
         else:
             cx, cy = 0, 0
 
-        print(x, y, w, h, cx, cy, "cropbox")
-        print(self.document[page].mediabox)
-
         self.document[page].set_cropbox(Rect(x + cx,
                                              y + cy,
                                              x + cx + w,
                                              y + cy + h) * self.document[
                                             page].derotation_matrix)
-        print(self.document[page].mediabox, "mediabox")
-        print(self.document[page].cropbox, "cropbox")
         w, h = self.get_page_size(page)
         self.images[page].update(w, h)
         self.page_updated.emit(page)
@@ -554,7 +543,7 @@ class MuPDFRenderer(QLabel):
 
     def add_annot(self, index, annot):
         if type(annot) == SquareAnnotation:
-            print("adding", index, annot.rect(), annot.pos())
+            # print("adding", index, annot.rect(), annot.pos())
             page = self.document[index]
             fitz_rect = utils.qrectf_and_pos_to_fitz_rect(annot.rect(), annot.pos())
             pen: QPen = annot.pen()
@@ -627,7 +616,6 @@ class MuPDFRenderer(QLabel):
                           field.rect[3] - field.rect[1])
 
             if field.field_type == PDF_WIDGET_TYPE_TEXT:
-                print("aoooooooooooo", field.field_value, type(field.field_value))
                 if field.field_flags & 4096:
                     swik_widget = MultiLinePdfTextWidget(None, field.field_value, rect, field.text_fontsize)
                 else:
@@ -642,7 +630,6 @@ class MuPDFRenderer(QLabel):
                                                    rect, field.text_fontsize)
 
             elif field.field_type == PDF_WIDGET_TYPE_COMBOBOX:
-                print("kakakakakaka", field.choice_values)
                 items = [str(item) for item in field.choice_values]
                 swik_widget = PdfComboboxWidget(None, field.field_value, rect, field.text_fontsize, items)
                 swik_widget.setZValue(1000 - count)
@@ -678,7 +665,6 @@ class MuPDFRenderer(QLabel):
 
                 value = swik_widget.get_value()
                 if isinstance(swik_widget, PdfCheckboxWidget) and value:
-                    print(self.document.xref_object(field.xref))
 
                     try:
                         field.field_value = field.on_state()
@@ -686,7 +672,6 @@ class MuPDFRenderer(QLabel):
                     except TypeError:
                         self.document.xref_set_key(field.xref, "AS", "/Yes")
                 else:
-                    print("siiiiiiiiiiiiiiiiiiiiiiiiii", value)
                     field.field_value = value
                     field.update()
 
@@ -757,7 +742,7 @@ class MuPDFRenderer(QLabel):
         page_count = len(doc2)
         doc2.close()
         self.set_document(self.document, False)
-        print("Appended", page_count, "pages", len(self.document))
+        # print("Appended", page_count, "pages", len(self.document))
         return page_count
 
     def export_pages(self, order, filename):
@@ -777,7 +762,6 @@ class MuPDFRenderer(QLabel):
     def insert_image(self, index, rect, qimage):
         self.document[index].clean_contents()
         rect = Rect(rect.x(), rect.y(), rect.x() + rect.width(), rect.y() + rect.height())
-        print("jsjsjs", rect, qimage.width())
         byte_array = QByteArray()
         buffer = QBuffer(byte_array)
         buffer.open(QIODevice.WriteOnly)

@@ -230,7 +230,6 @@ class ToolTextSelection(Tool):
         scene_pos = self.view.mapToScene(event.pos())
         items = self.view.scene().items(scene_pos)
         if len(items) > 0 and type(items[0]) == Word:
-            print("it is")
             word = items[0]
             word.set_selected(True)
             if not word in self.selected:

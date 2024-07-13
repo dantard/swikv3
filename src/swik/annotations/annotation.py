@@ -38,7 +38,6 @@ class Annotation(ResizableRectItem):
             self.set_border_color(color.get("Border").get_color())
             self.set_border_width(color.get("Border").get_width())
             c1 = color.get("Fill").get_color()
-            print("C1", c1.red(), c1.green(), c1.blue(), c1.alpha())
             self.set_fill_color(color.get("Fill").get_color())
             self.set_content(color.get("Content").get_text())
             self.setToolTip(self.get_content())

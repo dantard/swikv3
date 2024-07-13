@@ -31,7 +31,6 @@ class RedactAnnotation(ResizableRectItem, Copyable):
 
     def mousePressEvent(self, event: 'QGraphicsSceneMouseEvent') -> None:
         super().mousePressEvent(event)
-        print("RedactAnnotation mousePressEvent")
 
     def duplicate(self):
         r = RedactAnnotation(brush=self.brush(), pen=self.pen())
@@ -61,5 +60,5 @@ class Patch(QGraphicsRectItem):
         if self.parentItem() is None:
             return self.sceneBoundingRect()
         else:
-            rect = QRectF(self.rect().x()-1, self.rect().y()-1, self.rect().width()+2, self.rect().height()+2)
+            rect = QRectF(self.rect().x() - 1, self.rect().y() - 1, self.rect().width() + 2, self.rect().height() + 2)
             return self.parentItem().mapRectFromItem(self, rect)

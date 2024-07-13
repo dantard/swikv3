@@ -88,7 +88,6 @@ class Scene(QGraphicsScene):
     def keyPressEvent(self, event) -> None:
         items = self.selectedItems()
         if len(items) == 0:
-            print("eooo")
             super().keyPressEvent(event)
             if event.key() in [QtCore.Qt.Key_Up, QtCore.Qt.Key_Down, QtCore.Qt.Key_Left, QtCore.Qt.Key_Right]:
                 if event.key() in [QtCore.Qt.Key_Right, QtCore.Qt.Key_Up]:

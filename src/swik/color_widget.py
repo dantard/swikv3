@@ -28,7 +28,7 @@ class ColorWidget(QPushButton):
         return self.color
 
     def get_color_with_alpha(self):
-        print(self.color.red(), self.color.green(), self.color.blue(), self.opacity)
+        # print(self.color.red(), self.color.green(), self.color.blue(), self.opacity)
         return QColor(self.color.red(), self.color.green(), self.color.blue(), self.opacity)
 
     def set_order(self, order):
@@ -70,7 +70,7 @@ class Color(QWidget):
     def __init__(self, color):
         super().__init__()
         r, g, b, a = QColor(color).getRgb()
-        print(r, g, b, a, "color")
+        # print(r, g, b, a, "color")
         self.color_widget = ColorWidget(color)
         self.color_widget.set_order(2)
         self.layout = QFormLayout()

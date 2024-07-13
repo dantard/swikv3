@@ -224,7 +224,6 @@ class ToolCrop(Tool, Undoable):
 
     def undo(self, kind, info):
         index, rect, ratio = info
-        print(info, "undo cropbox")
         self.renderer.set_cropbox(index, rect, True)
 
     def redo(self, kind, info):

@@ -170,8 +170,6 @@ class ToolMimicPDF(Tool):
             new_font_name = self.tree.itemWidget(item.child(0), 1).text()
             translate[orig_font_name] = new_font_name
 
-        print(translate)
-
         for i in self.texts:
             self.view.scene().removeItem(i)
         self.texts.clear()

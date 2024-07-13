@@ -28,8 +28,6 @@ class Finder(QObject):
         self.worker = None
         self.keep_running = True
 
-        print("Finder initialized")
-
     def finish(self):
         pass
         #        self.keep_running = False
@@ -45,7 +43,6 @@ class Finder(QObject):
     def find(self, text, mode, first_page=0):
         self.mode = mode
         if self.worker is None:
-            print("Create Thread")
             self.worker = threading.Thread(target=self.find_thread)
             self.worker.start()
 
@@ -62,16 +59,12 @@ class Finder(QObject):
             return w1 == w2
 
     def find_thread(self):
-        print("Finder thread started")
         while True:
-
-            print("waiting for text")
 
             text, first_page = self.queue.get()
 
             self.clear()
 
-            print("waiting for text2 ", text, first_page)
             if first_page == -1:
                 break
             elif first_page == -2:
@@ -107,19 +100,16 @@ class Finder(QObject):
                     words.append(word)
                     if self.check_words_case(text, word.get_text()):
                         candidates.append((word, len(words) - 1))
-                        print(word.get_text(), len(words) - 1)
 
                 # After processing every page we must check the candidates
                 # because the sentence can be split between pages
                 # WARNING: We are copying the list because we are going to remove elements
                 copy = candidates.copy()
                 for word, index in copy:
-                    print(word.get_text(), index, "*")
                     sentence = [word]
                     for j, needle in enumerate(needles[1:]):
                         if index + j + 1 >= len(words) or not self.check_words_case(needle,
                                                                                     words[index + j + 1].get_text()):
-                            print("break", needle, words[index + j + 1].get_text(), word.get_text())
                             break
                         sentence.append(words[index + j + 1])
                     else:
@@ -163,6 +153,4 @@ class Finder(QObject):
 
     def die(self):
         self.queue.put((None, -1))
-        print("Finder thread finished joining")
         self.worker.join()
-        print("Finder thread finished")

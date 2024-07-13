@@ -233,5 +233,4 @@ class SimplePage(QGraphicsRectItem):
         return self.box.isVisible()
 
     def set_selected(self, true):
-        print("Setting selected", true)
         self.box.setVisible(true)

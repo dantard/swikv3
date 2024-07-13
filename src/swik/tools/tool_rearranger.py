@@ -138,7 +138,6 @@ class ToolRearrange(Tool, Undoable):
             return
 
         page = self.view.get_page_at_pos(event.pos())
-        print("page", page)
         if page is None:
             self.state = self.STATE_RECT_SELECTION
             self.rb = SelectorRectItem()
@@ -271,7 +270,6 @@ class ToolRearrange(Tool, Undoable):
             if page not in self.selected:
                 page.set_selected(True)
                 self.selected.append(page)
-        print("rubberband", rubberband, ci)
 
     def operation_done(self, clear=True):
         for view in self.views:
@@ -344,8 +342,7 @@ class ToolRearrange(Tool, Undoable):
                     helper.append(index)
                     pages.append(i)
             self.rearrange(pages)
-            for p in self.view.pages.values():
-                print(p.index)
+
             for view in self.views:
                 view.update_layout()
 
@@ -370,7 +367,6 @@ class ToolRearrange(Tool, Undoable):
             self.action_rotate(indices, angle)
         elif kind == Action.PAGES_DUPLICATED:
             indices = info["indices"]
-            print("indiceees", indices)
             self.rearrange(indices)
             for view in self.views:
                 view.update_layout()

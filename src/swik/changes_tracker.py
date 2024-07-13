@@ -61,7 +61,6 @@ class ChangesTracker(QObject):
         self.dirty.emit(False)
 
     def undo(self):
-        print("undo stack", len(self.undo_stack))
         if len(self.undo_stack) > 0:
             action = self.undo_stack.pop()
             self.redo_stack.append(action)
@@ -74,11 +73,9 @@ class ChangesTracker(QObject):
                     atom.item.undo(atom.kind, atom.old)
 
     def redo(self):
-        print("redo stack", len(self.redo_stack))
         if len(self.redo_stack) > 0:
             action = self.redo_stack.pop()
             for atom in action:
-                print("item redo", atom.item, atom.kind, atom.old, atom.new)
                 if atom.kind == Action.ACTION_CREATE:
                     atom.item.setParentItem(atom.parent)
                 elif atom.kind == Action.ACTION_REMOVE:
@@ -105,7 +102,6 @@ class ChangesTracker(QObject):
         self.undo_stack.append(action)
 
     def item_changed(self, action):
-        print("item changed", action[0].item, action[0].kind, action[0].old, action[0].new)
         self.undo_stack.append(action)
 
     def saved(self):

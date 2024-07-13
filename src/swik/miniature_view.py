@@ -38,4 +38,3 @@ class MiniatureView(GraphView):
             if page is not None:
                 self.page_clicked.emit(page.index)
                 page.set_highlighted(True)
-                print("Page clicked: ", page.index)

@@ -81,7 +81,6 @@ class ClickableLabel(QLabel):
     clicked = pyqtSignal()
 
     def mousePressEvent(self, event):
-        print("clicked")
         super(ClickableLabel, self).mousePressEvent(event)
         self.clicked.emit()
 
@@ -262,7 +261,6 @@ class ToolInsertSignatureImage(Tool):
 
     def raise_images(self):
         images = self.renderer.get_images(0)
-        print("oooooooooooooo", images)
         for image, x, y, rect in images:
             patch = Patch(self.view.pages[0])
             patch.setRect(rect)

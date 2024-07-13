@@ -379,7 +379,6 @@ class RCloneBrowser(QWidget):
     def item_expanded(self, item):
         if self.emit_enabled:
             path = item.get_absolute_path()
-            print("putoexpanded")
             self.ls(path, item)
 
     def item_collapsed(self, item):

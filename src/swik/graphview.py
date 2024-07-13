@@ -143,7 +143,6 @@ class GraphView(QGraphicsView):
         self.scene().clear()
 
     def create_page(self, i, ratio):
-        print("Creating page", i, ratio)
         self.pages[i] = self.page_object(i, self, self.manager, self.renderer, ratio)
         self.scene().addItem(self.pages[i])
         return self.pages[i]
@@ -187,7 +186,6 @@ class GraphView(QGraphicsView):
         return self.pages.get(self.page)
 
     def move_to_page(self, index, offset=None):
-        print("move to page", index, offset, self.pages.get(index))
         if (page := self.pages.get(index)) is not None:
             offset = -10 if offset is None else offset
 
@@ -196,7 +194,6 @@ class GraphView(QGraphicsView):
 
             # Must be here because of the fit_width that changes the scrollbars
             if self.layout_manager.get_mode() in [LayoutManager.MODE_VERTICAL_MULTIPAGE, LayoutManager.MODE_VERTICAL]:
-                print("SCROLLING", page.pos().y(), offset, self.get_ratio())
                 self.verticalScrollBar().setValue(int((page.pos().y() + offset * self.get_ratio())))
             else:
                 self.horizontalScrollBar().setValue(int((page.pos().x() + offset * self.get_ratio())))

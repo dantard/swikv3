@@ -196,7 +196,6 @@ class MainWindow(QMainWindow):
         self.update_title()
 
     def tab_menu(self, action, code, data, widget):
-        print("tab_menu", action, code, data, widget)
         filename = widget.get_filename()
         if code == self.TAB_MENU_OPEN_IN_OTHER_TAB:
             self.open_new_tab(filename)
@@ -351,12 +350,11 @@ def main():
         try:
             proxy = bus.get_object('com.swik.server', '/com/swik/server')
             interface = dbus.Interface(proxy, 'com.swik.server_interface')
-            print("Requesting running instance to open2222", unknown[0])
+            # print("Requesting running instance to open2222", unknown[0])
             response = interface.open("*".join([os.path.abspath(u) for u in unknown]))
-            print("response:", response)
+            # print("response:", response)
             sys.exit(0)
         except Exception as e:
-            print(e)
             print("No other instance running")
 
     window = MainWindow()

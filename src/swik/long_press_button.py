@@ -17,11 +17,9 @@ class LongPressButton(QPushButton):
             if self._state == 0:
                 self._state = 1
             elif self._state == 1:
-                print("emit log press")
                 self._state = 2
                 self.long_press.emit()
             else:
                 pass
         else:
             self._state = 0
-            print('release')

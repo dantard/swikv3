@@ -67,6 +67,3 @@ class ZoomToolbar(Toolbar):
             self.lb_zoom.setEditable(True)
             self.lb_zoom.setCurrentText("{}%".format(int(ratio * 100)))
             self.lb_zoom.blockSignals(False)
-
-    def __del__(self):
-        print("I'm dyyyyyyyuing")

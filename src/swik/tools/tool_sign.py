@@ -189,11 +189,9 @@ class ToolSign(Tool):
         if True:  # try:
             valid = signer.get_signature_info(self.renderer.get_filename(),
                                               '/home/danilo/Desktop/AC_FNMT_Usuarios.cer')
-            print(valid)
             for i, value in enumerate(valid):
                 item = QTreeWidgetItem(["Signer " + str(i + 1)])
                 self.tree.addTopLevelItem(item)
-                print(i, value)
                 for k, v in value.items():
                     item.addChild(QTreeWidgetItem([k, v]))
             self.tree.header().setSectionResizeMode(0, QHeaderView.ResizeToContents)

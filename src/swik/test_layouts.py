@@ -46,7 +46,6 @@ class MainWindow(QMainWindow):
         elif self.count == 3:
             self.hlayout.insertWidget(self.hlayout.count(), self.pb2)
         self.count = (self.count + 1) % 4
-        print(self.count)
 
 
 if __name__ == "__main__":

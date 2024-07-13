@@ -123,7 +123,6 @@ class ToolReplaceFonts(Tool):
                         dic["newfont"] = font_info[0].path
 
                 struct.append(dic)
-                print(dic)
 
             in_name = self.renderer.get_filename()
             out_name = in_name.replace(".pdf", "_replaced.pdf")

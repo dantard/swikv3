@@ -281,23 +281,23 @@ class MainWindow(QGraphicsView):
             self.scene.addItem(self.rect_item)
             self.rect_item.view_mouse_press_event(self, event)
             self.rect_item.signals.done.connect(self.draw_done)
-            self.rect_item.signals.moving.connect(lambda x: print("moving"))
-            self.rect_item.signals.resizing.connect(lambda x: print("resizing"))
+            # self.rect_item.signals.moving.connect(lambda x: print("moving"))
+            # self.rect_item.signals.resizing.connect(lambda x: print("resizing"))
             # self.rect_item.signals.creating.connect(lambda x: print("creating"))
 
         super().mousePressEvent(event)
 
     def draw_done(self):
         return
-        for w, k in self.rect_item.get_kwargs().items():
-            print(w, k)
-        tmp = self.rect_item
-        new = ResizableRectItem(**self.rect_item.get_kwargs(), copy=self.rect_item)
-
-        new.setPos(tmp.pos())
-        new.setRect(tmp.rect())
-        self.scene.removeItem(self.rect_item)
-        self.scene.addItem(new)
+        # for w, k in self.rect_item.get_kwargs().items():
+        #     print(w, k)
+        # tmp = self.rect_item
+        # new = ResizableRectItem(**self.rect_item.get_kwargs(), copy=self.rect_item)
+        #
+        # new.setPos(tmp.pos())
+        # new.setRect(tmp.rect())
+        # self.scene.removeItem(self.rect_item)
+        # self.scene.addItem(new)
 
     def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:
         super().mouseMoveEvent(event)
