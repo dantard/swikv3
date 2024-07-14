@@ -5,10 +5,10 @@ import sys
 from time import sleep
 
 from PyQt5 import QtGui
-from PyQt5.QtCore import QTimer, pyqtSignal, QMimeData, Qt
+from PyQt5.QtCore import QTimer, pyqtSignal, QMimeData, Qt, QUrl
 from PyQt5.QtGui import QDrag, QDragLeaveEvent
 from PyQt5.QtWidgets import QTreeWidget, QMainWindow, QWidget, QVBoxLayout, QApplication, QTreeWidgetItem, QMenu, QFileDialog, QComboBox, QLabel, QToolBar, \
-    QProgressBar, QAbstractItemView, QHBoxLayout, QProgressDialog
+    QProgressBar, QAbstractItemView, QHBoxLayout, QProgressDialog, QMessageBox, QInputDialog
 
 
 class Progressing(QProgressDialog):
@@ -80,6 +80,10 @@ class RCloneApi:
 
     def delete(self, path):
         command = ["rclone", "delete", self.rclone_path + path]
+        self.run_rclone_command(command)
+
+    def mkdir(self, path):
+        command = ["rclone", "mkdir", self.rclone_path + path]
         self.run_rclone_command(command)
 
 
@@ -159,8 +163,9 @@ class LoadingItem(RCloneTreeItem):
 
 class TreeWidget(QTreeWidget):
     download_requested = pyqtSignal(object)
-    move_requested = pyqtSignal(object, object)
+    copy_requested = pyqtSignal(object, object)
     delete_requested = pyqtSignal(object)
+    new_dir_requested = pyqtSignal(object, str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -176,28 +181,52 @@ class TreeWidget(QTreeWidget):
         self.interactable = value
 
     def startDrag(self, supportedActions):
-        super(TreeWidget, self).startDrag(supportedActions)
+        mimeData = QMimeData()
+        str = "*".join([item.get_absolute_path() for item in self.selectedItems()])
+        mimeData.setData("application/rclone-browser", str.encode("utf-8"))
+        # mimeData.setData("text/plain", str.encode("utf-8"))
+
+        drag = QDrag(self)
+        drag.setMimeData(mimeData)
+        drag.exec(supportedActions)
 
     def dropEvent(self, a0: QtGui.QDropEvent):
+
         index = self.indexAt(a0.pos())
         dest_item: RCloneTreeItem = self.itemFromIndex(index)
-        source_items = self.selectedItems()
-        if dest_item is not None and source_items is not None and dest_item.is_dir:
-            self.move_requested.emit(source_items, dest_item)
 
-    # super().dropEvent(a0)
+        if a0.mimeData().hasFormat("application/rclone-browser"):
+            source = a0.mimeData().data("application/rclone-browser").data().decode("utf-8")
+            source_items = source.split("*")
+            if len(source_items) > 0 and dest_item is not None and dest_item.is_dir:
+                self.copy_requested.emit(source_items, dest_item)
+
+        elif a0.mimeData().hasUrls():
+            urls = a0.mimeData().urls()
+            source_paths = [url.toLocalFile() for url in urls]
+            self.copy_requested.emit(source_paths, dest_item)
 
     def dragLeaveEvent(self, event: QDragLeaveEvent):
         super().dragLeaveEvent(event)
-        self.aitem is not None and self.aitem.setBackground(0, QtGui.QBrush(QtGui.QColor(255, 255, 255)))
+        if self.aitem is not None:
+            self.aitem is not None and self.aitem.setBackground(0, QtGui.QBrush(QtGui.QColor(255, 255, 255)))
 
     def dragEnterEvent(self, event):
         super().dragEnterEvent(event)
         event.accept()
+        print("dragEnterEvent")
 
     def dragMoveEvent(self, event):
         super().dragMoveEvent(event)
+        if self.aitem is not None:
+            self.aitem.setBackground(0, QtGui.QBrush(QtGui.QColor(255, 255, 255)))
         event.accept()
+        index = self.indexAt(event.pos())
+        dest_item: RCloneTreeItem = self.itemFromIndex(index)
+        if self.aitem is not None:
+            dest_item.setBackground(0, QtGui.QBrush(QtGui.QColor(255, 0, 0)))
+
+        self.aitem = dest_item
 
     def mousePressEvent(self, e):
         if not self.interactable:
@@ -216,14 +245,25 @@ class TreeWidget(QTreeWidget):
 
                 menu = QMenu()
                 download = menu.addAction("Download")
+                menu.addSeparator()
                 delete = menu.addAction("Delete")
+                menu.addSeparator()
+                new_dir = None
+                if len(self.selectedItems()) == 1 and self.selectedItems()[0].is_dir:
+                    new_dir = menu.addAction("New Folder")
                 res = menu.exec_(self.viewport().mapToGlobal(a0.pos()))
                 selected = self.selectedItems()
 
                 if res == download:
                     self.download_requested.emit(selected)
                 elif res == delete:
-                    self.delete_requested.emit(selected)
+                    if QMessageBox.question(self, "Delete", "Are you sure you want to delete these items?",
+                                            QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
+                        self.delete_requested.emit(selected)
+                elif res == new_dir:
+                    text, ok = QInputDialog.getText(self, "New Folder", "Enter the name of the new folder:")
+                    if ok:
+                        self.new_dir_requested.emit(selected[0], text)
 
 
 class RCloneBrowser(QWidget):
@@ -247,7 +287,8 @@ class RCloneBrowser(QWidget):
         self.tree.itemCollapsed.connect(self.item_collapsed)
         self.tree.download_requested.connect(self.download_requested)
         self.tree.delete_requested.connect(self.delete_requested)
-        self.tree.move_requested.connect(self.copy_requested)
+        self.tree.copy_requested.connect(self.copy_requested)
+        self.tree.new_dir_requested.connect(self.new_dir_requested)
         self.tree.doubleClicked.connect(self.on_double_clicked)
         self.tree.setDragEnabled(True)
         self.tree.setDropIndicatorShown(True)
@@ -265,8 +306,9 @@ class RCloneBrowser(QWidget):
             LoadingItem(rem)
         self.tree.sortByColumn(1, Qt.AscendingOrder)
 
-    def copy_requested(self, source_items, dest_item):
-        self.copy(source_items, dest_item)
+    def copy_requested(self, source_paths, dest_item):
+        print("Copy requested", source_paths, dest_item)
+        self.copy(source_paths, dest_item)
 
     def set_accept_drops(self, value):
         self.tree.viewport().setAcceptDrops(value)
@@ -289,6 +331,10 @@ class RCloneBrowser(QWidget):
         print("Delete requested", items)
         self.delete(items)
 
+    def new_dir_requested(self, item, name):
+        print("New dir requested", item, name)
+        self.new_dir(item, name)
+
     def download_btn_clicked(self, run):
         indexes = self.tree.selectedIndexes()
         if indexes:
@@ -300,8 +346,8 @@ class RCloneBrowser(QWidget):
     def on_filter_changed(self, index):
         self.on_remote_changed(0)
 
-    def copy(self, items, dest_item):
-        self.pd = Progressing(self, len(items), "Copying...", cancel=True)
+    def copy(self, source_paths, dest_item):
+        self.pd = Progressing(self, len(source_paths), "Copying...", cancel=True)
 
         def do_copy():
             if dest_item.is_dir:
@@ -309,15 +355,15 @@ class RCloneBrowser(QWidget):
             else:
                 dest_dir = os.path.dirname(dest_item.get_absolute_path())
 
-            for source_item in items:
+            for source_path in source_paths:
                 if self.pd.wasCanceled():
                     break
-                self.pd.setLabelText("Copying " + source_item.get_absolute_path())
-                self.pd.set_progress(items.index(source_item))
+                self.pd.setLabelText("Copying " + source_path)
+                self.pd.set_progress(source_paths.index(source_path))
                 QApplication.processEvents()
-                self.api.copy2(source_item.get_absolute_path(), dest_dir)
+                self.api.copy2(source_path, dest_dir)
 
-            self.pd.setValue(len(items))
+            self.pd.setValue(len(source_paths))
 
             self.tree.blockSignals(True)
             dest_item.takeChildren()
@@ -326,6 +372,21 @@ class RCloneBrowser(QWidget):
             self.tree.blockSignals(False)
 
         self.pd.start(do_copy)
+
+    def new_dir(self, item, name):
+        self.pd = Progressing(self, 0, "Creating " + name)
+
+        def do_mkdir():
+            self.api.mkdir(item.get_absolute_path() + os.sep + name)
+            self.pd.close()
+
+            self.tree.blockSignals(True)
+            item.takeChildren()
+            LoadingItem(item)
+            self.ls(item.get_absolute_path(), item)
+            self.tree.blockSignals(False)
+
+        self.pd.start(do_mkdir)
 
     def ls(self, path=None, parent1=None):
         self.pd = Progressing(self, 0, "Listing " + path)
