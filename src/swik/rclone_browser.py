@@ -1,8 +1,10 @@
 import json
 import os
+import re
 import subprocess
 import sys
 from time import sleep
+from typing import Tuple, Union, Dict, Any
 
 from PyQt5 import QtGui
 from PyQt5.QtCore import QTimer, pyqtSignal, QMimeData, Qt, QUrl
@@ -78,12 +80,19 @@ class RCloneApi:
         command = ["rclone", "copy", self.rclone_path + src, self.rclone_path + dest]
         self.run_rclone_command(command)
 
-    def delete(self, path):
-        command = ["rclone", "delete", self.rclone_path + path]
+    def delete(self, path, purge=False):
+        if purge:
+            command = ["rclone", "purge", self.rclone_path + path]
+        else:
+            command = ["rclone", "delete", self.rclone_path + path]
         self.run_rclone_command(command)
 
     def mkdir(self, path):
         command = ["rclone", "mkdir", self.rclone_path + path]
+        self.run_rclone_command(command)
+
+    def move(self, src, dest):
+        command = ["rclone", "move", self.rclone_path + src, self.rclone_path + dest]
         self.run_rclone_command(command)
 
 
@@ -162,10 +171,8 @@ class LoadingItem(RCloneTreeItem):
 
 
 class TreeWidget(QTreeWidget):
-    download_requested = pyqtSignal(object)
     copy_requested = pyqtSignal(object, object)
-    delete_requested = pyqtSignal(object)
-    new_dir_requested = pyqtSignal(object, str)
+    move_requested = pyqtSignal(object, object)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -194,12 +201,19 @@ class TreeWidget(QTreeWidget):
 
         index = self.indexAt(a0.pos())
         dest_item: RCloneTreeItem = self.itemFromIndex(index)
+        dest_item.setBackground(0, QtGui.QBrush(QtGui.QColor(255, 255, 255)))
 
         if a0.mimeData().hasFormat("application/rclone-browser"):
             source = a0.mimeData().data("application/rclone-browser").data().decode("utf-8")
             source_items = source.split("*")
+
+            print("here", a0.keyboardModifiers())
+
             if len(source_items) > 0 and dest_item is not None and dest_item.is_dir:
-                self.copy_requested.emit(source_items, dest_item)
+                if a0.keyboardModifiers() == Qt.AltModifier:
+                    self.move_requested.emit(source_items, dest_item)
+                else:
+                    self.copy_requested.emit(source_items, dest_item)
 
         elif a0.mimeData().hasUrls():
             urls = a0.mimeData().urls()
@@ -220,9 +234,15 @@ class TreeWidget(QTreeWidget):
         super().dragMoveEvent(event)
         if self.aitem is not None:
             self.aitem.setBackground(0, QtGui.QBrush(QtGui.QColor(255, 255, 255)))
-        event.accept()
+
         index = self.indexAt(event.pos())
         dest_item: RCloneTreeItem = self.itemFromIndex(index)
+        if dest_item is not None and dest_item.is_dir:
+            event.accept()
+        else:
+            event.ignore()
+            return
+
         if self.aitem is not None:
             dest_item.setBackground(0, QtGui.QBrush(QtGui.QColor(255, 0, 0)))
 
@@ -232,38 +252,6 @@ class TreeWidget(QTreeWidget):
         if not self.interactable:
             return
         super().mousePressEvent(e)
-
-    def contextMenuEvent(self, a0: QtGui.QContextMenuEvent) -> None:
-        print("contextMenuEvent")
-        super().contextMenuEvent(a0)
-        indexes = self.selectedIndexes()
-        if indexes:
-            index = self.indexAt(a0.pos())
-            if index.isValid():
-
-                # item = self.itemFromIndex(index)
-
-                menu = QMenu()
-                download = menu.addAction("Download")
-                menu.addSeparator()
-                delete = menu.addAction("Delete")
-                menu.addSeparator()
-                new_dir = None
-                if len(self.selectedItems()) == 1 and self.selectedItems()[0].is_dir:
-                    new_dir = menu.addAction("New Folder")
-                res = menu.exec_(self.viewport().mapToGlobal(a0.pos()))
-                selected = self.selectedItems()
-
-                if res == download:
-                    self.download_requested.emit(selected)
-                elif res == delete:
-                    if QMessageBox.question(self, "Delete", "Are you sure you want to delete these items?",
-                                            QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
-                        self.delete_requested.emit(selected)
-                elif res == new_dir:
-                    text, ok = QInputDialog.getText(self, "New Folder", "Enter the name of the new folder:")
-                    if ok:
-                        self.new_dir_requested.emit(selected[0], text)
 
 
 class RCloneBrowser(QWidget):
@@ -285,10 +273,8 @@ class RCloneBrowser(QWidget):
         self.tree.setHeaderLabels(["File", "Type", "Size"])
         self.tree.itemExpanded.connect(self.item_expanded)
         self.tree.itemCollapsed.connect(self.item_collapsed)
-        self.tree.download_requested.connect(self.download_requested)
-        self.tree.delete_requested.connect(self.delete_requested)
         self.tree.copy_requested.connect(self.copy_requested)
-        self.tree.new_dir_requested.connect(self.new_dir_requested)
+        self.tree.move_requested.connect(self.move_requested)
         self.tree.doubleClicked.connect(self.on_double_clicked)
         self.tree.setDragEnabled(True)
         self.tree.setDropIndicatorShown(True)
@@ -310,30 +296,64 @@ class RCloneBrowser(QWidget):
         print("Copy requested", source_paths, dest_item)
         self.copy(source_paths, dest_item)
 
+    def move_requested(self, source_paths, dest_item):
+        self.pd = Progressing(self, len(source_paths), "Moving...", cancel=True)
+
+        def do_move():
+            if dest_item.is_dir:
+                dest_dir = dest_item.get_absolute_path()
+            else:
+                dest_dir = os.path.dirname(dest_item.get_absolute_path())
+
+            for source_path in source_paths:
+
+                if self.pd.wasCanceled():
+                    break
+                self.pd.setLabelText("Moving " + source_path)
+                self.pd.set_progress(source_paths.index(source_path))
+                QApplication.processEvents()
+                self.api.move(source_path, dest_dir)
+            self.pd.setValue(len(source_paths))
+            self.update_item(dest_item)
+
+            for source_path in source_paths:
+                dir = os.path.dirname(source_path)
+                source_item = self.get_item_from_absolute_path(dir)
+                if source_item is not None:
+                    self.update_item(source_item)
+
+        self.pd.start(do_move)
+
+    def get_item_from_absolute_path(self, path) -> RCloneTreeItem:
+        bits = path.split("/")
+        parent = self.tree.invisibleRootItem()
+        while len(bits) > 0:
+            bit = bits.pop(0)
+            for i in range(parent.childCount()):
+                if parent.child(i).text(0) == bit:
+                    parent = parent.child(i)
+                    break
+            else:
+                return None
+
+        return parent
+
+    def update_item(self, item: RCloneTreeItem):
+        self.tree.blockSignals(True)
+        item.takeChildren()
+        LoadingItem(item)
+        self.ls(item.get_absolute_path(), item)
+        self.tree.blockSignals(False)
+
     def set_accept_drops(self, value):
         self.tree.viewport().setAcceptDrops(value)
 
-    def begin(self):
-        res = self.api.list_remotes()
-        remotes = res.split("\n")
-        remotes = [remote for remote in remotes if remote != ""]
-        self.remotes_cb.addItems(remotes)
-
     def on_double_clicked(self, index):
         item: RCloneTreeItem = self.tree.itemFromIndex(index)
-        self.download([item], "/tmp", True)
-
-    def download_requested(self, items):
-        print("Download requested", items)
-        self.download(items)
-
-    def delete_requested(self, items):
-        print("Delete requested", items)
-        self.delete(items)
-
-    def new_dir_requested(self, item, name):
-        print("New dir requested", item, name)
-        self.new_dir(item, name)
+        if item.is_dir:
+            item.setExpanded(not item.isExpanded())
+        else:
+            self.download([item], "/tmp", True)
 
     def download_btn_clicked(self, run):
         indexes = self.tree.selectedIndexes()
@@ -342,9 +362,6 @@ class RCloneBrowser(QWidget):
                 if index.isValid():
                     item: RCloneTreeItem = self.tree.itemFromIndex(index)
                     self.download(item.get_absolute_path(), "/tmp" if run else None, run)
-
-    def on_filter_changed(self, index):
-        self.on_remote_changed(0)
 
     def copy(self, source_paths, dest_item):
         self.pd = Progressing(self, len(source_paths), "Copying...", cancel=True)
@@ -432,14 +449,19 @@ class RCloneBrowser(QWidget):
     def delete(self, items):
         self.pd = Progressing(self, len(items), "Deleting", cancel=True)
 
-        def do_download():
-            parents = [item.parent() for item in items]
+        def do_delete():
+            helper, parents = [], []
+            for item in items:
+                if item.parent().path not in helper:
+                    helper.append(item.parent().path)
+                    parents.append(item.parent())
+
             for item in items:
                 if self.pd.wasCanceled():
                     break
                 self.pd.setValue(items.index(item))
                 path = item.get_absolute_path()
-                self.api.delete(path)
+                self.api.delete(path, item.is_dir)
 
             self.pd.setValue(len(items))
 
@@ -450,7 +472,7 @@ class RCloneBrowser(QWidget):
                 self.ls(parent.get_absolute_path(), parent)
             self.tree.blockSignals(False)
 
-        self.pd.start(do_download)
+        self.pd.start(do_delete)
 
     def download(self, items, where=None, run=False):
         if where is None:
@@ -491,6 +513,47 @@ class RCloneBrowser(QWidget):
         # item.takeChildren()
         # item.addChild(LoadingItem(item))
 
+    def contextMenuEvent(self, a0: QtGui.QContextMenuEvent) -> None:
+        print("contextMenuEvent")
+        super().contextMenuEvent(a0)
+        indexes = self.tree.selectedIndexes()
+        if indexes:
+            pos = self.tree.mapFrom(self, a0.pos())
+            index = self.tree.indexAt(pos)
+            if index.isValid():
+
+                # item = self.itemFromIndex(index)
+
+                menu = QMenu()
+                download = menu.addAction("Download")
+                new_dir, refresh = [-1] * 2
+
+                if len(self.tree.selectedItems()) == 1 and self.tree.selectedItems()[0].is_dir:
+                    new_dir = menu.addAction("New Folder")
+                    menu.addSeparator()
+                    refresh = menu.addAction("Refresh")
+
+                menu.addSeparator()
+                delete = menu.addAction("Delete")
+
+                res = menu.exec_(a0.globalPos())
+
+                selected = self.tree.selectedItems()
+
+                if res == download:
+                    self.download(selected)
+                elif res == delete:
+                    if QMessageBox.question(self, "Delete",
+                                            "Are you sure you want to delete these items?",
+                                            QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
+                        self.delete(selected)
+                elif res == new_dir:
+                    text, ok = QInputDialog.getText(self, "New Folder", "Enter the name of the new folder:")
+                    if ok:
+                        self.new_dir(selected[0], text)
+                elif res == refresh:
+                    self.update_item(selected[0])
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -504,7 +567,79 @@ class MainWindow(QMainWindow):
         self.setGeometry(100, 100, 600, 400)
 
 
+# def extract_rclone_progress(buffer: str) -> Tuple[bool, Union[Dict[str, Any], None]]:
+#     # matcher that checks if the progress update block is completely buffered yet (defines start and stop)
+#     # it gets the sent bits, total bits, progress, transfer-speed and eta
+#     reg_transferred = re.findall(
+#         r"Transferred:\s+(\d+.\d+ \w+) \/ (\d+.\d+ \w+), (\d{1,3})%, (\d+.\d+ \w+\/\w+), ETA (\S+)",
+#         buffer,
+#     )
+#
+#     if reg_transferred:  # transferred block is completely buffered
+#         # get the progress of the individual files
+#         # matcher gets the currently transferring files and their individual progress
+#         # returns list of tuples: (name, progress, file_size, unit)
+#         prog_transferring = []
+#         prog_regex = re.findall(
+#             r"\* +(.+):[ ]+(\d{1,3})% \/(\d+.\d+)([a-zA-Z]+),", buffer
+#         )
+#         for item in prog_regex:
+#             prog_transferring.append(
+#                 (
+#                     item[0],
+#                     int(item[1]),
+#                     float(item[2]),
+#                     # the suffix B of the unit is missing for subprocesses
+#                     item[3] + "B",
+#                 )
+#             )
+#
+#         out = {"prog_transferring": prog_transferring}
+#         sent_bits, total_bits, progress, transfer_speed_str, eta = reg_transferred[0]
+#         out["progress"] = float(progress.strip())
+#         out["total_bits"] = float(re.findall(r"\d+.\d+", total_bits)[0])
+#         out["sent_bits"] = float(re.findall(r"\d+.\d+", sent_bits)[0])
+#         out["unit_sent"] = re.findall(r"[a-zA-Z]+", sent_bits)[0]
+#         out["unit_total"] = re.findall(r"[a-zA-Z]+", total_bits)[0]
+#         out["transfer_speed"] = float(re.findall(r"\d+.\d+", transfer_speed_str)[0])
+#         out["transfer_speed_unit"] = re.findall(
+#             r"[a-zA-Z]+/[a-zA-Z]+", transfer_speed_str
+#         )[0]
+#         out["eta"] = eta
+#
+#         return True, out
+#
+#     else:
+#         return False, None
+#
+#
+# def real_time():
+#     import subprocess
+#
+#     # Define the external command to run
+#     command = ["rclone", "copy", "/home/danilo/Desktop/vpncud2.zip", "jjgdrive:", "-P"]
+#
+#     # Start the external command
+#     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+#
+#     # Read the output line by line in real time
+#     while True:
+#         output = process.stdout.readline()
+#         if output == '' and process.poll() is not None:
+#             break
+#         if output:
+#             # Print the matches
+#             a, b = extract_rclone_progress(output)
+#             if a:
+#                 print(b)
+#
+#     # Get the return code of the process
+#     return_code = process.poll()
+#     print(f"Process finished with return code {return_code}")
+
+
 if __name__ == "__main__":
+    # real_time()
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
