@@ -9,7 +9,7 @@ from time import sleep
 from typing import Tuple, Union, Dict, Any
 
 from PyQt5 import QtGui
-from PyQt5.QtCore import QTimer, pyqtSignal, QMimeData, Qt, QUrl
+from PyQt5.QtCore import QTimer, pyqtSignal, QMimeData, Qt, QUrl, QObject
 from PyQt5.QtGui import QDrag, QDragLeaveEvent
 from PyQt5.QtWidgets import QTreeWidget, QMainWindow, QWidget, QVBoxLayout, QApplication, QTreeWidgetItem, QMenu, QFileDialog, QComboBox, QLabel, QToolBar, \
     QProgressBar, QAbstractItemView, QHBoxLayout, QProgressDialog, QMessageBox, QInputDialog
@@ -260,48 +260,6 @@ class TreeWidget(QTreeWidget):
         if not self.interactable:
             return
         super().mousePressEvent(e)
-
-
-class Processor:
-    def __init__(self, max_threads=5):
-        self.max_threads = max_threads
-        self.running_threads = 0
-        self.keep_running = True
-        self.commands = []
-        self.processes = []
-        self.done = {}
-        self.jobs = 0
-        self.thread = None
-
-    def checker(self):
-        while self.keep_running:
-            if len(self.processes) < self.max_threads:
-                if len(self.commands) > 0:
-                    command = self.commands.pop(0)
-                    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-                    self.processes.append(process)
-            for process in self.processes:
-                if process.poll() is not None:
-                    self.done[process] = process.poll()
-                    self.processes.remove(process)
-            time.sleep(0.25)
-
-    def poll(self, process):
-        return process.stdout.readline()
-
-    def clear(self):
-        self.commands.clear()
-        self.processes.clear()
-
-    def submit(self, command, clear=False):
-        if clear:
-            self.clear()
-        self.commands.append(command)
-
-    def start(self):
-        self.keep_running = True
-        self.jobs = len(self.commands)
-        self.thread = threading.Thread(target=self.checker).start()
 
 
 class RCloneBrowser(QWidget):
@@ -713,7 +671,117 @@ def extract_rclone_progress(buffer: str) -> Tuple[bool, Union[Dict[str, Any], No
 #     print(f"Process finished with return code {return_code}")
 
 
+class Processor(QObject):
+    done = pyqtSignal(str)
+    update = pyqtSignal(str)
+
+    class Process:
+        def __init__(self, command, name=None):
+            self.process = None
+            self.command = command
+            self.done = False
+            self.result = None
+            self.running = False
+            self.name = name
+
+        def get_name(self):
+            return self.name
+
+        def poll(self):
+            return self.process.poll() if self.process is not None else None
+
+        def update(self):
+            self.done = self.process is not None and self.process.poll() is not None
+            self.running = self.process is not None and not self.done
+
+    def __init__(self, max_threads=5):
+        super().__init__()
+        self.max_threads = max_threads
+        self.running_threads = 0
+        self.keep_running = True
+        self.commands = []
+        self.processes = []
+        self.jobs = 0
+        self.thread = None
+        self.period = 0.25
+        self.name = "jobs"
+
+    def watcher(self):
+        while self.keep_running:
+            running = [p for p in self.processes if p.running]
+            waiting = [p for p in self.processes if not p.running and not p.done]
+            if len(running) < self.max_threads and len(waiting) > 0:
+                waiting[0].process = subprocess.Popen(waiting[0].command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+            for i, process in enumerate(self.processes):
+                process.update()
+
+            self.update.emit(self.name)
+
+            if all([process.done for process in self.processes]):
+                break
+
+            print([p.command for p in self.processes if p.running])
+
+            time.sleep(self.period)
+
+        self.done.emit(self.name)
+
+    def poll(self, index):
+        return self.processes[index].stdout.readline()
+
+    def poll_by_name(self, name):
+        for i, process in enumerate(self.processes):
+            if process.name == name:
+                return process.stdout.readline()
+        return None
+
+    def count(self):
+        return len(self.processes)
+
+    def terminated(self):
+        return all([process.done for process in self.processes])
+
+    def get(self, index):
+        return self.processes[index]
+
+    def get_by_name(self, name):
+        for process in self.processes:
+            if process.name == name:
+                return process
+        return None
+
+    def running(self):
+        return [process for process in self.processes if process.running]
+
+    def clear(self):
+        self.commands.clear()
+        self.processes.clear()
+
+    def submit(self, command, name=None, clear=False):
+        if clear:
+            self.clear()
+        name = "job#{}".format(len(self.commands)) if name is None else name
+        self.processes.append(self.Process(command, name))
+
+    def start(self, period=0.25, name="jobs"):
+        self.period = period
+        self.name = name
+        self.keep_running = True
+        self.jobs = len(self.commands)
+        self.thread = threading.Thread(target=self.watcher).start()
+
+
 if __name__ == "__main__":
+    p = Processor(2)
+    p.submit(["sleep", "1"])
+    p.submit(["sleep", "2"])
+    p.submit(["sleep", "3"])
+    p.submit(["sleep", "4"])
+    p.submit(["sleep", "5"])
+    p.start()
+    sleep(100)
+    sys.exit(0)
     # real_time()
     app = QApplication(sys.argv)
     window = MainWindow()
