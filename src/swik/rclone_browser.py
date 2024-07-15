@@ -3,6 +3,8 @@ import os
 import re
 import subprocess
 import sys
+import threading
+import time
 from time import sleep
 from typing import Tuple, Union, Dict, Any
 
@@ -68,6 +70,12 @@ class RCloneApi:
         print("done")
         return result.stdout
 
+    def run_rclone_command2(self, command):
+        command.append("-P")
+        print("*** Running command2: ", " ".join(command))
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        return process
+
     def download(self, path, where):
         command = ["rclone", "copy", self.rclone_path + path, where]
         return self.run_rclone_command(command)
@@ -78,7 +86,7 @@ class RCloneApi:
 
     def copy2(self, src, dest):
         command = ["rclone", "copy", self.rclone_path + src, self.rclone_path + dest]
-        self.run_rclone_command(command)
+        return self.run_rclone_command2(command)
 
     def delete(self, path, purge=False):
         if purge:
@@ -254,6 +262,48 @@ class TreeWidget(QTreeWidget):
         super().mousePressEvent(e)
 
 
+class Processor:
+    def __init__(self, max_threads=5):
+        self.max_threads = max_threads
+        self.running_threads = 0
+        self.keep_running = True
+        self.commands = []
+        self.processes = []
+        self.done = {}
+        self.jobs = 0
+        self.thread = None
+
+    def checker(self):
+        while self.keep_running:
+            if len(self.processes) < self.max_threads:
+                if len(self.commands) > 0:
+                    command = self.commands.pop(0)
+                    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                    self.processes.append(process)
+            for process in self.processes:
+                if process.poll() is not None:
+                    self.done[process] = process.poll()
+                    self.processes.remove(process)
+            time.sleep(0.25)
+
+    def poll(self, process):
+        return process.stdout.readline()
+
+    def clear(self):
+        self.commands.clear()
+        self.processes.clear()
+
+    def submit(self, command, clear=False):
+        if clear:
+            self.clear()
+        self.commands.append(command)
+
+    def start(self):
+        self.keep_running = True
+        self.jobs = len(self.commands)
+        self.thread = threading.Thread(target=self.checker).start()
+
+
 class RCloneBrowser(QWidget):
     def __init__(self):
         super().__init__()
@@ -364,7 +414,16 @@ class RCloneBrowser(QWidget):
                     self.download(item.get_absolute_path(), "/tmp" if run else None, run)
 
     def copy(self, source_paths, dest_item):
-        self.pd = Progressing(self, len(source_paths), "Copying...", cancel=True)
+        self.pd = Progressing(self, 100, "Copying...", cancel=True)
+        self.timer = QTimer()
+        processes = []
+
+        def update_view():
+            self.tree.blockSignals(True)
+            dest_item.takeChildren()
+            LoadingItem(dest_item)
+            self.ls(dest_item.get_absolute_path(), dest_item)
+            self.tree.blockSignals(False)
 
         def do_copy():
             if dest_item.is_dir:
@@ -376,18 +435,32 @@ class RCloneBrowser(QWidget):
                 if self.pd.wasCanceled():
                     break
                 self.pd.setLabelText("Copying " + source_path)
-                self.pd.set_progress(source_paths.index(source_path))
                 QApplication.processEvents()
-                self.api.copy2(source_path, dest_dir)
+                process = self.api.copy2(source_path, dest_dir)
+                processes.append(process)
+            self.timer.start(100)
 
-            self.pd.setValue(len(source_paths))
+        def check_processes():  # self.pd.setValue(len(source_paths))
+            progress = {}
+            for process in processes:
+                output = process.stdout.readline()
+                if output == '' and process.poll() is not None:
+                    break
+                if output:
+                    ok, data = extract_rclone_progress(output)
+                    if ok:
+                        progress[process] = data['progress']
 
-            self.tree.blockSignals(True)
-            dest_item.takeChildren()
-            LoadingItem(dest_item)
-            self.ls(dest_item.get_absolute_path(), dest_item)
-            self.tree.blockSignals(False)
+            if len(progress) > 0:
+                avg = int(sum(list(progress.values())) / len(progress))
+                self.pd.setValue(avg)
 
+            if all([process.poll() is not None for process in processes]):
+                self.timer.stop()
+                self.pd.close()
+                update_view()
+
+        self.timer.timeout.connect(check_processes)
         self.pd.start(do_copy)
 
     def new_dir(self, item, name):
@@ -567,50 +640,52 @@ class MainWindow(QMainWindow):
         self.setGeometry(100, 100, 600, 400)
 
 
-# def extract_rclone_progress(buffer: str) -> Tuple[bool, Union[Dict[str, Any], None]]:
-#     # matcher that checks if the progress update block is completely buffered yet (defines start and stop)
-#     # it gets the sent bits, total bits, progress, transfer-speed and eta
-#     reg_transferred = re.findall(
-#         r"Transferred:\s+(\d+.\d+ \w+) \/ (\d+.\d+ \w+), (\d{1,3})%, (\d+.\d+ \w+\/\w+), ETA (\S+)",
-#         buffer,
-#     )
-#
-#     if reg_transferred:  # transferred block is completely buffered
-#         # get the progress of the individual files
-#         # matcher gets the currently transferring files and their individual progress
-#         # returns list of tuples: (name, progress, file_size, unit)
-#         prog_transferring = []
-#         prog_regex = re.findall(
-#             r"\* +(.+):[ ]+(\d{1,3})% \/(\d+.\d+)([a-zA-Z]+),", buffer
-#         )
-#         for item in prog_regex:
-#             prog_transferring.append(
-#                 (
-#                     item[0],
-#                     int(item[1]),
-#                     float(item[2]),
-#                     # the suffix B of the unit is missing for subprocesses
-#                     item[3] + "B",
-#                 )
-#             )
-#
-#         out = {"prog_transferring": prog_transferring}
-#         sent_bits, total_bits, progress, transfer_speed_str, eta = reg_transferred[0]
-#         out["progress"] = float(progress.strip())
-#         out["total_bits"] = float(re.findall(r"\d+.\d+", total_bits)[0])
-#         out["sent_bits"] = float(re.findall(r"\d+.\d+", sent_bits)[0])
-#         out["unit_sent"] = re.findall(r"[a-zA-Z]+", sent_bits)[0]
-#         out["unit_total"] = re.findall(r"[a-zA-Z]+", total_bits)[0]
-#         out["transfer_speed"] = float(re.findall(r"\d+.\d+", transfer_speed_str)[0])
-#         out["transfer_speed_unit"] = re.findall(
-#             r"[a-zA-Z]+/[a-zA-Z]+", transfer_speed_str
-#         )[0]
-#         out["eta"] = eta
-#
-#         return True, out
-#
-#     else:
-#         return False, None
+def extract_rclone_progress(buffer: str) -> Tuple[bool, Union[Dict[str, Any], None]]:
+    # matcher that checks if the progress update block is completely buffered yet (defines start and stop)
+    # it gets the sent bits, total bits, progress, transfer-speed and eta
+    reg_transferred = re.findall(
+        r"Transferred:\s+(\d+.\d+ \w+) \/ (\d+.\d+ \w+), (\d{1,3})%, (\d+.\d+ \w+\/\w+), ETA (\S+)",
+        buffer,
+    )
+
+    if reg_transferred:  # transferred block is completely buffered
+        # get the progress of the individual files
+        # matcher gets the currently transferring files and their individual progress
+        # returns list of tuples: (name, progress, file_size, unit)
+        prog_transferring = []
+        prog_regex = re.findall(
+            r"\* +(.+):[ ]+(\d{1,3})% \/(\d+.\d+)([a-zA-Z]+),", buffer
+        )
+        for item in prog_regex:
+            prog_transferring.append(
+                (
+                    item[0],
+                    int(item[1]),
+                    float(item[2]),
+                    # the suffix B of the unit is missing for subprocesses
+                    item[3] + "B",
+                )
+            )
+
+        out = {"prog_transferring": prog_transferring}
+        sent_bits, total_bits, progress, transfer_speed_str, eta = reg_transferred[0]
+        out["progress"] = float(progress.strip())
+        out["total_bits"] = float(re.findall(r"\d+.\d+", total_bits)[0])
+        out["sent_bits"] = float(re.findall(r"\d+.\d+", sent_bits)[0])
+        out["unit_sent"] = re.findall(r"[a-zA-Z]+", sent_bits)[0]
+        out["unit_total"] = re.findall(r"[a-zA-Z]+", total_bits)[0]
+        out["transfer_speed"] = float(re.findall(r"\d+.\d+", transfer_speed_str)[0])
+        out["transfer_speed_unit"] = re.findall(
+            r"[a-zA-Z]+/[a-zA-Z]+", transfer_speed_str
+        )[0]
+        out["eta"] = eta
+
+        return True, out
+
+    else:
+        return False, None
+
+
 #
 #
 # def real_time():
