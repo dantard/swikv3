@@ -83,6 +83,7 @@ class Manager(QObject):
             drag = QDrag(self)
             mime_data = QMimeData()
             mime_data.setUrls([QUrl.fromLocalFile(self.renderer.get_filename())])
+            print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", [QUrl.fromLocalFile(self.renderer.get_filename())])
             drag.setMimeData(mime_data)
             drag.exec_(Qt.CopyAction)
             return

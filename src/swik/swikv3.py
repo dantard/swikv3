@@ -371,6 +371,7 @@ def main():
     if len(unknown) > 0:
         def open_new():
             for u in unknown:
+                u = os.path.abspath(u)
                 widget = window.create_widget()
                 window.open_new_tab(widget, u)
                 widget.set_tool(args.tool)

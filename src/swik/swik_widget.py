@@ -20,7 +20,6 @@ from pymupdf import Document
 
 from swik.file_browser import FileBrowser
 from swik.layout_manager import LayoutManager
-from swik.rclone_browser import RCloneBrowser
 from swik.swik_graphview import SwikGraphView
 from swik.dialogs import PasswordDialog, DictDialog, TextBoxDialog
 from swik.font_manager import FontManager
@@ -521,18 +520,23 @@ class SwikWidget(Shell):
                     pass
                 elif result == -4:
                     QMessageBox.warning(self, "Error", "Libreoffice does not seem to be installed.")
+                    self.close_requested.emit(self)
                     return
                 elif result == -1:
                     QMessageBox.warning(self, "Error", "Libreoffice Writer does not seem to be installed.")
+                    self.close_requested.emit(self)
                     return
                 elif result == -2:
                     QMessageBox.warning(self, "Error", "Libreoffice Draw does not seem to be installed.")
+                    self.close_requested.emit(self)
                     return
                 elif result == -3:
                     QMessageBox.warning(self, "Error", "Libreoffice Calc does not seem to be installed.")
+                    self.close_requested.emit(self)
                     return
                 else:
                     QMessageBox.warning(self, "Error", "Error converting file")
+                    self.close_requested.emit(self)
                     return
                 filename = filename.replace(ext, '.pdf')
 
@@ -546,10 +550,12 @@ class SwikWidget(Shell):
                     pdf.save(filename)
                 except:
                     QMessageBox.warning(self, "Error", "Error converting file")
+                    self.close_requested.emit(self)
                     return
 
             if not os.path.exists(filename):
                 QMessageBox.warning(self, "Error", "File does not exist")
+                self.close_requested.emit(self)
                 return
 
             self.mode_group.reset()
