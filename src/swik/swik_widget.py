@@ -234,7 +234,7 @@ class SwikWidget(Shell):
         self.outline.itemSelectionChanged.connect(self.toc_selected)
 
         self.file_browser = FileBrowser(expanduser("~"))
-        self.file_browser.signals.file_selected.connect(self.open_file)
+        self.file_browser.signals.file_selected.connect(self.file_selected)
 
         # self.rclone_browser = RCloneBrowser()
 
@@ -250,6 +250,10 @@ class SwikWidget(Shell):
         self.set_interactable(False)
         self.preferences_changed()
         QApplication.processEvents()
+
+    def file_selected(self, file):
+        self.push_params(self.view.layout_manager.mode, self.view.ratio, 0, self.splitter.sizes())
+        self.open_file(file)
 
     def push_params(self, mode=0, ratio=1, scroll=0, splitter=None):
         self.params.append((mode, ratio, scroll, splitter))
