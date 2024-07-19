@@ -1,4 +1,5 @@
 import os
+import pathlib
 import time
 from os.path import expanduser
 
@@ -82,6 +83,7 @@ class SwikWidget(Shell):
         self.win = window
         self.config = config
         self.params = []
+        self.placeholder = None
         self.renderer = MuPDFRenderer()
         self.renderer.document_changed.connect(self.document_changed)
         self.renderer.file_changed.connect(self.file_modified)
@@ -269,7 +271,11 @@ class SwikWidget(Shell):
 
     def reload_file(self):
         self.file_changed_frame.setVisible(False)
-        self.open_file(self.renderer.get_filename())
+        if os.path.isfile(self.renderer.get_filename()):
+            self.open_file(self.renderer.get_filename())
+        else:
+            QMessageBox.critical(self, "Error", "File " + self.renderer.get_filename() + " has been deleted")
+            self.close_requested.emit(self)
 
     def file_modified(self):
         self.file_changed_frame.setVisible(True)
@@ -505,7 +511,7 @@ class SwikWidget(Shell):
         self.push_params(self.view.layout_manager.mode, self.view.ratio, 0, self.splitter.sizes())
         self.open_file()
 
-    def open_file(self, filename=None, apply_default=True):
+    def open_file(self, filename=None, warn=True):
         if filename is None:
             last_dir_for_open = self.config.private.get('last_dir_for_open')
             filename, ext = QFileDialog.getOpenFileName(self, 'Open file', last_dir_for_open, 'PDF (*.pdf)')
@@ -519,23 +525,23 @@ class SwikWidget(Shell):
                 if result == 0:
                     pass
                 elif result == -4:
-                    QMessageBox.warning(self, "Error", "Libreoffice does not seem to be installed.")
+                    warn and QMessageBox.warning(self, "Error", "Libreoffice does not seem to be installed.")
                     self.close_requested.emit(self)
                     return
                 elif result == -1:
-                    QMessageBox.warning(self, "Error", "Libreoffice Writer does not seem to be installed.")
+                    warn and QMessageBox.warning(self, "Error", "Libreoffice Writer does not seem to be installed.")
                     self.close_requested.emit(self)
                     return
                 elif result == -2:
-                    QMessageBox.warning(self, "Error", "Libreoffice Draw does not seem to be installed.")
+                    warn and QMessageBox.warning(self, "Error", "Libreoffice Draw does not seem to be installed.")
                     self.close_requested.emit(self)
                     return
                 elif result == -3:
-                    QMessageBox.warning(self, "Error", "Libreoffice Calc does not seem to be installed.")
+                    warn and QMessageBox.warning(self, "Error", "Libreoffice Calc does not seem to be installed.")
                     self.close_requested.emit(self)
                     return
                 else:
-                    QMessageBox.warning(self, "Error", "Error converting file")
+                    warn and QMessageBox.warning(self, "Error", "Error converting file")
                     self.close_requested.emit(self)
                     return
                 filename = filename.replace(ext, '.pdf')
@@ -549,12 +555,12 @@ class SwikWidget(Shell):
                     filename = filename.replace(ext, '.pdf')
                     pdf.save(filename)
                 except:
-                    QMessageBox.warning(self, "Error", "Error converting file")
+                    warn and QMessageBox.warning(self, "Error", "Error converting file")
                     self.close_requested.emit(self)
                     return
 
             if not os.path.exists(filename):
-                QMessageBox.warning(self, "Error", "File does not exist")
+                warn and QMessageBox.warning(self, "Error", "File does not exist")
                 self.close_requested.emit(self)
                 return
 
@@ -575,21 +581,27 @@ class SwikWidget(Shell):
                 self.file_browser.select(self.renderer.get_filename(), False)
 
             else:
-                QMessageBox.warning(self, "Error", "Error opening file")
+                warn and QMessageBox.warning(self, "Error", "Error opening file")
                 self.close_requested.emit(self)
 
     def save_file(self, name=None):
         name = self.renderer.get_filename() if name is None else name
+        print("in save_file: ", name)
+
         if self.renderer.get_num_of_pages() > 100:
-            self.progressing = Progressing(self, title="Saving PDF...")
-            self.progressing.start(self.renderer.save_pdf, name, callback=self.saved)
+            self.placeholder = Progressing(self, title="Saving PDF...")
+            self.placeholder.show()
+            result = self.renderer.save_pdf(name, False)
+            self.placeholder.close()
         else:
             result = self.renderer.save_pdf(name, False)
-            self.saved(result, name)
+        if result:
+            self.file_browser.select(self.renderer.get_filename(), False)
+            self.file_changed.emit(self)
+            self.changes_tracker.clear()
+            self.mode_group.reset()
 
-        self.file_changed.emit(self)
-        self.changes_tracker.clear()
-        self.mode_group.reset()
+        return result
 
     def apply_post_save_artifacts(self, filename):
         # Signature
@@ -607,14 +619,19 @@ class SwikWidget(Shell):
     def save_file_as(self):
         name = self.renderer.get_filename()
         name, _ = QFileDialog.getSaveFileName(self, "Save PDF Document", name, "PDF Files (*.pdf)")
+        print("name chosen", name)
         if name:
             return self.save_file(name)
         return False
 
     def rename(self):
-        filename = self.renderer.get_filename()
-        self.save_file_as()
-        os.remove(filename)
+        current_name = self.renderer.get_filename()
+        name, _ = QFileDialog.getSaveFileName(self, "Save PDF Document", current_name, "PDF Files (*.pdf)")
+        print("name chosen", name)
+        if name:
+            if self.save_file(name):
+                pathlib.Path.unlink(pathlib.Path(current_name))
+        return False
 
     def open_with_other(self, command):
         if command is not None:

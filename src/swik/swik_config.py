@@ -20,7 +20,7 @@ class SwikConfig(EasyConfig):
 
     def __init__(self):
         super().__init__()
-        self.base_dir = os.path.expanduser('~') + os.sep + '.config' + os.sep + 'swik'
+        self.base_dir = os.path.expanduser('~') + os.sep + '.config' + os.sep + 'swik' + os.sep
         self.set_dialog_minimum_size(500, 500)
 
         if not os.path.exists(self.base_dir):
@@ -29,9 +29,9 @@ class SwikConfig(EasyConfig):
         #    os.makedirs(self.base_dir + os.sep + "script")
 
         self.general = self.root().addSubSection("General")
-        self.general.addString("file_browser", pretty="File Browser", default="/usr/bin/nautilus")
+        self.general.addFile("file_browser", pretty="File Browser", default="/usr/bin/nautilus")
         self.general.addString("web_search", pretty="Web Search query", default="https://www.google.com/search?q=")
-        self.general.addEditBox("other_pdf", pretty="Other PDF readers", height=50, default="/usr/bin/evince&&/usr/bin/okular")
+        self.general.addList("other_pdf", pretty="Other PDF readers", height=50, default=[], type="file")
         self.general.addCheckbox("open_last", pretty="Reopen Last opened", default=True)
         self.general.addCombobox("lateral_bar_position", pretty="Lateral Bar Position", items=["Left", "Right", "Bottom", "Top"])
         self.general.addCheckbox("natural_hscroll", pretty="Natural H-Scroll")
@@ -144,7 +144,8 @@ class SwikConfig(EasyConfig):
         recent = self.private.get("recent")
         if recent is not None:
             for r in recent:
-                open_recent.addAction(r, lambda x=r: window.open_file(x))
+                if os.path.exists(r):
+                    open_recent.addAction(r, lambda x=r: window.open_file(x))
 
     def should_continue(self, key, message, icon=QMessageBox.Question, title="Warning", parent=None):
         if not self.been_warned(key):

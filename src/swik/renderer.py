@@ -165,7 +165,7 @@ class MuPDFRenderer(QLabel):
             return self.OPEN_ERROR
 
     def save_pdf(self, filename, emit=True):
-
+        print("Saving to in renderer", filename)
         if self.watcher.files():
             self.watcher.removePaths(self.watcher.files())
 
@@ -176,8 +176,10 @@ class MuPDFRenderer(QLabel):
         self.sync_dynamic.emit()
 
         if filename != self.get_filename():
+            print("Saving to2", filename)
             self.document.save(filename, encryption=PDF_ENCRYPT_KEEP, deflate=True, garbage=3)
         else:
+            print("Saving to3", filename)
             tmp_dir = tempfile.gettempdir() + os.sep
             temp_filename = tmp_dir + "swik_{}.tmp".format(int(time.time()))
 
@@ -193,6 +195,7 @@ class MuPDFRenderer(QLabel):
         self.watcher.addPath(self.filename)
 
         self.set_document(orig_doc, False)
+        return True
 
     def get_page_size(self, index):
         return self.document[index].rect[2], self.document[index].rect[3]

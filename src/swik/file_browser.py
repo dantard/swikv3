@@ -108,10 +108,18 @@ class FileBrowser(QWidget):
         self.treeview.setCurrentIndex(index)
         self.treeview.selectionModel().blockSignals(False)
 
-    def on_current_changed(self, index, prev):
-        if index is None or len(index.indexes()) < 1:
+    def on_current_changed(self, selected, deselected):
+        if deselected.indexes():
+            print("deselected1", deselected.indexes())
+            # Check if the deselected index is valid
+            for index in deselected.indexes():
+                if not os.path.isfile(self.dirModel.filePath(index)):
+                    self.treeview.clearSelection()
+                    return
+
+        if selected is None or len(selected.indexes()) < 1:
             return
-        path = self.dirModel.fileInfo(index.indexes()[0]).absoluteFilePath()
+        path = self.dirModel.fileInfo(selected.indexes()[0]).absoluteFilePath()
         # self.listview.setRootIndex(self.fileModel.setRootPath(path))
         if os.path.isfile(path):
             self.signals.file_selected.emit(path)

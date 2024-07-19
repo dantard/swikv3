@@ -8,6 +8,7 @@ class Magnifier(QGraphicsView):
 
     def __init__(self, widget):
         super().__init__(widget.view.scene())
+        self.pos1 = None
         self.main_view: QGraphicsView = widget.view
         self.setAlignment(Qt.AlignTop | Qt.AlignLeft)
         # self.link_shower.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)

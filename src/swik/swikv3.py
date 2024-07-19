@@ -54,27 +54,30 @@ class MainWindow(QMainWindow):
         rename = file_menu.addAction('Rename', self.rename)
         file_menu.addSeparator()
         copy_path = file_menu.addAction('Copy path', self.copy_path)
-        command = self.config.general.get("other_pdf")
-        self.file_menu_actions = [save, save_as, copy_path, rename]
+        file_menu.addSeparator()
+        file_menu.addAction('Preferences', self.preferences)
+        file_menu.addSeparator()
+        open_wo_odf = file_menu.addMenu('Open with other Viewer')
 
-        if command is not None and command != "None":
-            open_wo_odf = file_menu.addMenu('Open with other Viewer')
-            self.file_menu_actions.append(open_wo_odf)
-            for line in command.split("&&"):
-                data = line.split(" ")
-                if len(data) == 2:
-                    name, cmd = data
-                else:
-                    name = cmd = data[0]
-                open_wo_odf.addAction(name, lambda x=cmd: self.open_with_other(x))
+        self.file_menu_actions = [save, save_as, copy_path, rename, open_wo_odf]
+
+        def update_open_with_other():
+            open_wo_odf.clear()
+            command = self.config.general.get("other_pdf")
+            if command is not None and len(command) > 0:
+                for name in command:
+                    open_wo_odf.addAction(name, lambda x=name: self.open_with_other(x))
+                open_wo_odf.setEnabled(True)
+            else:
+                open_wo_odf.addAction("Add viewer", self.preferences)
+
+        open_wo_odf.aboutToShow.connect(update_open_with_other)
         # end setup file menu
 
         # Setup edit menu
         self.edit_menu = menu_bar.addMenu('Edit')
         self.edit_menu.addAction('Edit metadata', lambda: self.current().edit_metadata())
         self.edit_menu.addAction('Edit XML metadata', lambda: self.current().edit_xml_metadata())
-        self.edit_menu.addSeparator()
-        self.edit_menu.addAction('Preferences', self.preferences)
         self.edit_menu.addSeparator()
         self.edit_menu.addAction('Set as default PDF reader', self.set_as_default)
         # end setup edit menu
@@ -106,16 +109,16 @@ class MainWindow(QMainWindow):
         self.tab_widget.tab_close_requested.connect(self.close_tab)
 
         # Add open with menu
-        command = self.config.general.get("other_pdf")
-        if command is not None and command != "None":
-            actions = []
-            for line in command.split("&&"):
-                data = line.split(" ")
-                actions.append((data[0], self.TAB_MENU_OPEN_WITH, data[1]) if len(data) == 2 else (
-                    data[0], self.TAB_MENU_OPEN_WITH, data[0]))
-            self.tab_widget.add_menu_submenu("Open with", actions)
-        self.tab_widget.set_menu_callback(self.tab_menu)
-        # Done
+        # command = self.config.general.get("other_pdf")
+        # if command is not None and command != "None":
+        #     actions = []
+        #     for line in command.split("&&"):
+        #         data = line.split(" ")
+        #         actions.append((data[0], self.TAB_MENU_OPEN_WITH, data[1]) if len(data) == 2 else (
+        #             data[0], self.TAB_MENU_OPEN_WITH, data[0]))
+        #     self.tab_widget.add_menu_submenu("Open with", actions)
+        # self.tab_widget.set_menu_callback(self.tab_menu)
+        # # Done
 
         # self.tab_widget.setVisible(False)
         self.magnifier = None
@@ -244,15 +247,20 @@ class MainWindow(QMainWindow):
 
     def update_interaction_status(self):
         value = self.current().is_interaction_enabled() if self.current() is not None else False
-        self.tool_menu.setEnabled(value)
+        for action in self.tool_menu.actions():
+            action.setEnabled(value)
+        for action in self.edit_menu.actions():
+            action.setEnabled(value)
+        # self.tool_menu.setEnabled(value)
+        # self.edit_menu.setEnabled(value)
         # self.edit_menu.setEnabled(self.current().is_interaction_enabled())
         for action in self.file_menu_actions:
             action.setEnabled(value)
 
-    def open_new_tab(self, widget, filename=None):
+    def open_new_tab(self, widget, filename=None, warn=True):
         self.tab_widget.new_tab(widget, filename)
         if filename is not None:
-            widget.open_file(filename)
+            widget.open_file(filename, warn)
             self.update_interaction_status()
 
         return widget
