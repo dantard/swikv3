@@ -331,6 +331,7 @@ class MainWindow(QMainWindow):
     def preferences(self):
         self.config.exec()
         self.config.flush()
+        self.current().preferences_changed()
 
     def open_with_other(self, command):
         self.current().open_with_other(command)

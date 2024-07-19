@@ -12,11 +12,11 @@ from swik.changes_tracker import ChangesTracker
 import swik.resources
 
 from PyQt5 import QtGui
-from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QPainter, QIcon
+from PyQt5.QtCore import Qt, pyqtSignal, QRectF
+from PyQt5.QtGui import QPainter, QIcon, QPalette
 from PyQt5.QtWidgets import QApplication, QFileDialog, QDialog, QMessageBox, QHBoxLayout, \
     QWidget, QTabWidget, QVBoxLayout, QToolBar, \
-    QSplitter, QGraphicsScene, QProgressBar, QTreeWidget, QTreeWidgetItem, QPushButton, QLabel, QFrame, QSizePolicy
+    QSplitter, QGraphicsScene, QProgressBar, QTreeWidget, QTreeWidgetItem, QPushButton, QLabel, QFrame, QSizePolicy, QScrollBar
 from pymupdf import Document
 
 from swik.file_browser import FileBrowser
@@ -68,6 +68,22 @@ class Splitter(QSplitter):
         # print("splitter released")
 
 
+class MyScrollBar(QScrollBar):
+
+    def paintEvent(self, a0: QtGui.QPaintEvent) -> None:
+
+        if self.maximum() == 0:
+            painter = QPainter(self)
+            painter.setCompositionMode(QPainter.CompositionMode_SourceOver)
+
+            qr = QRectF(self.rect().x(), self.rect().y(), self.rect().width(), self.rect().height())
+            painter.fillRect(qr, Qt.transparent)
+        else:
+            super().paintEvent(a0)
+
+        # print("paintevent")
+
+
 class SwikWidget(Shell):
     interaction_changed = pyqtSignal(QWidget)
     open_requested = pyqtSignal(str, int, float)
@@ -95,6 +111,7 @@ class SwikWidget(Shell):
         self.manager = Manager(self.renderer, self.config)
         self.view = SwikGraphView(self.manager, self.renderer, self.scene, page=Page,
                                   mode=self.config.private.get('mode', default=LayoutManager.MODE_VERTICAL))
+        self.view.setVerticalScrollBar(MyScrollBar())
         self.view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.view.setRenderHint(QPainter.Antialiasing)
         self.view.setRenderHint(QPainter.TextAntialiasing)
@@ -103,6 +120,7 @@ class SwikWidget(Shell):
         self.view.document_ready.connect(self.document_ready)
 
         self.miniature_view = MiniatureView(self.manager, self.renderer, QGraphicsScene())
+        self.miniature_view.setVerticalScrollBar(MyScrollBar())
         self.miniature_view.setRenderHint(QPainter.Antialiasing)
         self.miniature_view.setRenderHint(QPainter.TextAntialiasing)
         self.miniature_view.setRenderHint(QPainter.SmoothPixmapTransform)
@@ -138,8 +156,8 @@ class SwikWidget(Shell):
         self.vlayout.addLayout(self.hlayout)
         self.hlayout.addLayout(self.ilayout)
 
-        helper = QWidget()
-        helper.setLayout(self.vlayout)
+        self.main_view = QWidget()
+        self.main_view.setLayout(self.vlayout)
 
         self.app_bar = AppBar()
         self.app_bar.close.connect(self.app_closed)
@@ -226,7 +244,7 @@ class SwikWidget(Shell):
         self.lateral_bar.addSeparator()
         self.mode_group.append(self.lateral_bar)
 
-        for w in [self.vlayout, self.hlayout, self.ilayout, self.app_layout, self.splitter, helper, self.lateral_bar]:
+        for w in [self.vlayout, self.hlayout, self.ilayout, self.app_layout, self.splitter, self.main_view, self.lateral_bar]:
             w.setContentsMargins(0, 0, 0, 0)
 
         self.outline = QTreeWidget()
@@ -245,8 +263,8 @@ class SwikWidget(Shell):
         self.tab.setTabVisible(1, False)
         self.tab.setMaximumWidth(self.miniature_view.maximumWidth())
 
-        self.splitter.addWidget(self.tab)
-        self.splitter.addWidget(helper)
+        self.update_miniature_bar_position()
+
         self.set_interactable(False)
         self.preferences_changed()
         QApplication.processEvents()
@@ -372,6 +390,7 @@ class SwikWidget(Shell):
 
     def preferences_changed(self):
         self.update_lateral_bar_position()
+        self.update_miniature_bar_position()
 
     def iterate_bar_position(self):
         pos = self.config.general.get('lateral_bar_position', default=0)
@@ -692,3 +711,18 @@ class SwikWidget(Shell):
     def die(self):
         self.finder_toolbar.die()
         self.dying.emit()
+
+    def update_miniature_bar_position(self):
+        widgets = [self.splitter.widget(i) for i in range(self.splitter.count())]
+        for widget in widgets:
+            if widget is not None:
+                widget.setParent(None)
+
+        if self.config.lateral_bar_side.get_value() == 0:
+            self.splitter.addWidget(self.tab)
+            self.splitter.addWidget(self.main_view)
+        elif self.config.lateral_bar_side.get_value() == 1:
+            self.splitter.addWidget(self.main_view)
+            self.splitter.addWidget(self.tab)
+        else:
+            self.splitter.addWidget(self.main_view)

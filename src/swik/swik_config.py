@@ -33,7 +33,7 @@ class SwikConfig(EasyConfig):
         self.general.addString("web_search", pretty="Web Search query", default="https://www.google.com/search?q=")
         self.general.addList("other_pdf", pretty="Other PDF readers", height=50, default=[], type="file")
         self.general.addCheckbox("open_last", pretty="Reopen Last opened", default=True)
-        self.general.addCombobox("lateral_bar_position", pretty="Lateral Bar Position", items=["Left", "Right", "Bottom", "Top"])
+        self.general.addCombobox("lateral_bar_position", pretty="Tools Bar Position", items=["Left", "Right", "Bottom", "Top"])
         self.general.addCheckbox("natural_hscroll", pretty="Natural H-Scroll")
 
         self.zoom_on_open = self.general.addCombobox("zoom_on_open", pretty="Default Zoom",
@@ -42,7 +42,8 @@ class SwikConfig(EasyConfig):
         self.mode_on_open = self.general.addCombobox("mode_on_open", pretty="Default Mode",
                                                      items=['Vertical', 'Multi page', 'Horizontal', 'Single Page'],
                                                      default=1)
-        self.lateral_bar_size = self.general.addCombobox("lateral_bar_size", pretty="Default Miniature Size", items=["Small", "Medium", "Large", "Off"],
+        self.lateral_bar_side = self.general.addCombobox("lateral_bar_side", pretty="Miniature Bar Position", items=["Left", "Right", "None"], default=0)
+        self.lateral_bar_size = self.general.addCombobox("lateral_bar_size", pretty="Default Miniature Bar Size", items=["Small", "Medium", "Large", "Off"],
                                                          default=0)
 
         # encryption = self.root().addSubSection("Encryption")
