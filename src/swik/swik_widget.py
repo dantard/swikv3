@@ -70,6 +70,20 @@ class Splitter(QSplitter):
 
 class MyScrollBar(QScrollBar):
 
+    def __init__(self):
+        super().__init__()
+        self.installEventFilter(self)
+        self.hover = False
+
+    def eventFilter(self, obj, event):
+        if event.type() == event.Enter:
+            self.hover = True
+            self.update()
+        elif event.type() == event.Leave:
+            self.hover = False
+            self.update()
+        return False
+
     def paintEvent(self, a0: QtGui.QPaintEvent) -> None:
 
         if self.maximum() == 0:
@@ -96,6 +110,74 @@ class SwikWidget(Shell):
     def __init__(self, window, config):
         super().__init__()
         self.interaction_enabled = False
+        #         self.setStyleSheet('''
+        #
+        #
+        #             /* VERTICAL SCROLLBAR */
+        #             QScrollBar:vertical {
+        #                 border: none;
+        #                 background: rgb(0, 0, 0,0);
+        #                 width: 14px;
+        #                 margin: 15px 0 15px 0;
+        #                 border-radius: 0px;
+        #             }
+        #             /*  HANDLE BAR VERTICAL */
+        #             QScrollBar::handle:vertical {
+        #                 background-color: rgb(80, 80, 80, 0);
+        #                 min-height: 30px;
+        #                 border-radius: 0px;
+        #             }
+        #             QScrollBar::handle:vertical:hover {
+        #                 background-color: rgb(255, 0, 127);
+        #             }
+        #             QScrollBar::handle:vertical:pressed {
+        #                 background-color: rgb(185, 0, 92);
+        #             }
+        #             /* BTN TOP - SCROLLBAR */
+        #             QScrollBar::sub-line:vertical {
+        #                 border: none;
+        #                 background-color: rgb(59, 59, 90);
+        #                 height: 0px;
+        #                 border-top-left-radius: 7px;
+        #                 border-top-right-radius: 7px;
+        #                 subcontrol-position: top;
+        #                 subcontrol-origin: margin;
+        #             }
+        #             QScrollBar::sub-line:vertical:hover {
+        #                 background-color: rgb(255, 0, 127);
+        #             }
+        #             QScrollBar::sub-line:vertical:pressed {
+        #                 background-color: rgb(185, 0, 92);
+        #             }
+        #
+        #             /* BTN BOTTOM - SCROLLBAR */
+        #             QScrollBar::add-line:vertical {
+        #                 border: none;
+        #                 background-color: rgb(59, 59, 90);
+        #                 height: 0px;
+        #                 border-bottom-left-radius: 7px;
+        #                 border-bottom-right-radius: 7px;
+        #                 subcontrol-position: bottom;
+        #                 subcontrol-origin: margin;
+        #             }
+        #             QScrollBar::add-line:vertical:hover {
+        #                 background-color: rgb(255, 0, 127);
+        #             }
+        #             QScrollBar::add-line:vertical:pressed {
+        #                 background-color: rgb(185, 0, 92);
+        #             }
+        #
+        #
+        # /* RESET ARROW  vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv       */
+        #             QScrollBar::up-arrow:vertical, QScrollBar::down-arrow:vertical {
+        #                 background: none;
+        #             }
+        #             QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+        #                 background: none;
+        #             }
+        # /* ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^       */
+        #
+        #         ''')
         self.win = window
         self.config = config
         self.params = []
