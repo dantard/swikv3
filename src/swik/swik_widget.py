@@ -499,7 +499,7 @@ class SwikWidget(Shell):
         return self.win.statusBar()
 
     def iterate_mode(self):
-        mode = (self.view.get_mode() + 1) % (len(LayoutManager.modes) - 1)
+        mode = (self.view.get_mode() + 1) % (len(LayoutManager.modes))
         self.view.set_mode(mode, True)
         self.statusBar().showMessage("Mode " + LayoutManager.modes[mode], 2000)
 
@@ -538,7 +538,7 @@ class SwikWidget(Shell):
         QApplication.processEvents()
 
         if ratio > 0:
-            self.view.ratio = ratio
+            self.view.set_ratio(ratio, True)
         else:
             # Precompute ratio for
             # fit width to avoid flickering
