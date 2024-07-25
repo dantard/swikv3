@@ -256,6 +256,11 @@ class MuPDFRenderer(QLabel):
         pix = self.get_document()[index].get_pixmap(matrix=mat, alpha=False, annots=True)
         return QPixmap.fromImage(QImage(pix.samples, pix.width, pix.height, pix.stride, QImage.Format_RGB888))
 
+    def render_image(self, index, ratio):
+        mat = pymupdf.Matrix(ratio, ratio)
+        pix = self.get_document()[index].get_pixmap(matrix=mat, alpha=False, annots=True)
+        return QImage(pix.samples, pix.width, pix.height, pix.stride, QImage.Format_RGB888)
+
     def load(self, index, ratio, force):
         class Loader(QRunnable):
             def __init__(self, renderer: MuPDFRenderer, index, ratio, mutex):

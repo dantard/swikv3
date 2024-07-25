@@ -23,6 +23,7 @@ class Progressing(QProgressDialog):
         self.setMaximum(max_value)
         self.callback = None
         self.setLabelText(title)
+        self.setModal(True)
         if not cancel:
             self.setCancelButton(None)
         self.show()

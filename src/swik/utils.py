@@ -63,6 +63,39 @@ def fitz_color_to_qcolor(color, opacity=1):
     return color
 
 
+def adjust_crop2(image: QImage, ratio=1.0) -> QRectF:
+    w = image.width()
+    h = image.height()
+    f = h / w
+
+    for i in range(100, w):
+        white = QColor(Qt.white)
+        h1 = f * i
+        w1 = i
+        x1, y1 = int(w / 2 - w1 / 2), int(h / 2 - h1 / 2)
+        x2, y2 = int(x1 + w1), int(y1 + h1)
+
+        ok = True
+        for x in range(x1, x2):
+            color_up = QColor(image.pixel(x, y1))
+            color_down = QColor(image.pixel(x, y2))
+            if color_up != white or color_down != white:
+                ok = False
+                break
+
+        for y in range(y1, y2):
+            color_left = QColor(image.pixel(x1, y))
+            color_right = QColor(image.pixel(x2, y))
+            if color_left != white or color_right != white:
+                ok = False
+                break
+
+        if ok:
+            return QRectF(x1 / ratio, y1 / ratio, (x2 - x1) / ratio, (y2 - y1) / ratio)
+
+    return None
+
+
 def adjust_crop(image: QImage, ratio=1.0) -> QRectF:
     # Create a QColor object to represent white
     white = QColor(Qt.white)
