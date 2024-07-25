@@ -2,7 +2,7 @@ from multiprocessing.pool import ThreadPool
 
 from PyQt5 import QtGui, QtWidgets, QtCore
 from PyQt5.QtCore import pyqtSignal, QCoreApplication, Qt, QEvent, QPoint, QTimer, QMutex, QRectF
-from PyQt5.QtGui import QWheelEvent, QPainter, QColor
+from PyQt5.QtGui import QWheelEvent, QPainter, QColor, QKeyEvent
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsRectItem, QApplication, QScrollBar, QGraphicsEllipseItem
 
 from swik import utils
@@ -29,6 +29,20 @@ class GraphView(QGraphicsView):
     page_created = pyqtSignal(SimplePage)
     page_clicked = pyqtSignal(int)
 
+    def eventFilter(self, a0: QtCore.QObject, a1: QtCore.QEvent) -> bool:
+        if self.scene().focusItem() is not None:
+            return False
+
+        if a1.type() == QKeyEvent.KeyPress:
+            if a1.key() == Qt.Key_Left:
+                self.move_to_page(self.page - 1)
+                return True
+            elif a1.key() == Qt.Key_Right:
+                self.move_to_page(self.page + 1)
+                return True
+
+        return False
+
     def __init__(self, manager, renderer, scene, page=SimplePage, mode=LayoutManager.MODE_VERTICAL_MULTIPAGE, align=Qt.AlignVCenter | Qt.AlignHCenter,
                  page_sep=27):
         super().__init__()
@@ -42,6 +56,8 @@ class GraphView(QGraphicsView):
         self.page = 0
         self.pages = SyncDict()
         self.immediate_resize = False
+
+        self.installEventFilter(self)
 
         self.setScene(scene)
         self.scene().setBackgroundBrush(Qt.gray)
@@ -61,6 +77,8 @@ class GraphView(QGraphicsView):
 
         if mode == LayoutManager.MODE_FIT_WIDTH:
             self.ratio_changed.emit(-1)
+        elif mode == LayoutManager.MODE_FIT_PAGE:
+            self.ratio_changed.emit(-2)
         elif self.layout_manager.get_mode() == LayoutManager.MODE_FIT_WIDTH:
             self.ratio_changed.emit(self.ratio)
             for page in self.pages.values():
@@ -106,7 +124,7 @@ class GraphView(QGraphicsView):
         return self.ratio
 
     def set_ratio(self, ratio, inform=False):
-        if self.layout_manager.get_mode() == LayoutManager.MODE_FIT_WIDTH:
+        if self.layout_manager.get_mode() in [LayoutManager.MODE_FIT_WIDTH, LayoutManager.MODE_FIT_PAGE]:
             self.layout_manager.set_mode(LayoutManager.MODE_VERTICAL, False)
 
         ratio = min(max(self.layout_manager.ratio_min, ratio), self.layout_manager.ratio_max)
@@ -193,7 +211,8 @@ class GraphView(QGraphicsView):
             self.layout_manager.move_to_page(page)
 
             # Must be here because of the fit_width that changes the scrollbars
-            if self.layout_manager.get_mode() in [LayoutManager.MODE_VERTICAL_MULTIPAGE, LayoutManager.MODE_VERTICAL]:
+            if self.layout_manager.get_mode() in [LayoutManager.MODE_VERTICAL_MULTIPAGE, LayoutManager.MODE_VERTICAL, LayoutManager.MODE_FIT_WIDTH,
+                                                  LayoutManager.MODE_FIT_PAGE]:
                 self.verticalScrollBar().setValue(int((page.pos().y() + offset * self.get_ratio())))
             else:
                 self.horizontalScrollBar().setValue(int((page.pos().x() + offset * self.get_ratio())))

@@ -11,11 +11,12 @@ class LayoutManager:
     MODE_HORIZONTAL = 2
     MODE_SINGLE_PAGE = 3
     MODE_FIT_WIDTH = 4
+    MODE_FIT_PAGE = 5
 
     modes = {MODE_VERTICAL: 'Vertical', MODE_VERTICAL_MULTIPAGE: 'Multi page',
-             MODE_HORIZONTAL: 'Horizontal', MODE_SINGLE_PAGE: 'Single Page', MODE_FIT_WIDTH: 'Fit Width'}
+             MODE_HORIZONTAL: 'Horizontal', MODE_SINGLE_PAGE: 'Single Page', MODE_FIT_WIDTH: 'Fit Width', MODE_FIT_PAGE: 'Fit Page'}
 
-    Vertical = [MODE_VERTICAL, MODE_VERTICAL_MULTIPAGE, MODE_SINGLE_PAGE, MODE_FIT_WIDTH]
+    Vertical = [MODE_VERTICAL, MODE_VERTICAL_MULTIPAGE, MODE_SINGLE_PAGE, MODE_FIT_WIDTH, MODE_FIT_PAGE]
 
     ratio_max = 5
     ratio_min = 0.25
@@ -40,6 +41,15 @@ class LayoutManager:
 
     def set_mode(self, mode, update=True):
         self.mode = mode
+
+        if mode == self.MODE_SINGLE_PAGE:
+            w, h = self.renderer.get_page_size(0)
+            if w < h:
+                ratio = 1 / (h / (self.view.viewport().height() - 60))
+            else:
+                ratio = 1 / (w / (self.view.viewport().width() - 60))
+            self.view.set_ratio(ratio, True)
+
         if update:
             self.reset()
             self.fully_update_layout()
@@ -73,7 +83,15 @@ class LayoutManager:
             max_width, max_height = 0, 20
             for index in range(self.renderer.get_num_of_pages()):
                 w, h = self.renderer.get_page_size(index)
-                ratio = self.view.get_ratio() if self.mode != self.MODE_FIT_WIDTH else 1 / (w / (self.view.viewport().width() - 20))
+                if self.mode == self.MODE_FIT_WIDTH:
+                    ratio = 1 / (w / (self.view.viewport().width() - 20))
+                elif self.mode == self.MODE_FIT_PAGE:
+                    if w < h:
+                        ratio = 1 / (h / (self.view.viewport().height() - 40))
+                    else:
+                        ratio = 1 / (w / (self.view.viewport().width() - 40))
+                else:
+                    ratio = self.view.get_ratio()
                 w = w * ratio
                 h = h * ratio
                 max_width = max(max_width, w)
@@ -90,6 +108,21 @@ class LayoutManager:
 
     def single_column_fit_width(self, page):
         ratio = page.get_orig_width() / (self.view.viewport().width() - 17)
+        page.update_ratio(1 / ratio)
+        y_pos = 20 if page.index == 0 else self.view.pages[page.index - 1].pos().y() + self.view.pages[page.index - 1].get_scaled_height() + self.page_sep
+        self.scene_height = max(self.scene_height, y_pos + page.get_scaled_height() + self.page_sep)
+        # self.view.scene().setSceneRect(0, 0, page.get_scaled_width(), self.scene_height)
+        page.setPos(0, y_pos)
+        page.setVisible(True)
+
+    def single_column_fit_page(self, page):
+        w, h = page.get_orig_width(), page.get_orig_height()
+        if w < h:
+            ratio = 1 / (h / (self.view.viewport().height() - 60))
+        else:
+            ratio = 1 / (w / (self.view.viewport().width() - 60))
+
+        # ratio = page.get_orig_height() / (self.view.viewport().height() - 17)
         page.update_ratio(1 / ratio)
         y_pos = 20 if page.index == 0 else self.view.pages[page.index - 1].pos().y() + self.view.pages[page.index - 1].get_scaled_height() + self.page_sep
         self.scene_height = max(self.scene_height, y_pos + page.get_scaled_height() + self.page_sep)
@@ -153,6 +186,8 @@ class LayoutManager:
 
         elif self.mode == self.MODE_FIT_WIDTH:
             self.single_column_fit_width(page)
+        elif self.mode == self.MODE_FIT_PAGE:
+            self.single_column_fit_page(page)
         elif self.mode == self.MODE_VERTICAL_MULTIPAGE:
             self.vertical_multipage(page)
         elif self.mode == self.MODE_VERTICAL:

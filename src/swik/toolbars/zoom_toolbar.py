@@ -7,7 +7,7 @@ from swik.toolbars.toolbar import Toolbar
 
 
 class ZoomToolbar(Toolbar):
-    options = ["25%", "50%", "100%", "200%", "300%", "400%", "500%", "Fit Width"]
+    options = ["25%", "50%", "100%", "200%", "300%", "400%", "500%", "Fit Width", "Fit Page"]
 
     def __init__(self, view: GraphView, toolbar: QToolBar = None):
         super().__init__(view, toolbar)
@@ -31,6 +31,9 @@ class ZoomToolbar(Toolbar):
     def option_selected(self):
         if self.lb_zoom.currentText() == "Fit Width":
             self.view.layout_manager.set_mode(LayoutManager.MODE_FIT_WIDTH)
+            self.lb_zoom.setEditable(False)
+        elif self.lb_zoom.currentText() == "Fit Page":
+            self.view.layout_manager.set_mode(LayoutManager.MODE_FIT_PAGE)
             self.lb_zoom.setEditable(False)
         else:
             self.view.set_ratio(float(self.lb_zoom.currentText().replace("%", "")) / 100, False)
@@ -57,10 +60,15 @@ class ZoomToolbar(Toolbar):
 
     def ratio_changed(self, ratio):
 
-        if ratio < 0:
+        if ratio == -1:
             self.lb_zoom.blockSignals(True)
             self.lb_zoom.setEditable(False)
             self.lb_zoom.setCurrentText("Fit Width")
+            self.lb_zoom.blockSignals(False)
+        elif ratio == -2:
+            self.lb_zoom.blockSignals(True)
+            self.lb_zoom.setEditable(False)
+            self.lb_zoom.setCurrentText("Fit Page")
             self.lb_zoom.blockSignals(False)
         else:
             self.lb_zoom.blockSignals(True)
