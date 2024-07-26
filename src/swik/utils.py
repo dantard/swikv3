@@ -96,9 +96,8 @@ def adjust_crop2(image: QImage, ratio=1.0) -> QRectF:
     return None
 
 
-def adjust_crop(image: QImage, ratio=1.0) -> QRectF:
+def adjust_crop(image: QImage, ratio=1.0, level=255) -> QRectF:
     # Create a QColor object to represent white
-    white = QColor(Qt.white)
 
     # Initialize variables for the dimensions of the smallest rectangle
     # that contains non-white pixels
@@ -112,10 +111,10 @@ def adjust_crop(image: QImage, ratio=1.0) -> QRectF:
         for y in range(image.height()):
             # Get the color of the current pixel
             color = QColor(image.pixel(x, y))
-
+            r, g, b = color.red(), color.green(), color.blue()
             # If the color is not white, update the dimensions of the
             # smallest rectangle that contains non-white pixels
-            if color != white:
+            if r < level or g < level or b < level:
                 left = min(left, x)
                 top = min(top, y)
                 right = max(right, x)
@@ -194,15 +193,18 @@ def row(w1, w2, all=True):
     return h_layout
 
 
-def col(w1, w2, *args):
+def col(*args):
     v_layout = QVBoxLayout()
-    if isinstance(w1, str):
-        w1 = QLabel(w1)
-        w1.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-    v_layout.addWidget(w1)
-    v_layout.addWidget(w2)
+     
     for w in args:
-        v_layout.addWidget(w)
+        if type(w) == str:
+            w1 = QLabel(w)
+            v_layout.addWidget(w1)
+            w1.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        elif isinstance(w, QWidget):
+            v_layout.addWidget(w)
+        else:
+            v_layout.addLayout(w)
 
     return v_layout
 

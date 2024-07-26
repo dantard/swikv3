@@ -406,10 +406,12 @@ class MuPDFRenderer(QLabel):
         else:
             cx, cy = 0, 0
 
-        self.document[page].set_cropbox(Rect(x + cx,
-                                             y + cy,
-                                             x + cx + w,
-                                             y + cy + h) * self.document[
+        mx1, my1, mx2, my2 = self.document[page].mediabox
+
+        self.document[page].set_cropbox(Rect(max(x + cx, mx1),
+                                             max(y + cy, my1),
+                                             min(x + cx + w, mx2),
+                                             min(y + cy + h, my2)) * self.document[
                                             page].derotation_matrix)
         w, h = self.get_page_size(page)
         self.images[page].update(w, h)

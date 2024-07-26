@@ -1,6 +1,6 @@
 from PyQt5.QtCore import Qt, QRectF
 from PyQt5.QtGui import QColor, QPixmap
-from PyQt5.QtWidgets import QWidget, QPushButton, QVBoxLayout, QLabel, QMenu, QComboBox, QApplication, QMessageBox, QCheckBox
+from PyQt5.QtWidgets import QWidget, QPushButton, QVBoxLayout, QLabel, QMenu, QComboBox, QApplication, QMessageBox, QCheckBox, QSlider
 
 from swik.progressing import Progressing
 
@@ -66,11 +66,15 @@ class ToolCrop(Tool, Undoable):
         self.draw_btn = QPushButton("Draw")
         self.draw_btn.setCheckable(True)
         self.draw_btn.clicked.connect(self.draw)
+        self.level = QSlider(Qt.Horizontal)
+        self.level.setMaximum(255)
+        self.level.setMinimum(80)
+        self.level.setValue(255)
 
         self.crop_btn = QPushButton("Crop")
         self.crop_btn.clicked.connect(self.do_crop)
 
-        self.crop_page_btn = QPushButton("Draw Page")
+        self.crop_page_btn = QPushButton("Draw Pages")
         self.crop_page_btn.clicked.connect(self.do_crop_page)
 
         self.adjust_crop_btn = QPushButton("Adjust Crop")
@@ -89,7 +93,11 @@ class ToolCrop(Tool, Undoable):
         self.crop_page_cb.addItems(["All"] + [str(i + 1) for i in range(len(self.view.pages))])
 
         self.vlayout.addWidget(utils.framed(self.draw_btn, "Crop"))
-        self.vlayout.addWidget(utils.framed(utils.col(self.crop_page_cb, self.crop_page_btn), "Crop Pages"))
+        label = QLabel("☼")
+        row = utils.row(label, self.level, False)
+        self.vlayout.addWidget(utils.framed(utils.col(self.crop_page_cb, row, self.crop_page_btn), "Crop Pages"))
+        self.level.valueChanged.connect(
+            lambda: label.setStyleSheet("background-color:rgb({:d},{:d},{:d});".format(self.level.value(), self.level.value(), self.level.value())))
 
         self.vlayout.addWidget(utils.framed(utils.col(self.adjust_crop_btn, self.clear_btn, self.crop_btn), "Selection"))
         self.vlayout.addWidget(utils.framed(utils.col(self.cropped_cb, self.uncrop_btn), "Cropped pages"))
@@ -142,7 +150,7 @@ class ToolCrop(Tool, Undoable):
 
                     image = image.copy(int(rect.x()), int(rect.y()), int(rect.width()), int(rect.height()))
 
-                    rect2 = utils.adjust_crop(image, 1)
+                    rect2 = utils.adjust_crop(image, 1, self.level.value())
                     rect3 = QRectF(rect.x() + rect2.x(), rect.y() + rect2.y(), rect2.width(), rect2.height())
                     item.setRect(QRectF(0, 0, rect3.width(), rect3.height()))
                     item.setPos(rect3.x(), rect3.y())
@@ -154,7 +162,7 @@ class ToolCrop(Tool, Undoable):
         for page in self.view.pages.values():
             for rubberband in page.items(CropRectItem):
                 image = self.renderer.render_image(page.index, 1)
-                rect3 = utils.adjust_crop2(image, 1)
+                rect3 = utils.adjust_crop2(image, 1, self.level.value())
                 if rect3 is not None:
                     rubberband.setRect(QRectF(0, 0, rect3.width(), rect3.height()))
                     rubberband.setPos(rect3.x(), rect3.y())
@@ -203,11 +211,11 @@ class ToolCrop(Tool, Undoable):
 
     def do_crop_page(self):
 
-        pages = self.crop_page_cb.currentText()
-        if pages == "All":
+        text = self.crop_page_cb.currentText()
+        if text == "All":
             pages = self.view.pages.values()
         else:
-            pages = [self.view.pages[int(pages) - 1]]
+            pages = [self.view.pages[int(text) - 1]]
 
         for page in pages:
 
