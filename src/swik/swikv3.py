@@ -285,12 +285,7 @@ class MainWindow(QMainWindow):
         tabs = {}
         for index in range(self.tab_widget.count()):
             swik_widget = self.tab_widget.widget(index)
-            if (filename := swik_widget.get_filename()) is not None:
-                if swik_widget.view.get_mode() != LayoutManager.MODE_SINGLE_PAGE:
-                    value = swik_widget.view.get_scroll_value()
-                else:
-                    value = swik_widget.view.page
-                tabs[index] = [filename, swik_widget.view.get_mode(), swik_widget.view.get_ratio(), value, swik_widget.splitter.sizes()]
+            tabs[index] = swik_widget.get_state()
 
         if self.magnifier is not None:
             self.magnifier.close()

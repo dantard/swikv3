@@ -20,7 +20,6 @@ from PyQt5.QtWidgets import QApplication, QFileDialog, QDialog, QMessageBox, QHB
 from pymupdf import Document
 
 from swik.file_browser import FileBrowser
-from swik.layout_manager import LayoutManager
 from swik.swik_graphview import SwikGraphView
 from swik.dialogs import PasswordDialog, DictDialog, TextBoxDialog
 from swik.font_manager import FontManager
@@ -192,7 +191,7 @@ class SwikWidget(Shell):
         self.scene = Scene(self.changes_tracker)
         self.manager = Manager(self.renderer, self.config)
         self.view = SwikGraphView(self.manager, self.renderer, self.scene, page=Page,
-                                  mode=self.config.private.get('mode', default=LayoutManager.MODE_VERTICAL))
+                                  mode=self.config.private.get('mode', default=SwikGraphView.MODE_VERTICAL))
         self.view.setVerticalScrollBar(MyScrollBar())
         self.view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.view.setRenderHint(QPainter.Antialiasing)
@@ -352,7 +351,7 @@ class SwikWidget(Shell):
         QApplication.processEvents()
 
     def file_selected(self, file):
-        self.push_params(self.view.layout_manager.mode, self.view.ratio, 0, self.splitter.sizes())
+        self.push_params(self.view.get_mode(), self.view.ratio, 0, self.splitter.sizes())
         self.open_file(file)
 
     def push_params(self, mode=0, ratio=1, scroll=0, splitter=None):
@@ -409,7 +408,7 @@ class SwikWidget(Shell):
             return
         selected = selected[0]
         page = self.view.pages[selected.item.page]
-        if self.view.layout_manager.mode == LayoutManager.MODE_SINGLE_PAGE:
+        if self.view.get_mode() == SwikGraphView.MODE_SINGLE_PAGE:
             self.view.move_to_page(page.index)
         p = page.mapToScene(selected.item.to)
         self.view.centerOn(p.x(), p.y() + self.view.viewport().height() / 2)
@@ -444,7 +443,7 @@ class SwikWidget(Shell):
         self.view.set_page(page)
 
     def set_mode(self, mode):
-        self.view.layout_manager.set_mode(mode, False)
+        self.view.set_mode(mode, False)
 
     def document_ready(self):
         pass
@@ -499,9 +498,9 @@ class SwikWidget(Shell):
         return self.win.statusBar()
 
     def iterate_mode(self):
-        mode = (self.view.get_mode() + 1) % (len(LayoutManager.modes))
+        mode = (self.view.get_mode() + 1) % (len(SwikGraphView.modes))
         self.view.set_mode(mode, True)
-        self.statusBar().showMessage("Mode " + LayoutManager.modes[mode], 2000)
+        self.statusBar().showMessage("Mode " + SwikGraphView.modes[mode], 2000)
 
     def flatten(self, open=True):
         filename = self.renderer.get_filename().replace(".pdf", "-flat.pdf")
@@ -543,7 +542,7 @@ class SwikWidget(Shell):
             # Precompute ratio for
             # fit width to avoid flickering
             self.view.ratio = (self.view.viewport().width() - 20) / self.renderer.get_page_width(0)
-            mode = LayoutManager.MODE_FIT_WIDTH
+            mode = SwikGraphView.MODE_FIT_WIDTH
 
         self.view.set_mode(mode)
 
@@ -551,17 +550,17 @@ class SwikWidget(Shell):
         self.load_progress.setMaximum(self.renderer.get_num_of_pages())
 
         # Create pages
-        self.view.layout_manager.reset()
-        self.miniature_view.layout_manager.reset()
+        self.view.reset()
+        self.miniature_view.reset()
 
         for i in range(self.renderer.get_num_of_pages()):
             # Create Page
             page = self.view.create_page(i, self.view.get_ratio())
-            self.view.layout_manager.update_layout(page)
+            self.view.apply_layout(page)
 
             # Create Miniature Page
             mini_page = self.miniature_view.create_page(i, 1)
-            self.miniature_view.layout_manager.update_layout(mini_page)
+            self.miniature_view.apply_layout(mini_page)
 
             # Update progress bar
             self.load_progress.setValue(i + 1)
@@ -584,10 +583,15 @@ class SwikWidget(Shell):
         # view is not ready to be used
         QApplication.processEvents()
 
-        if mode != LayoutManager.MODE_SINGLE_PAGE:
+        if mode != SwikGraphView.MODE_SINGLE_PAGE:
             self.view.set_scroll_value(scroll)
         else:
             self.view.move_to_page(scroll)
+
+    def get_state(self):
+        if (filename := self.get_filename()) is not None:
+            value = self.view.get_show_state()
+            return [filename, self.view.get_mode(), self.view.get_ratio(), value, self.splitter.sizes()]
 
     class TocWidgetItem(QTreeWidgetItem):
         def __init__(self, item):
@@ -613,7 +617,7 @@ class SwikWidget(Shell):
         return self.renderer.get_filename()
 
     def open_button(self):
-        self.push_params(self.view.layout_manager.mode, self.view.ratio, 0, self.splitter.sizes())
+        self.push_params(self.view.get_mode(), self.view.ratio, 0, self.splitter.sizes())
         self.open_file()
 
     def open_file(self, filename=None, warn=True):
@@ -755,10 +759,10 @@ class SwikWidget(Shell):
             for i in range(num_of_pages_added):
                 page = self.view.create_page(index + i, self.view.get_ratio())
                 page.update_original_info({"page": i, "append_id": append_id})
-                self.view.layout_manager.update_layout(page)
+                self.view.apply_layout(page)
 
                 page = self.miniature_view.create_page(index + i, self.miniature_view.get_ratio())
-                self.miniature_view.layout_manager.update_layout(page)
+                self.miniature_view.apply_layout(page)
 
                 pd.set_progress(i * 100 / num_of_pages_added)
 

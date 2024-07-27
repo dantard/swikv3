@@ -30,14 +30,14 @@ class ZoomToolbar(Toolbar):
 
     def option_selected(self):
         if self.lb_zoom.currentText() == "Fit Width":
-            self.view.layout_manager.set_mode(LayoutManager.MODE_FIT_WIDTH)
+            self.view.set_mode(GraphView.MODE_FIT_WIDTH)
             self.lb_zoom.setEditable(False)
         elif self.lb_zoom.currentText() == "Fit Page":
-            self.view.layout_manager.set_mode(LayoutManager.MODE_FIT_PAGE)
+            self.view.set_mode(GraphView.MODE_FIT_PAGE)
             self.lb_zoom.setEditable(False)
         else:
             self.view.set_ratio(float(self.lb_zoom.currentText().replace("%", "")) / 100, False)
-            self.view.layout_manager.set_mode(LayoutManager.MODE_VERTICAL)
+            self.view.set_mode(GraphView.MODE_VERTICAL)
             self.lb_zoom.setEditable(True)
 
     def zoom_entered(self):

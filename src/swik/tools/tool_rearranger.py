@@ -45,7 +45,6 @@ class ToolRearrange(Tool, Undoable):
         self.collider = None
         self.insert_at_page = None
         self.state = None
-        self.orig_ratio = None
         self.rb = None
         self.views = [self.view] + widget.get_other_views()
         self.append_id = 0
@@ -56,8 +55,6 @@ class ToolRearrange(Tool, Undoable):
         self.collider.setPen(Qt.transparent)
         self.collider.setVisible(False)
         self.view.scene().addItem(self.collider)
-        self.orig_ratio = self.view.get_ratio()
-        self.view.set_ratio(0.25, True)
 
         v_layout = QVBoxLayout()
         self.helper = QWidget()
@@ -398,9 +395,6 @@ class ToolRearrange(Tool, Undoable):
 
         for page in self.selected:
             page.setZValue(0)
-
-        if self.view.get_ratio() == 0.25:
-            self.view.set_ratio(self.orig_ratio, True)
 
         self.widget.remove_app_widget()
         self.helper.deleteLater()

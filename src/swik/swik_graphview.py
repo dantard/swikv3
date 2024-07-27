@@ -21,7 +21,7 @@ from swik.widgets.pdf_widget import PdfWidget
 class SwikGraphView(GraphView):
     drop_event = pyqtSignal(list)
 
-    def __init__(self, manager, renderer, scene, page=SimplePage, mode=LayoutManager.MODE_VERTICAL_MULTIPAGE):
+    def __init__(self, manager, renderer, scene, page=SimplePage, mode=GraphView.MODE_VERTICAL_MULTIPAGE):
         super(SwikGraphView, self).__init__(manager, renderer, scene, page, mode)
         self.renderer.sync_requested.connect(self.sync_requested)
         self.renderer.sync_dynamic.connect(self.sync_dynamic)
