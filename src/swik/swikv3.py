@@ -19,7 +19,6 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog
 
 import swik.utils as utils
 from swik.dialogs import DeveloperInfoDialog
-from swik.layout_manager import LayoutManager
 from swik.magnifier import Magnifier
 from swik.progressing import Progressing
 from swik.swik_dbus import DBusServerThread

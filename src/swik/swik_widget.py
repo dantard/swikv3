@@ -499,7 +499,7 @@ class SwikWidget(Shell):
 
     def iterate_mode(self):
         mode = (self.view.get_mode() + 1) % (len(SwikGraphView.modes))
-        self.view.set_mode(mode, True)
+        self.view.set_mode2(mode)
         self.statusBar().showMessage("Mode " + SwikGraphView.modes[mode], 2000)
 
     def flatten(self, open=True):
@@ -536,20 +536,12 @@ class SwikWidget(Shell):
         # Force splitter adjustment
         QApplication.processEvents()
 
-        if ratio > 0:
-            self.view.set_ratio(ratio, True)
-        else:
-            # Precompute ratio for
-            # fit width to avoid flickering
-            self.view.ratio = (self.view.viewport().width() - 20) / self.renderer.get_page_width(0)
-            mode = SwikGraphView.MODE_FIT_WIDTH
-
-        self.view.set_mode(mode)
-
         self.load_progress_action.setVisible(True)
         self.load_progress.setMaximum(self.renderer.get_num_of_pages())
 
         # Create pages
+        self.view.set_mode2(mode, ratio)
+
         self.view.reset()
         self.miniature_view.reset()
 

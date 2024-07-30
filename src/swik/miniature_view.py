@@ -2,7 +2,6 @@ from PyQt5 import QtGui, QtCore
 from PyQt5.QtWidgets import QGraphicsView
 
 from swik.graphview import GraphView
-from swik.layout_manager import LayoutManager
 from swik.miniature_page import MiniaturePage
 from swik.simplepage import SimplePage
 

@@ -2,7 +2,6 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QToolBar, QComboBox
 
 from swik.graphview import GraphView
-from swik.layout_manager import LayoutManager
 from swik.toolbars.toolbar import Toolbar
 
 
@@ -13,7 +12,7 @@ class ZoomToolbar(Toolbar):
         super().__init__(view, toolbar)
 
         self.toolbar.addSeparator()
-        self.toolbar.addAction("Zoom Out", lambda: self.zoom(self.view.get_ratio() - 0.1)).setIcon(QIcon(":/icons/zoom-out.png"))
+        self.toolbar.addAction("Zoom Out", lambda: self.view.update_ratio(-0.1)).setIcon(QIcon(":/icons/zoom-out.png"))
 
         self.lb_zoom = QComboBox()
         self.lb_zoom.addItems(self.options)
@@ -24,20 +23,19 @@ class ZoomToolbar(Toolbar):
         self.lb_zoom.lineEdit().returnPressed.connect(self.zoom_entered)
 
         self.toolbar.addWidget(self.lb_zoom)
-        self.toolbar.addAction("Zoom In", lambda: self.zoom(self.view.get_ratio() + 0.1)).setIcon(QIcon(":/icons/zoom-in.png"))
+        self.toolbar.addAction("Zoom In", lambda: self.view.update_ratio(0.1)).setIcon(QIcon(":/icons/zoom-in.png"))
 
         self.view.ratio_changed.connect(self.ratio_changed)
 
     def option_selected(self):
         if self.lb_zoom.currentText() == "Fit Width":
-            self.view.set_mode(GraphView.MODE_FIT_WIDTH)
+            self.view.set_mode2(GraphView.MODE_FIT_WIDTH)
             self.lb_zoom.setEditable(False)
         elif self.lb_zoom.currentText() == "Fit Page":
-            self.view.set_mode(GraphView.MODE_FIT_PAGE)
+            self.view.set_mode2(GraphView.MODE_FIT_PAGE)
             self.lb_zoom.setEditable(False)
         else:
-            self.view.set_ratio(float(self.lb_zoom.currentText().replace("%", "")) / 100, False)
-            self.view.set_mode(GraphView.MODE_VERTICAL)
+            self.view.set_ratio2(float(self.lb_zoom.currentText().replace("%", "")) / 100)
             self.lb_zoom.setEditable(True)
 
     def zoom_entered(self):
@@ -56,7 +54,7 @@ class ZoomToolbar(Toolbar):
         self.setButtonsEnabled(["Zoom In", "Zoom Out"], value)
 
     def zoom(self, value):
-        self.view.set_ratio(value, True)
+        self.view.set_ratio2(value)
 
     def ratio_changed(self, ratio):
 

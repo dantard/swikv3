@@ -9,7 +9,6 @@ from swik.miniature_page import MiniaturePage
 from swik import utils
 from swik.annotations.hyperlink import InternalLink
 # import EnhancedPage
-from swik.layout_manager import LayoutManager
 from swik.sync_dict import SyncDict
 from swik.simplepage import SimplePage
 from swik.word import Word
@@ -139,10 +138,39 @@ class GraphView(QGraphicsView):
     def get_ratio(self):
         return self.ratio
 
-    def set_ratio(self, ratio, inform=False):
-        if self.get_mode() in [self.MODE_FIT_WIDTH, self.MODE_FIT_PAGE]:
-            self.set_mode(self.MODE_VERTICAL, False)
+    def set_mode2(self, mode, ratio=None):
 
+        if mode not in [self.MODE_FIT_WIDTH, self.MODE_FIT_PAGE]:
+            if ratio is not None:
+                self.ratio = ratio
+            for page in self.pages.values():
+                page.update_ratio(self.ratio)
+            self.ratio_changed.emit(self.ratio)
+        elif mode == self.MODE_FIT_WIDTH:
+            self.ratio_changed.emit(-1)
+        elif mode == self.MODE_FIT_PAGE:
+            self.ratio_changed.emit(-2)
+
+        self.mode = mode
+        self.fully_update_layout()
+
+        if mode == self.MODE_FIT_PAGE:
+            self.move_to_page(self.page)
+
+    def update_ratio(self, delta):
+        # If we are in fit width mode, we need to change
+        # to vertical mode and fix the zoom to the actual
+        # ratio to avoid strange visual effects
+        if self.mode == self.MODE_FIT_WIDTH:
+            ratio = (self.viewport().width() - 17) / self.renderer.get_page_width(self.page) + delta
+            self.set_mode2(self.MODE_VERTICAL, ratio)
+        elif self.mode == self.MODE_FIT_PAGE:
+            ratio = (self.viewport().height() - 17) / self.renderer.get_page_height(self.page) + delta
+            self.set_mode2(self.MODE_VERTICAL, ratio)
+        else:
+            self.set_ratio2(self.ratio + delta)
+
+    def set_ratio2(self, ratio):
         ratio = min(max(self.ratio_min, ratio), self.ratio_max)
 
         # Record radio change
@@ -155,19 +183,25 @@ class GraphView(QGraphicsView):
 
         self.reset()
 
+        for page in self.pages.values():
+            page.update_ratio(self.ratio)
+            self.apply_layout(page)
+
         if self.is_vertical():
             self.verticalScrollBar().setValue(int(self.scene().height() * percent))
             self.horizontalScrollBar().setValue(int(self.horizontalScrollBar().maximum() / 2))
         else:
             self.horizontalScrollBar().setValue(int(self.scene().width() * percent))
 
-        for page in self.pages.values():
-            page.update_ratio(self.ratio)
-            self.apply_layout(page)
-
-        if inform:
-            self.ratio_changed.emit(self.get_ratio())
+        # Avoid visual artifacts
         self.scene().setBackgroundBrush(Qt.gray)
+
+        # Inform toolbar
+        self.ratio_changed.emit(self.get_ratio())
+
+    def aset_ratio(self, ratio, inform=False):
+        if self.get_mode() in [self.MODE_FIT_WIDTH, self.MODE_FIT_PAGE]:
+            self.set_mode(self.MODE_VERTICAL, False)
 
     def set_natural_hscroll(self, value):
         self.natural_hscroll = value
@@ -332,7 +366,7 @@ class GraphView(QGraphicsView):
             delta = int((event.angleDelta().y() / 1200) * 100) / 100
             mouse_on_scene = self.mapToScene(event.pos())
             page = self.get_items_at_pos(event.pos(), SimplePage, 0, False)
-            self.set_ratio(self.get_ratio() + delta, True)
+            self.update_ratio(delta)
 
         index = self.page
         page = self.pages.get(index)
@@ -454,21 +488,6 @@ class GraphView(QGraphicsView):
     #
     #     self.set_mode(mode, force)
 
-    def set_mode(self, mode, update=True):
-        self.mode = mode
-
-        if mode == self.MODE_SINGLE_PAGE:
-            w, h = self.renderer.get_page_size(0)
-            if w < h:
-                ratio = 1 / (h / (self.viewport().height() - 60))
-            else:
-                ratio = 1 / (w / (self.viewport().width() - 60))
-            self.set_ratio(ratio, True)
-
-        if update:
-            self.reset()
-            self.fully_update_layout()
-
     def fully_update_layout(self):
         self.reset()
         for i in range(self.renderer.get_num_of_pages()):
@@ -478,37 +497,66 @@ class GraphView(QGraphicsView):
         QApplication.processEvents()
 
     def reset(self):
-        if self.mode == self.MODE_SINGLE_PAGE:
-            return
-        self.scene_width, self.scene_height = 0, 0
-        self.max_width, self.max_height = self.renderer.get_max_pages_size()
-        rect = self.compute_scene_rect()
+        if self.mode != self.MODE_SINGLE_PAGE:
+            self.scene_width, self.scene_height = 0, 0
+            self.max_width, self.max_height = self.renderer.get_max_pages_size()
+            rect = self.compute_scene_rect()
+            print("reset", self.mode, rect)
+            self.update_scene_rect(rect)
+
+    def update_scene_rect(self, rect):
         self.scene().setSceneRect(rect)
+        print("reeeect", rect)
         self.setAlignment(Qt.AlignBottom | Qt.AlignRight)
         self.setAlignment(self.align)
 
-    def compute_scene_rect(self):
+    def compute_scene_rect(self, page=None):
         if self.mode == self.MODE_SINGLE_PAGE:
-            return QRectF(0, 0, 0, 0)
-        else:
+            w, h = self.renderer.get_page_size(page.index)
+            w = w * self.ratio
+            h = h * self.ratio
+            return QRectF(0, 0, w, h + 40)
+
+        elif self.mode == self.MODE_FIT_WIDTH:
             max_width, max_height = 0, 20
             for index in range(self.renderer.get_num_of_pages()):
                 w, h = self.renderer.get_page_size(index)
-                if self.mode == self.MODE_FIT_WIDTH:
-                    ratio = 1 / (w / (self.viewport().width() - 20))
-                elif self.mode == self.MODE_FIT_PAGE:
-                    if w < h:
-                        ratio = 1 / (h / (self.viewport().height() - 40))
-                    else:
-                        ratio = 1 / (w / (self.viewport().width() - 40))
-                else:
-                    ratio = self.get_ratio()
+                ratio = 1 / (w / (self.viewport().width() - 20))
                 w = w * ratio
                 h = h * ratio
                 max_width = max(max_width, w)
                 max_height = max_height + h + self.page_sep
-            # ri.setRect(0, 0, max_width, max_height)
-            # self.scene().addItem(ri)
+            return QRectF(0, 0, max_width, max_height)
+
+        elif self.mode == self.MODE_FIT_PAGE:
+            max_width, max_height = 0, 20
+            for index in range(self.renderer.get_num_of_pages()):
+                w, h = self.renderer.get_page_size(index)
+                ratio = 1 / (h / (self.viewport().height() - 17))
+                w = w * ratio
+                h = h * ratio
+                max_width = max(max_width, w)
+                max_height = max_height + h + self.page_sep
+            return QRectF(0, 0, max_width, max_height)
+        elif self.mode == self.MODE_HORIZONTAL:
+            max_width, max_height = 0, 20
+            for index in range(self.renderer.get_num_of_pages()):
+                w, h = self.renderer.get_page_size(index)
+                w = w * self.ratio
+                h = h * self.ratio
+                max_width = max_width + w + self.page_sep
+                max_height = max(max_height, h)
+            return QRectF(0, 0, max_width, max_height)
+        else:
+            print("here", self.ratio, self.renderer.get_num_of_pages())
+            max_width, max_height = 0, 20
+            for index in range(self.renderer.get_num_of_pages()):
+                w, h = self.renderer.get_page_size(index)
+                w = w * self.ratio
+                h = h * self.ratio
+                max_width = max(max_width, w)
+                max_height = max_height + h + self.page_sep
+            print("res", max_width, max_height)
             return QRectF(0, 0, max_width, max_height)
 
     def single_row(self, page):
@@ -522,23 +570,18 @@ class GraphView(QGraphicsView):
         page.update_ratio(1 / ratio)
         y_pos = 20 if page.index == 0 else self.pages[page.index - 1].pos().y() + self.pages[page.index - 1].get_scaled_height() + self.page_sep
         self.scene_height = max(self.scene_height, y_pos + page.get_scaled_height() + self.page_sep)
-        # self.scene().setSceneRect(0, 0, page.get_scaled_width(), self.scene_height)
         page.setPos(0, y_pos)
         page.setVisible(True)
 
     def single_column_fit_page(self, page):
         w, h = page.get_orig_width(), page.get_orig_height()
-        if w < h:
-            ratio = 1 / (h / (self.viewport().height() - 60))
-        else:
-            ratio = 1 / (w / (self.viewport().width() - 60))
-
-        # ratio = page.get_orig_height() / (self.viewport().height() - 17)
+        ratio = (h / (self.viewport().height() - 17))
         page.update_ratio(1 / ratio)
         y_pos = 20 if page.index == 0 else self.pages[page.index - 1].pos().y() + self.pages[page.index - 1].get_scaled_height() + self.page_sep
         self.scene_height = max(self.scene_height, y_pos + page.get_scaled_height() + self.page_sep)
         # self.scene().setSceneRect(0, 0, page.get_scaled_width(), self.scene_height)
-        page.setPos(0, y_pos)
+        print("scene_width", self.scene_width, page.get_scaled_width())
+        page.setPos(self.scene().sceneRect().width() / 2 - page.get_scaled_width() / 2, y_pos)
         page.setVisible(True)
 
     def single_column(self, page):
@@ -576,16 +619,10 @@ class GraphView(QGraphicsView):
 
         if self.mode == self.MODE_SINGLE_PAGE:
             if page.index == self.get_page():
-                self.reset()
-                w, h = self.renderer.get_page_size(page.index)
-                ratio = self.get_ratio()
-                w = w * ratio
-                h = h * ratio
-                self.scene().setSceneRect(QRectF(0, 0, w, h + 40))
+                rect = self.compute_scene_rect(page)
+                self.update_scene_rect(rect)
                 page.setPos(0, 20)
                 page.setVisible(True)
-                self.setAlignment(Qt.AlignBottom | Qt.AlignRight)
-                self.setAlignment(self.align)
             else:
                 page.setVisible(False)
 

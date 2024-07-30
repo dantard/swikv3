@@ -4,7 +4,6 @@ from PyQt5.QtWidgets import QGraphicsEllipseItem, QGraphicsView, QPushButton
 
 import swik.utils as utils
 from swik.graphview import GraphView
-from swik.layout_manager import LayoutManager
 from swik.annotations.highlight_annotation import HighlightAnnotation
 from swik.annotations.hyperlink import InternalLink
 from swik.annotations.redact_annotation import RedactAnnotation, Patch
