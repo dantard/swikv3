@@ -27,6 +27,9 @@ class Scene(QGraphicsScene):
         for elem in self.selectedItems():
             self.poses[elem] = elem.pos()
 
+    def action_added(self, action):
+        self.tracker().add_action(action)
+
     def notify_not_undoable(self):
         self.tracker().add_not_undoable()
 

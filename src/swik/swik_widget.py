@@ -696,11 +696,16 @@ class SwikWidget(Shell):
             self.placeholder.close()
         else:
             result = self.renderer.save_pdf(name, False)
+
         if result:
             self.file_browser.select(self.renderer.get_filename(), False)
             self.file_changed.emit(self)
             self.changes_tracker.clear()
             self.mode_group.reset()
+
+            # Update miniature page view (not especially efficient)
+            for page in self.miniature_view.pages.values():
+                page.invalidate()
 
         return result
 

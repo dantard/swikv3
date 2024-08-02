@@ -2,6 +2,7 @@ from PyQt5.QtCore import Qt, QPointF, QUrl, QMimeData
 from PyQt5.QtGui import QColor, QGuiApplication, QDesktopServices, QDrag
 from PyQt5.QtWidgets import QMenu, QDialog, QMessageBox, QApplication
 
+from swik.action import Action
 from swik.annotations.highlight_annotation import HighlightAnnotation
 from swik.annotations.redact_annotation import RedactAnnotation
 from swik.dialogs import FontAndColorDialog
@@ -185,15 +186,20 @@ class ToolTextSelection(Tool):
                 QDesktopServices.openUrl(QUrl(query + text))
 
         elif res == anon:
+            action = Action()
             for word in self.selected:  # type: Word
+                word.set_selected(False)
                 r = RedactAnnotation(word.parentItem(), brush=Qt.black)
                 r.setRect(word.get_rect_on_parent())
-                r.notify_creation()
+                action.push(r, Action.ACTION_CREATE, r.parentItem())
             self.clear_selection()
+            self.view.scene().action_added(action)
+
 
         elif res == highlight:
             annot = HighlightAnnotation(QColor(255, 0, 0, 80), self.selected[0].parentItem())
             for word in self.selected:  # type: Word
+                word.set_selected(False)
                 r = word.get_rect_on_parent()
                 annot.add_quad(r)
             self.clear_selection()

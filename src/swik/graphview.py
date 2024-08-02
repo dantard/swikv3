@@ -275,6 +275,8 @@ class GraphView(QGraphicsView):
             self.page_changed.emit(index, self.renderer.get_num_of_pages())
 
     def page_updated(self, index):
+        print("page updated on", self)
+
         self.pages[index].invalidate()
         v, h = self.verticalScrollBar().value(), self.horizontalScrollBar().value()
 
