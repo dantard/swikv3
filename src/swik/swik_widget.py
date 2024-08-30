@@ -277,6 +277,7 @@ class SwikWidget(Shell):
         self.key_manager.register_combination_action('Ctrl+Z', self.scene.tracker().undo)
         self.key_manager.register_combination_action('Ctrl+Shift+Z', self.scene.tracker().redo)
         self.key_manager.register_combination_action('Ctrl+B', self.iterate_bar_position)
+        self.key_manager.register_combination_action('Ctrl+W', lambda: self.view.set_mode2(SwikGraphView.MODE_FIT_WIDTH))
 
         self.toolbar = QToolBar()
         self.toolbar.addAction("Open", self.open_button).setIcon(QIcon(":/icons/open.png"))

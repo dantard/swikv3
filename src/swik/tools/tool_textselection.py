@@ -237,9 +237,12 @@ class ToolTextSelection(Tool):
         items = self.view.scene().items(scene_pos)
         if len(items) > 0 and type(items[0]) == Word:
             word = items[0]
-            word.set_selected(True)
             if not word in self.selected:
                 self.selected.append(word)
+                word.set_selected(True)
+            else:
+                self.selected.remove(word)
+                word.set_selected(False)
 
     def finish(self):
         for word in self.selected + self.multiple_selection:

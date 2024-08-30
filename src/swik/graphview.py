@@ -34,7 +34,6 @@ class GraphView(QGraphicsView):
 
     ratio_max = 5
     ratio_min = 0.25
-    page_sep = 27
 
     # ## Signals
     mouseEvent = pyqtSignal(QEvent)
@@ -73,6 +72,7 @@ class GraphView(QGraphicsView):
         self.page = 0
         self.pages = SyncDict()
         self.immediate_resize = False
+        self.page_sep = page_sep
 
         self.installEventFilter(self)
 
