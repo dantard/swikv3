@@ -28,6 +28,19 @@ class SignerRectItem(ResizableRectItem):
     def notify_change(self, kind, old, new):
         pass
 
+    def deleted(self):
+        self.signals.discarded.emit()
+
+    def contextMenuEvent(self, event: 'QGraphicsSceneContextMenuEvent') -> None:
+        menu = QMenu()
+        discard = menu.addAction("Discard")
+        res = menu.exec(event.screenPos())
+        if res == discard:
+            self.signals.discarded.emit()
+
+    def notify_creation(self):
+        pass
+
     def notify_deletion(self):
         pass
 
@@ -327,6 +340,7 @@ class ToolSign(Tool):
                                          text_mode=text_mode,
                                          image_mode=image_mode, pen=Qt.transparent, brush=QColor(255, 0, 0, 80))
         self.rubberband.signals.done.connect(self.selection_done)
+        self.rubberband.signals.discarded.connect(self.cancel_btn_clicked)
 
         self.view.viewport().setCursor(Qt.CrossCursor)
 
