@@ -93,7 +93,8 @@ class SwikText(QGraphicsTextItem, Undoable):
                 self.setDefaultTextColor(color.get_color())
                 self.notify_change(Action.FULL_STATE, self.current_state, self.get_full_state())
         elif res == edit_text:
-            text, ok = QInputDialog().getText(self.scene().views()[0], "Input Text", "Enter text", text=self.toPlainText())
+            text, ok = QInputDialog().getText(self.scene().views()[0], "Input Text", "Enter text",
+                                              text=self.toPlainText())
             if ok:
                 self.current_state = self.get_full_state()
                 self.set_text(text)
@@ -103,8 +104,14 @@ class SwikText(QGraphicsTextItem, Undoable):
 
     def mouseDoubleClickEvent(self, event) -> None:
         super().mouseDoubleClickEvent(event)
-        self.setTextInteractionFlags(Qt.TextEditorInteraction)
-        self.setFocus()
+        # self.setTextInteractionFlags(Qt.TextEditorInteraction)
+        # self.setFocus()
+        text, ok = QInputDialog().getText(self.scene().views()[0], "Input Text", "Enter text", text=self.toPlainText())
+        if ok:
+            self.current_state = self.get_full_state()
+            self.set_text(text)
+            self.notify_change(Action.FULL_STATE, self.current_state, self.get_full_state())
+            print("full state", self.get_full_state(), self.current_state)
 
     def mousePressEvent(self, event) -> None:
         super().mousePressEvent(event)
