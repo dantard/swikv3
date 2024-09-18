@@ -1,6 +1,6 @@
 from PyQt5.QtCore import Qt, QPointF, QUrl, QMimeData
 from PyQt5.QtGui import QColor, QGuiApplication, QDesktopServices, QDrag
-from PyQt5.QtWidgets import QMenu, QDialog, QMessageBox, QApplication
+from PyQt5.QtWidgets import QMenu, QDialog, QMessageBox, QApplication, QInputDialog
 
 from swik.action import Action
 from swik.annotations.highlight_annotation import HighlightAnnotation
@@ -172,8 +172,8 @@ class ToolTextSelection(Tool):
             pass
         elif res == paste:
             text = QGuiApplication.clipboard().text()
-            for i, word in enumerate(text.replace("\n", " ").split(" ")):
-                st = SwikText(word, page, self.font_manager, Arial(), 11)
+            for i, word in enumerate(text.split("\n")):
+                st = SwikText(word.replace("\n", ""), page, self.font_manager, Arial(), 11)
                 on_scene = self.view.mapToScene(event.pos())
                 st.setPos(st.mapFromScene(on_scene) + QPointF(15 * i, 15 * i))
 
@@ -205,9 +205,12 @@ class ToolTextSelection(Tool):
             self.clear_selection()
 
         elif res == add_text:
-            st = SwikText("New Text", page, self.font_manager, Arial(), 11)
-            on_scene = self.view.mapToScene(event.pos())
-            st.setPos(st.mapFromScene(on_scene))
+            # inputbox to get text
+            text, ok = QInputDialog().getText(self.view, "Input Text", "Enter text")
+            if ok:
+                st = SwikText(text, page, self.font_manager, Arial(), 11)
+                on_scene = self.view.mapToScene(event.pos())
+                st.setPos(st.mapFromScene(on_scene))
 
         elif res == copy:
             self.copy_selected_to_clipboard()

@@ -3,7 +3,7 @@ import typing
 from PyQt5 import QtGui
 from PyQt5.QtCore import Qt, QPointF, QRectF, pyqtSignal, QObject, QTimer
 from PyQt5.QtGui import QFont, QColor, QPen
-from PyQt5.QtWidgets import QGraphicsTextItem, QMenu, QGraphicsRectItem, QGraphicsItem
+from PyQt5.QtWidgets import QGraphicsTextItem, QMenu, QGraphicsRectItem, QGraphicsItem, QInputDialog
 
 from swik.action import Action
 from swik.color_widget import Color
@@ -80,6 +80,7 @@ class SwikText(QGraphicsTextItem, Undoable):
         self.popup_context_menu(QMenu(), event)
 
     def popup_context_menu(self, menu, event):
+        edit_text = menu.addAction("Edit")
         action = menu.addAction("Edit Font")
         res = menu.exec(event.screenPos())
         self.current_state = self.get_full_state()
@@ -91,7 +92,13 @@ class SwikText(QGraphicsTextItem, Undoable):
                 self.set_font_info(font.get_font(), font.get_font_size())
                 self.setDefaultTextColor(color.get_color())
                 self.notify_change(Action.FULL_STATE, self.current_state, self.get_full_state())
-
+        elif res == edit_text:
+            text, ok = QInputDialog().getText(self.scene().views()[0], "Input Text", "Enter text", text=self.toPlainText())
+            if ok:
+                self.current_state = self.get_full_state()
+                self.set_text(text)
+                self.notify_change(Action.FULL_STATE, self.current_state, self.get_full_state())
+                print("full state", self.get_full_state(), self.current_state)
         return res
 
     def mouseDoubleClickEvent(self, event) -> None:
