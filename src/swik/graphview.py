@@ -28,7 +28,8 @@ class GraphView(QGraphicsView):
     MODE_FIT_PAGE = 5
 
     modes = {MODE_VERTICAL: 'Vertical', MODE_VERTICAL_MULTIPAGE: 'Multi page',
-             MODE_HORIZONTAL: 'Horizontal', MODE_SINGLE_PAGE: 'Single Page', MODE_FIT_WIDTH: 'Fit Width', MODE_FIT_PAGE: 'Fit Page'}
+             MODE_HORIZONTAL: 'Horizontal', MODE_SINGLE_PAGE: 'Single Page', MODE_FIT_WIDTH: 'Fit Width',
+             MODE_FIT_PAGE: 'Fit Page'}
 
     Vertical = [MODE_VERTICAL, MODE_VERTICAL_MULTIPAGE, MODE_SINGLE_PAGE, MODE_FIT_WIDTH, MODE_FIT_PAGE]
 
@@ -59,7 +60,8 @@ class GraphView(QGraphicsView):
 
         return False
 
-    def __init__(self, manager, renderer, scene, page=SimplePage, mode=MODE_VERTICAL_MULTIPAGE, align=Qt.AlignVCenter | Qt.AlignHCenter,
+    def __init__(self, manager, renderer, scene, page=SimplePage, mode=MODE_VERTICAL_MULTIPAGE,
+                 align=Qt.AlignVCenter | Qt.AlignHCenter,
                  page_sep=27):
         super().__init__()
         self.on_document_ready = []
@@ -503,12 +505,10 @@ class GraphView(QGraphicsView):
             self.scene_width, self.scene_height = 0, 0
             self.max_width, self.max_height = self.renderer.get_max_pages_size()
             rect = self.compute_scene_rect()
-            print("reset", self.mode, rect)
             self.update_scene_rect(rect)
 
     def update_scene_rect(self, rect):
         self.scene().setSceneRect(rect)
-        print("reeeect", rect)
         self.setAlignment(Qt.AlignBottom | Qt.AlignRight)
         self.setAlignment(self.align)
 
@@ -562,7 +562,8 @@ class GraphView(QGraphicsView):
             return QRectF(0, 0, max_width, max_height)
 
     def single_row(self, page):
-        x_pos = 20 if page.index == 0 else self.pages[page.index - 1].pos().x() + self.pages[page.index - 1].get_scaled_width() + self.page_sep
+        x_pos = 20 if page.index == 0 else self.pages[page.index - 1].pos().x() + self.pages[
+            page.index - 1].get_scaled_width() + self.page_sep
         self.scene_width = max(self.scene_width, x_pos + page.get_scaled_width() + self.page_sep)
         self.scene().setSceneRect(0, 0, self.scene_width, self.max_height * page.get_scaling_ratio())
         page.setPos(x_pos, self.max_height * page.get_scaling_ratio() / 2 - page.get_scaled_height() / 2)
@@ -570,7 +571,8 @@ class GraphView(QGraphicsView):
     def single_column_fit_width(self, page):
         ratio = page.get_orig_width() / (self.viewport().width() - 17)
         page.update_ratio(1 / ratio)
-        y_pos = 20 if page.index == 0 else self.pages[page.index - 1].pos().y() + self.pages[page.index - 1].get_scaled_height() + self.page_sep
+        y_pos = 20 if page.index == 0 else self.pages[page.index - 1].pos().y() + self.pages[
+            page.index - 1].get_scaled_height() + self.page_sep
         self.scene_height = max(self.scene_height, y_pos + page.get_scaled_height() + self.page_sep)
         page.setPos(0, y_pos)
         page.setVisible(True)
@@ -579,7 +581,8 @@ class GraphView(QGraphicsView):
         w, h = page.get_orig_width(), page.get_orig_height()
         ratio = (h / (self.viewport().height() - 17))
         page.update_ratio(1 / ratio)
-        y_pos = 20 if page.index == 0 else self.pages[page.index - 1].pos().y() + self.pages[page.index - 1].get_scaled_height() + self.page_sep
+        y_pos = 20 if page.index == 0 else self.pages[page.index - 1].pos().y() + self.pages[
+            page.index - 1].get_scaled_height() + self.page_sep
         self.scene_height = max(self.scene_height, y_pos + page.get_scaled_height() + self.page_sep)
         # self.scene().setSceneRect(0, 0, page.get_scaled_width(), self.scene_height)
         print("scene_width", self.scene_width, page.get_scaled_width())
@@ -587,7 +590,8 @@ class GraphView(QGraphicsView):
         page.setVisible(True)
 
     def single_column(self, page):
-        y_pos = 20 if page.index == 0 else self.pages[page.index - 1].pos().y() + self.pages[page.index - 1].get_scaled_height() + self.page_sep
+        y_pos = 20 if page.index == 0 else self.pages[page.index - 1].pos().y() + self.pages[
+            page.index - 1].get_scaled_height() + self.page_sep
         self.scene_height = max(self.scene_height, y_pos + page.get_scaled_height() + self.page_sep)
         # self.scene().setSceneRect(0, 0, self.max_width * page.get_scaling_ratio(), self.scene_height)
 

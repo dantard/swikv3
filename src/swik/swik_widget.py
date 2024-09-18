@@ -16,7 +16,8 @@ from PyQt5.QtCore import Qt, pyqtSignal, QRectF
 from PyQt5.QtGui import QPainter, QIcon, QPalette
 from PyQt5.QtWidgets import QApplication, QFileDialog, QDialog, QMessageBox, QHBoxLayout, \
     QWidget, QTabWidget, QVBoxLayout, QToolBar, \
-    QSplitter, QGraphicsScene, QProgressBar, QTreeWidget, QTreeWidgetItem, QPushButton, QLabel, QFrame, QSizePolicy, QScrollBar
+    QSplitter, QGraphicsScene, QProgressBar, QTreeWidget, QTreeWidgetItem, QPushButton, QLabel, QFrame, QSizePolicy, \
+    QScrollBar
 from pymupdf import Document
 
 from swik.file_browser import FileBrowser
@@ -277,7 +278,8 @@ class SwikWidget(Shell):
         self.key_manager.register_combination_action('Ctrl+Z', self.scene.tracker().undo)
         self.key_manager.register_combination_action('Ctrl+Shift+Z', self.scene.tracker().redo)
         self.key_manager.register_combination_action('Ctrl+B', self.iterate_bar_position)
-        self.key_manager.register_combination_action('Ctrl+W', lambda: self.view.set_mode2(SwikGraphView.MODE_FIT_WIDTH))
+        self.key_manager.register_combination_action('Ctrl+W',
+                                                     lambda: self.view.set_mode2(SwikGraphView.MODE_FIT_WIDTH))
 
         self.toolbar = QToolBar()
         self.toolbar.addAction("Open", self.open_button).setIcon(QIcon(":/icons/open.png"))
@@ -326,7 +328,8 @@ class SwikWidget(Shell):
         self.lateral_bar.addSeparator()
         self.mode_group.append(self.lateral_bar)
 
-        for w in [self.vlayout, self.hlayout, self.ilayout, self.app_layout, self.splitter, self.main_view, self.lateral_bar]:
+        for w in [self.vlayout, self.hlayout, self.ilayout, self.app_layout, self.splitter, self.main_view,
+                  self.lateral_bar]:
             w.setContentsMargins(0, 0, 0, 0)
 
         self.outline = QTreeWidget()
@@ -592,6 +595,8 @@ class SwikWidget(Shell):
             self.item = item
 
     def update_toc(self):
+        ##### TODO: WARNING TOC DISABLED:
+        return
         self.outline.clear()
         items = self.renderer.get_toc()
         self.tab.setTabVisible(1, len(items) > 0)
@@ -662,7 +667,7 @@ class SwikWidget(Shell):
                     return
 
             if not os.path.exists(filename):
-                warn and QMessageBox.warning(self, "Error", "File does not exist")
+                warn and QMessageBox.warning(self, "Error", "File {} does not exist".format(filename))
                 self.close_requested.emit(self)
                 return
 

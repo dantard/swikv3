@@ -15,7 +15,7 @@ from PyQt5 import QtGui
 from PyQt5.QtCore import QEvent, QThread, pyqtSignal, QObject, Qt
 from PyQt5.QtGui import QGuiApplication, QIcon
 from PyQt5.QtNetwork import QUdpSocket, QHostAddress
-from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog
+from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QMessageBox
 
 import swik.utils as utils
 from swik.dialogs import DeveloperInfoDialog
@@ -339,6 +339,7 @@ class MainWindow(QMainWindow):
 
 
 def main():
+    window = None
     app = QApplication(sys.argv)
 
     parser = argparse.ArgumentParser(description='PDF Swik')
@@ -346,25 +347,58 @@ def main():
     parser.add_argument('-t', '--tool', default=None, type=str)
     args, unknown = parser.parse_known_args()
 
-    if len(unknown) > 0 and not args.force_new_instance:
-        DBusGMainLoop(set_as_default=True)
+    sock = QUdpSocket()
 
-        bus = dbus.SessionBus()
-        try:
-            proxy = bus.get_object('com.swik.server', '/com/swik/server')
-            interface = dbus.Interface(proxy, 'com.swik.server_interface')
-            # print("Requesting running instance to open2222", unknown[0])
-            response = interface.open("*".join([os.path.abspath(u) for u in unknown]))
-            # print("response:", response)
-            sys.exit(0)
-        except Exception as e:
-            print("No other instance running")
+    def files_from_other_instances():
+        while sock.hasPendingDatagrams():
+            a, b, c = sock.readDatagram(1024)
+            sock.writeDatagram(b":::OK:::", QHostAddress.LocalHost, c)
+            print("aaaaa", a)
+            if a.decode() != ":::OK?:::":
+                window.open_requested_by_dbus(a.decode())
+
+    port = 5000
+    done = False
+    server_available = False
+
+    while not done and port < 5005:
+        print("TRY to establish myself as server", port)
+        if sock.bind(QHostAddress.LocalHost, port):
+            sock.readyRead.connect(files_from_other_instances)
+            done = True
+        else:
+            # Other instance must be running
+            # Send datagram to 5000 to check if it is responsive
+            sock.writeDatagram(":::OK?:::".encode(), QHostAddress.LocalHost, port)
+
+            # wait for response and manage the lack of response
+            print("wait for response")
+            if sock.waitForReadyRead(1000):
+                while sock.hasPendingDatagrams():
+                    a, b, c, = sock.readDatagram(1024)
+                    print("response received", a, b, c)
+                    if a.decode() == ":::OK:::":
+                        print("server is healthy")
+                        server_available = True
+                        done = True
+                    else:
+                        port = port + 1
+            else:
+                # did not respond retry with next port
+                print("Server is not healthy, try to establish myself as new server on next port")
+                port = port + 1
+
+    if port != 5000:
+        QMessageBox.warning(None, "Warning",
+                            "There is at least an instance of swik which is stuck, please kill it/them.")
+
+    if not args.force_new_instance and len(unknown) > 0 and server_available:
+        print("sending", "*".join(unknown))
+        sock.writeDatagram("*".join(unknown).encode(), QHostAddress.LocalHost, port)
+        sock.waitForReadyRead(1000)
+        sys.exit(0)
 
     window = MainWindow()
-
-    dbus_loop = DBusServerThread()
-    dbus_loop.open_requested.connect(window.open_requested_by_dbus)
-    dbus_loop.start()
 
     app.installEventFilter(window)
 
