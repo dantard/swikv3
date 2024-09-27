@@ -10,13 +10,16 @@ class Copyable:
 class Undoable:
 
     def notify_creation(self):
-        self.scene().item_added(self)
+        if self.scene():
+            self.scene().item_added(self)
 
     def notify_deletion(self):
-        self.scene().item_removed(self)
+        if self.scene():
+            self.scene().item_removed(self)
 
     def notify_change(self, kind, old, new):
-        self.scene().notify_change(self, kind, old, new)
+        if self.scene():
+            self.scene().notify_change(self, kind, old, new)
 
     def undo(self, kind, info):
         pass
@@ -25,7 +28,8 @@ class Undoable:
         self.undo(kind, info)
 
     def notify_not_undoable(self):
-        self.scene().notify_not_undoable()
+        if self.scene():
+            self.scene().notify_not_undoable()
 
 
 class Shell(QWidget):

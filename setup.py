@@ -35,4 +35,12 @@ setup(
             'swik=swik.swikv3:main',
         ],
     },
+    package_data={
+        "swik": ["fonts/*"],
+    },
+    include_package_data=True,
+
+    data_files=[
+        ("share/applications", ['desktop/swik.desktop']),  # Copy to a specific location
+    ],
 )

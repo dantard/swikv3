@@ -133,8 +133,8 @@ class MainWindow(QMainWindow):
         self.magnifier.show()
 
     def set_as_default(self):
-        utils.add_mimeapps_entry("[Default Applications]", "swik0.3.desktop")
-        utils.add_mimeapps_entry("[Added Associations]", "swik0.3.desktop")
+        utils.add_mimeapps_entry("[Default Applications]", "swik.desktop")
+        utils.add_mimeapps_entry("[Added Associations]", "swik.desktop")
 
     def restore(self):
         if self.config.general.get("open_last"):

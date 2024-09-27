@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.1
+Type=Application
+Name=Swik
+Comment=The PDF swiss knife
+Icon=application-x-pdf
+#Exec=swik
+Exec=bash -c "$HOME/.local/bin/swik %f"
+Actions=
+MimeType=application/pdf;
+Categories=Office;

@@ -66,8 +66,8 @@ class PdfTextWidget(PdfWidget):
 
     def set_widget(self, content):
         le = QLineEdit()
-        le.textEdited.connect(self.text_changed)
         le.setText(content)
+        le.textEdited.connect(self.text_changed)
         return le
 
     def text_changed(self, text):
