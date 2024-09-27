@@ -259,7 +259,7 @@ class MainWindow(QMainWindow):
     def open_requested_by_tab(self, filename, page, zoom):
         widget = self.create_widget()
         self.open_new_tab(widget, filename)
-        widget.view.set_ratio(zoom, True)
+        widget.view.set_ratio2(zoom)
         widget.view.set_page(page)
 
     def close_requested_by_tab(self, widget):

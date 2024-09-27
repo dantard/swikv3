@@ -201,10 +201,6 @@ class GraphView(QGraphicsView):
         # Inform toolbar
         self.ratio_changed.emit(self.get_ratio())
 
-    def aset_ratio(self, ratio, inform=False):
-        if self.get_mode() in [self.MODE_FIT_WIDTH, self.MODE_FIT_PAGE]:
-            self.set_mode(self.MODE_VERTICAL, False)
-
     def set_natural_hscroll(self, value):
         self.natural_hscroll = value
 
