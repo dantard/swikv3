@@ -1,5 +1,5 @@
 import os
-import importlib.resources as pkg_resources
+import swik.fonts
 import shutil
 from pathlib import Path
 from subprocess import Popen
@@ -195,7 +195,7 @@ def row(w1, w2, all=True):
 
 def col(*args):
     v_layout = QVBoxLayout()
-     
+
     for w in args:
         if type(w) == str:
             w1 = QLabel(w)
@@ -234,8 +234,7 @@ def framed(widget, title=None):
 
 
 def get_font_path(name):
-    package_name = 'swik.fonts'
-    return str(pkg_resources.path(package_name, name))
+    return swik.fonts.__path__[0] + os.sep + name
 
 
 def get_warning_messagebox(text, icon=QMessageBox.Warning, title=None, parent=None):
