@@ -1,15 +1,17 @@
 #!/usr/bin/env python
+
+import sys
+
+sys.path.append('Z:\\work\\swikv3\\src\\swik')
+sys.path.append('Z:\\work\\swikv3\\src')
+sys.path.append('Z:\\work\\easyconfig\\src')
+
 import argparse
 import os
 import subprocess
 import sys
-import dbus.mainloop.glib
 
-import dbus
-import dbus.service
-import dbus.mainloop.glib
-from gi.repository import GLib
-from dbus.mainloop.glib import DBusGMainLoop
+# from gi.repository import GLib
 
 from PyQt5 import QtGui
 from PyQt5.QtCore import QEvent, QThread, pyqtSignal, QObject, Qt
@@ -21,7 +23,6 @@ import swik.utils as utils
 from swik.dialogs import DeveloperInfoDialog
 from swik.magnifier import Magnifier
 from swik.progressing import Progressing
-from swik.swik_dbus import DBusServerThread
 from swik.swik_tab_widget import SwikTabWidget
 from swik.swik_widget import SwikWidget
 from swik.swik_config import SwikConfig

@@ -9,47 +9,47 @@ version = "0.0.3"
 description = "A PDF Swiss Knife"
 readme = "README.md"
 requires-python = ">=3.10"
-license = {file = "LICENSE.txt"}
+license = { file = "LICENSE.txt" }
 keywords = ["pdf", "swiss knife", "swik"]
 
 # This should be your name or the name of the organization who originally
 # authored the project, and a valid email address corresponding to the name
 # listed.
 authors = [
-  {name = "Danilo Tardioli", email = "dantard@unizar.es" }
+    { name = "Danilo Tardioli", email = "dantard@unizar.es" }
 ]
 
 # This should be your name or the names of the organization who currently
 # maintains the project, and a valid email address corresponding to the name
 # listed.
 maintainers = [
-  {name = "Danilo Tardioli", email = "dantard@unizar.es" }
+    { name = "Danilo Tardioli", email = "dantard@unizar.es" }
 ]
 
 classifiers = [
-  "Development Status :: 3 - Alpha",
-  "Intended Audience :: Developers",
-  "Topic :: Software Development :: Build Tools",
-  "License :: OSI Approved :: MIT License",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12",
-  "Programming Language :: Python :: 3 :: Only",
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Build Tools",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3 :: Only",
 ]
 
 dependencies = [
-  "pyqt5",
-  "pymupdf >= 1.18.17",
-  "easyconfig",
-  "pyhanko",
-  "psutil",
-  "pyHanko[image-support]",
-  "easyconfig@git+https://github.com/dantard/easyconfig.git@revolution",
-  "pycairo",
-  "fonttools",
-  "glib",
-  "dbus-python",
-  "pyopenssl"
+    "pyqt5",
+    "pymupdf >= 1.18.17",
+    "easyconfig",
+    "pyhanko",
+    "psutil",
+    "pyHanko[image-support]",
+    "easyconfig@git+https://github.com/dantard/easyconfig.git@revolution",
+    "pycairo",
+    "fonttools",
+    "glib",
+    "dbus-python",
+    "pyopenssl"
 ]
 
 [project.optional-dependencies]
@@ -66,9 +66,15 @@ test = ["coverage"]
 [project.scripts]
 swik = "swik.swikv3:main"
 
+#[tool.setuptools.options]
+#include-package-data = true
 
-[tool.setuptools]
-#package-data = {"sample" = ["*.dat"]}
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+swik = ["fonts/*"]
+
 
 [tool.setuptools.data-files]
 "share/applications" = ["swik0.3.desktop"]
