@@ -5,7 +5,7 @@ import subprocess
 import sys
 
 from PyQt5 import QtGui
-from PyQt5.QtCore import QEvent, QThread, pyqtSignal, QObject, Qt
+from PyQt5.QtCore import QEvent, QThread, pyqtSignal, QObject, Qt, QTimer
 from PyQt5.QtGui import QGuiApplication, QIcon
 from PyQt5.QtNetwork import QUdpSocket, QHostAddress
 from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QMessageBox
@@ -98,6 +98,7 @@ class MainWindow(QMainWindow):
         self.tab_widget.add_menu_entry('Locate in folder', self.TAB_MENU_LOCATE_IN_FOLDER)
         self.tab_widget.plus_clicked.connect(self.plus_clicked)
         self.tab_widget.tab_close_requested.connect(self.close_tab)
+        self.tab_widget.tab_closed.connect(self.tab_closed)
 
         # Add open with menu
         # command = self.config.general.get("other_pdf")
@@ -117,6 +118,9 @@ class MainWindow(QMainWindow):
         self.config.apply_window_config(self)
         self.update_interaction_status()
         self.show()
+
+    def tab_closed(self):
+        self.config.flush()
 
     def import_file(self):
         file_name, _ = QFileDialog.getOpenFileName(self, "Import file", "",
@@ -385,10 +389,13 @@ def main():
                             "There is at least an instance of swik which is stuck, please kill it/them.")
 
     if not args.force_new_instance and len(unknown) > 0 and server_available:
-        print("sending", "*".join(unknown))
+        print("sending1", unknown, "*".join(unknown))
+        unknown = [os.path.abspath(u) for u in unknown]
+        print("sending2", unknown, "*".join(unknown))
         sock.writeDatagram("*".join(unknown).encode(), QHostAddress.LocalHost, port)
         sock.waitForReadyRead(1000)
-        sys.exit(0)
+        QTimer.singleShot(2000, app.quit)
+        sys.exit(app.exec_())
 
     window = MainWindow()
 

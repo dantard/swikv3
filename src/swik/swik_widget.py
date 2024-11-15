@@ -440,14 +440,8 @@ class SwikWidget(Shell):
         else:
             self.mode_group.reset()
 
-    def set_ratio(self, ratio):
-        self.view.set_ratio(ratio, True)
-
     def set_page(self, page):
         self.view.set_page(page)
-
-    def set_mode(self, mode):
-        self.view.set_mode(mode, False)
 
     def document_ready(self):
         pass

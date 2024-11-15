@@ -546,7 +546,6 @@ class GraphView(QGraphicsView):
                 max_height = max(max_height, h)
             return QRectF(0, 0, max_width, max_height)
         else:
-            print("here", self.ratio, self.renderer.get_num_of_pages())
             max_width, max_height = 0, 20
             for index in range(self.renderer.get_num_of_pages()):
                 w, h = self.renderer.get_page_size(index)
@@ -554,7 +553,6 @@ class GraphView(QGraphicsView):
                 h = h * self.ratio
                 max_width = max(max_width, w)
                 max_height = max_height + h + self.page_sep
-            print("res", max_width, max_height)
             return QRectF(0, 0, max_width, max_height)
 
     def single_row(self, page):

@@ -2,6 +2,7 @@ from PyQt5 import QtGui
 from PyQt5.QtCore import Qt, pyqtSignal, QRect
 from PyQt5.QtGui import QPainter, QColor, QFont
 from PyQt5.QtWidgets import QTabWidget, QPushButton, QWidget, QHBoxLayout, QTabBar, QMenu, QAction, QLabel
+from pyqtgraph.examples.MultiDataPlot import widget
 
 
 class MyAction(QAction):
@@ -14,6 +15,7 @@ class MyAction(QAction):
 class SwikTabWidget(QTabWidget):
     plus_clicked = pyqtSignal()
     tab_close_requested = pyqtSignal(QWidget)
+    tab_closed = pyqtSignal()
 
     def __init__(self, parent=None):
         super(SwikTabWidget, self).__init__(parent)
@@ -94,14 +96,16 @@ class SwikTabWidget(QTabWidget):
     def close_tab_request(self, widget):
         self.tab_close_requested.emit(widget)
 
-    def close_tab(self, widget):
+    def close_tab(self, widget, emit=True):
         index = self.indexOf(widget)
         if index != -1:
             self.removeTab(index)
             widget.die()
             widget.deleteLater()
-
         self.check_paint_shortcuts()
+
+        if emit:
+            self.tab_closed.emit()
 
     def removeTab(self, index: int) -> None:
         super().removeTab(index)
@@ -169,3 +173,27 @@ class SwikTabWidget(QTabWidget):
         if a0.button() == Qt.MidButton:
             tab = self.tabBar().tabAt(a0.pos())
             self.close_tab(self.widget(tab))
+        elif a0.button() == Qt.RightButton:
+            tab = self.tabBar().tabAt(a0.pos())
+            menu = QMenu()
+            menu.addAction("Close", lambda: self.close_tab(self.widget(tab)))
+            menu.addAction("Close All", lambda: self.close_all(tab, 'all'))
+            menu.addAction("Close Others", lambda: self.close_all(tab, 'all-but-this'))
+            # close all the tabs to the right of the current one
+            menu.addAction("Close Tabs to the Right", lambda: self.close_all(tab, 'right'))
+            menu.exec_(a0.globalPos())
+
+    def close_all(self, tab, which):
+        if which == "all":
+            widgets = [self.widget(i) for i in range(self.count())]
+        elif which == "all-but-this":
+            widgets = [self.widget(i) for i in range(self.count()) if i != tab]
+        elif which == "right":
+            widgets = [self.widget(i) for i in range(tab + 1, self.count())]
+        else:
+            widgets = []
+
+        for w in widgets:
+            self.close_tab(w, False)
+
+        self.tab_closed.emit()

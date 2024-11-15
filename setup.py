@@ -12,7 +12,7 @@ setup(
         "pyhanko",
         "psutil",
         "pyHanko[image-support]",
-        "easyconfig@git+https://github.com/dantard/easyconfig.git@revolution",
+        "easyconfig@git+https://github.com/dantard/easyconfig.git",
         "pycairo",
         "fonttools",
         "glib",
