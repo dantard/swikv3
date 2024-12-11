@@ -106,6 +106,7 @@ class SwikWidget(Shell):
     dirtiness_changed = pyqtSignal(object, bool)
     progress = pyqtSignal(float)
     dying = pyqtSignal()
+    document_loading_finished = pyqtSignal()
 
     def __init__(self, window, config):
         super().__init__()
@@ -200,6 +201,7 @@ class SwikWidget(Shell):
         self.view.set_natural_hscroll(self.config.general.get('natural_hscroll'))
         self.view.drop_event.connect(self.drop_event_received)
         self.view.document_ready.connect(self.document_ready)
+        self.view.document_ready.connect(self.document_loading_finished.emit)
 
         self.miniature_view = MiniatureView(self.manager, self.renderer, QGraphicsScene())
         self.miniature_view.setVerticalScrollBar(MyScrollBar())
@@ -577,6 +579,8 @@ class SwikWidget(Shell):
             self.view.set_scroll_value(scroll)
         else:
             self.view.move_to_page(scroll)
+
+        self.document_loading_finished.emit()
 
     def get_state(self):
         if (filename := self.get_filename()) is not None:

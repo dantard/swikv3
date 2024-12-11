@@ -10,7 +10,6 @@ from PyQt5.QtCore import QEvent, QThread, pyqtSignal, QObject, Qt, QTimer
 from PyQt5.QtGui import QGuiApplication, QIcon
 from PyQt5.QtNetwork import QUdpSocket, QHostAddress
 from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QMessageBox
-from mercurial.commandserver import server
 
 import swik.utils as utils
 from swik.dialogs import DeveloperInfoDialog
