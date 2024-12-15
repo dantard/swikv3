@@ -23,6 +23,7 @@
         <file alias="icons/mimic.png">icons/Copy.svg</file>
         <file alias="icons/form.png">icons/Pencil-Square.svg</file>
         <file alias="icons/swiss_knife.png">icons/swiss_knife.png</file>
+        <file alias="icons/privacy.png">icons/privacy.png</file>
         <file>fonts/Arial.ttf</file>
 
 

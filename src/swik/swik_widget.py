@@ -37,6 +37,7 @@ from swik.title_widget import AppBar
 from swik.toolbars.navigation_toolbar import NavigationToolbar
 from swik.toolbars.search_toolbar import TextSearchToolbar
 from swik.toolbars.zoom_toolbar import ZoomToolbar
+from swik.tools.tool_drag import ToolDrag
 from swik.tools.tool_form import ToolForm
 from swik.tools.tool_insert_image import ToolInsertSignatureImage
 from swik.tools.tool_mimic_pdf import ToolMimicPDF
@@ -255,7 +256,7 @@ class SwikWidget(Shell):
         self.app_handle = sp.handle(1)
         self.app_handle.setDisabled(True)
 
-        tool_text = self.manager.register_tool(ToolTextSelection(self), True)
+        tool_text = self.manager.register_tool(ToolTextSelection(self))
         self.tool_sign = self.manager.register_tool(ToolSign(self))
         tool_rear = self.manager.register_tool(ToolRearrange(self))
         tool_reda = self.manager.register_tool(ToolRedactAnnotation(self))
@@ -265,6 +266,7 @@ class SwikWidget(Shell):
         tool_form = self.manager.register_tool(ToolForm(self))
         tool_mimi = self.manager.register_tool(ToolMimicPDF(self))
         tool_nume = self.manager.register_tool(ToolNumerate(self))
+        tool_drag = self.manager.register_tool(ToolDrag(self))
 
         self.key_manager = KeyboardManager(self)
 
@@ -291,7 +293,8 @@ class SwikWidget(Shell):
         # self.toolbar.addWidget(LongPressButton())
 
         self.mode_group = GroupBox(self.manager.use_tool)
-        self.mode_group.add(tool_text, icon=":/icons/text_cursor.png", text="Select Text", default=True)
+        self.mode_group.add(tool_drag, icon=":/icons/privacy.png", text="Drag",default=True)
+        self.mode_group.add(tool_text, icon=":/icons/text_cursor.png", text="Select Text")
         self.sign_btn = self.mode_group.add(self.tool_sign, icon=":/icons/sign.png", text="Sign")
         self.mode_group.add(tool_crop, icon=":/icons/crop.png", text="Crop")
         self.mode_group.add(tool_sqan, icon=":/icons/annotate.png", text="Annotate")
@@ -301,6 +304,7 @@ class SwikWidget(Shell):
         self.mode_group.add(tool_mimi, icon=":/icons/mimic.png", text="Mimic PDF")
         self.tool_form_btn = self.mode_group.add(tool_form, icon=":/icons/form.png", text="Forms")
         self.mode_group.add(tool_nume, icon=":/icons/number.png", text="Number pages")
+
 
         # self.mode_group.append(self.toolbar)
 
