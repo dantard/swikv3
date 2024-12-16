@@ -147,6 +147,12 @@ class MuPDFRenderer(QLabel):
             self.watcher.removePaths(self.watcher.files())
         self.watcher.addPath(self.filename)
 
+        # Close hypothetical previous document
+        try:
+            self.document.close()
+        except:
+            pass
+
         try:
             self.document = Document(file)
             if self.document.needs_pass:
