@@ -2,7 +2,7 @@ from PyQt5 import QtGui
 from PyQt5.QtCore import Qt, pyqtSignal, QRect
 from PyQt5.QtGui import QPainter, QColor, QFont
 from PyQt5.QtWidgets import QTabWidget, QPushButton, QWidget, QHBoxLayout, QTabBar, QMenu, QAction, QLabel
-from pyqtgraph.examples.MultiDataPlot import widget
+#from pyqtgraph.examples.MultiDataPlot import widget
 
 
 class MyAction(QAction):
