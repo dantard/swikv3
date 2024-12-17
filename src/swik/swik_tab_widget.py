@@ -2,7 +2,9 @@ from PyQt5 import QtGui
 from PyQt5.QtCore import Qt, pyqtSignal, QRect
 from PyQt5.QtGui import QPainter, QColor, QFont
 from PyQt5.QtWidgets import QTabWidget, QPushButton, QWidget, QHBoxLayout, QTabBar, QMenu, QAction, QLabel
-#from pyqtgraph.examples.MultiDataPlot import widget
+
+
+# from pyqtgraph.examples.MultiDataPlot import widget
 
 
 class MyAction(QAction):
@@ -175,13 +177,14 @@ class SwikTabWidget(QTabWidget):
             self.close_tab(self.widget(tab))
         elif a0.button() == Qt.RightButton:
             tab = self.tabBar().tabAt(a0.pos())
-            menu = QMenu()
-            menu.addAction("Close", lambda: self.close_tab(self.widget(tab)))
-            menu.addAction("Close All", lambda: self.close_all(tab, 'all'))
-            menu.addAction("Close Others", lambda: self.close_all(tab, 'all-but-this'))
-            # close all the tabs to the right of the current one
-            menu.addAction("Close Tabs to the Right", lambda: self.close_all(tab, 'right'))
-            menu.exec_(a0.globalPos())
+            if self.tabBar().tabRect(tab).contains(a0.pos()):
+                menu = QMenu()
+                menu.addAction("Close", lambda: self.close_tab(self.widget(tab)))
+                menu.addAction("Close All", lambda: self.close_all(tab, 'all'))
+                menu.addAction("Close Others", lambda: self.close_all(tab, 'all-but-this'))
+                # close all the tabs to the right of the current one
+                menu.addAction("Close Tabs to the Right", lambda: self.close_all(tab, 'right'))
+                menu.exec_(a0.globalPos())
 
     def close_all(self, tab, which):
         if which == "all":
