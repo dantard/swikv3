@@ -12,6 +12,7 @@ class Annotation(ResizableRectItem):
         super().__init__(parent, **kwargs)
         self.content = str()
         self.name = str()
+        self.double_click_callback = self.change_color
 
     def set_content(self, text):
         self.content = text
@@ -22,9 +23,12 @@ class Annotation(ResizableRectItem):
     def get_content(self):
         return self.content
 
+    def set_double_click_callback(self, callback):
+        self.double_click_callback = callback
+
     def mouseDoubleClickEvent(self, event: 'QGraphicsSceneMouseEvent') -> None:
         super().mouseDoubleClickEvent(event)
-        self.change_color()
+        self.double_click_callback()
 
     def change_color(self):
         before = self.get_full_state()
