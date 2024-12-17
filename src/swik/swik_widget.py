@@ -12,7 +12,7 @@ from swik.changes_tracker import ChangesTracker
 import swik.resources
 
 from PyQt5 import QtGui
-from PyQt5.QtCore import Qt, pyqtSignal, QRectF
+from PyQt5.QtCore import Qt, pyqtSignal, QRectF, QTimer
 from PyQt5.QtGui import QPainter, QIcon, QPalette
 from PyQt5.QtWidgets import QApplication, QFileDialog, QDialog, QMessageBox, QHBoxLayout, \
     QWidget, QTabWidget, QVBoxLayout, QToolBar, \
@@ -580,7 +580,7 @@ class SwikWidget(Shell):
         else:
             self.view.move_to_page(scroll)
 
-        self.document_loading_finished.emit()
+        QTimer.singleShot(0, self.document_loading_finished.emit)
 
     def get_state(self):
         if (filename := self.get_filename()) is not None:
