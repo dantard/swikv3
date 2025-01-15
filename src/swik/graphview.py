@@ -271,6 +271,8 @@ class GraphView(QGraphicsView):
 
             page.update()
             self.page_changed.emit(index, self.renderer.get_num_of_pages())
+            return True
+        return False
 
     def page_updated(self, index):
         print("page updated on", self)

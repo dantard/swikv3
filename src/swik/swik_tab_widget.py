@@ -19,12 +19,13 @@ class SwikTabWidget(QTabWidget):
     tab_close_requested = pyqtSignal(QWidget)
     tab_closed = pyqtSignal()
 
-    def __init__(self, parent=None):
+    def __init__(self, main_window, parent=None):
         super(SwikTabWidget, self).__init__(parent)
         self.setMovable(True)
         self.menu = QMenu()
         self.menu_callback = None
         self.paint_shortcuts = True
+        self.main_window = main_window
 
         class PB(QWidget):
             def __init__(self, text, parent=None):
@@ -184,6 +185,8 @@ class SwikTabWidget(QTabWidget):
                 menu.addAction("Close Others", lambda: self.close_all(tab, 'all-but-this'))
                 # close all the tabs to the right of the current one
                 menu.addAction("Close Tabs to the Right", lambda: self.close_all(tab, 'right'))
+                menu.addSeparator()
+                menu.addAction("Rename", self.main_window.rename)
                 menu.exec_(a0.globalPos())
 
     def close_all(self, tab, which):

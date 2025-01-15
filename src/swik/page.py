@@ -16,6 +16,7 @@ class Page(SimplePage):
         self.signals = Page.PageSignals()
         super().__init__(index, view, manager, renderer, ratio)
         self.words = None
+        self.selector = None
         self.info = QGraphicsTextItem(self)
         self.info.setPlainText(str(index))
         font = self.info.font()

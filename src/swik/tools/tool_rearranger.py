@@ -141,7 +141,8 @@ class ToolRearrange(Tool, Undoable):
             self.view.scene().addItem(self.rb)
             self.rb.view_mouse_press_event(self.view, event)
             self.rb.signals.creating.connect(self.rect_selection)
-            self.clear_selected()
+            if not event.modifiers() & Qt.ControlModifier:
+                self.clear_selected()
 
         elif event.modifiers() & Qt.ControlModifier:
             self.state = self.STATE_PAGE_SELECTION
@@ -201,27 +202,6 @@ class ToolRearrange(Tool, Undoable):
                 self.insert_at_page = None
                 self.collider.setVisible(False)
 
-    def scene(self):
-        return self.view.scene()
-
-    def rearrange(self, ids):
-        self.renderer.rearrange_pages(ids, False)
-
-        for view in self.views:
-            # pages = [view.get_page_item(i) for i in range(view.get_page_count())]
-            # for i, idx in enumerate(ids):
-            #     view.pages[i] = pages[idx]
-            #     view.pages[i].index = i
-            view.rearrange(ids)
-
-    def key_pressed(self, event):
-        self.update_cursor(event)
-
-    def key_released(self, event):
-        self.update_cursor(event)
-        if event.key() == Qt.Key_Escape:
-            self.clear_selected()
-
     def mouse_released(self, event):
 
         if self.state == self.STATE_PAGE_MOVING:
@@ -255,18 +235,54 @@ class ToolRearrange(Tool, Undoable):
         self.state = None
         self.update_cursor(event)
 
+    def scene(self):
+        return self.view.scene()
+
+    def rearrange(self, ids):
+        self.renderer.rearrange_pages(ids, False)
+
+        for view in self.views:
+            # pages = [view.get_page_item(i) for i in range(view.get_page_count())]
+            # for i, idx in enumerate(ids):
+            #     view.pages[i] = pages[idx]
+            #     view.pages[i].index = i
+            view.rearrange(ids)
+
+    def key_pressed(self, event):
+        self.update_cursor(event)
+
+    def key_released(self, event):
+        self.update_cursor(event)
+        if event.key() == Qt.Key_Escape:
+            self.clear_selected()
+
     def rect_selection(self, rubberband):
         ci = self.rb.collidingItems()
         ci = [item for item in ci if isinstance(item, SimplePage)]
-        for page in self.selected:
-            page.set_selected(False)
+        # for page in self.selected:
+        #    page.set_selected(False)
 
-        self.selected.clear()
+        #        self.selected.clear()
 
         for page in ci:
-            if page not in self.selected:
-                page.set_selected(True)
+            page.set_selected(True)
+            page.selector = self.rb
+            if not page in self.selected:
                 self.selected.append(page)
+
+        for page in self.view.pages.values():
+            if not page in ci and page.selector is self.rb:
+                page.set_selected(False)
+                page.selector = None
+                if page in self.selected:
+                    self.selected.remove(page)
+
+        # reorder selected pages by index
+        self.selected.sort(key=lambda x: x.index)
+
+        #   if page not in self.selected:
+        #       page.set_selected(True)
+        #       self.selected.append(page)
 
     def operation_done(self, clear=True):
         for view in self.views:
@@ -281,6 +297,8 @@ class ToolRearrange(Tool, Undoable):
             return
 
         menu = QMenu()
+        export_path = self.renderer.get_filename().replace(".pdf", "_" + str(len(self.selected)) + "_pag.pdf")
+        export_and_open_autoname = menu.addAction("Export" + " " + str(len(self.selected)) + " " + "pages and open '" + export_path.split("/")[-1] + "'")
         export_and_open = menu.addAction("Export" + " " + str(len(self.selected)) + " " + "pages and open")
         export = menu.addAction("Export" + " " + str(len(self.selected)) + " " + "pages")
         menu.addSeparator()
@@ -306,6 +324,9 @@ class ToolRearrange(Tool, Undoable):
             self.action_insert_blank([page.index for page in self.selected])
         elif res == rotate:
             self.action_rotate([p.index for p in self.selected], 90)
+        elif res == export_and_open_autoname:
+            self.action_export(True, export_path)
+
         # elif res == stack_blank:
         #    self.action_stack_blank([page.index for page in self.selected])
 
@@ -453,14 +474,15 @@ class ToolRearrange(Tool, Undoable):
         self.notify_change(Action.PAGES_ADDED, {"pages_added": pages_added}, {"pages_added": pages_added})
         self.show_numbers()
 
-    def action_export(self, open_pdf):
-        filename, _ = QFileDialog.getSaveFileName(self.view, "Save PDF Document", self.renderer.get_filename(),
-                                                  "PDF Files (*.pdf)")
+    def action_export(self, open_pdf, filename=None):
+        if filename is None:
+            filename, _ = QFileDialog.getSaveFileName(self.view, "Save PDF Document", self.renderer.get_filename(),
+                                                      "PDF Files (*.pdf)")
         if filename:
             if self.renderer.export_pages([page.index for page in self.selected], filename):
                 if open_pdf:
                     self.emit_finished()
-                    self.renderer.open_pdf(filename)
+                    self.widget.open_requested.emit(filename, 0, 1)
                 else:
                     QMessageBox.information(self.view, "Export", "Exported" + " " + str(
                         len(self.selected)) + " " + "pages to" + " " + filename)

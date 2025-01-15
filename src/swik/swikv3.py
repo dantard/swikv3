@@ -90,7 +90,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Swik")
         self.setGeometry(100, 100, 640, 480)
 
-        self.tab_widget = SwikTabWidget()
+        self.tab_widget = SwikTabWidget(self)
         # self.tab_widget.addTab(QWidget(), "+")
         self.tab_widget.currentChanged.connect(self.tab_changed)
         self.tab_widget.setStyleSheet("QTabBar::tab { max-width: 300px; text-align: right; }")
@@ -254,6 +254,15 @@ class MainWindow(QMainWindow):
             action.setEnabled(value)
 
     def open_new_tab(self, widget, filename=None, warn=True):
+
+        print("djjdjdjdjd")
+
+        # check if file already opened
+        for i in range(self.tab_widget.count()):
+            if self.tab_widget.widget(i).renderer.filename == filename:
+                self.tab_widget.setCurrentIndex(i)
+                return
+
         self.tab_widget.new_tab(widget, filename)
         if filename is not None:
             widget.open_file(filename, warn)

@@ -1,6 +1,6 @@
 from PyQt5.QtCore import QObject, pyqtSignal, Qt, QUrl, QMimeData
 from PyQt5.QtGui import QDrag
-from PyQt5.QtWidgets import QGraphicsRectItem
+from PyQt5.QtWidgets import QGraphicsRectItem, QGraphicsView
 from swik.word import Word
 
 from swik.simplepage import SimplePage
@@ -80,12 +80,14 @@ class Manager(QObject):
 
         if event.modifiers() & Qt.ShiftModifier:
             event.accept()
+            drag_mode = self.view.dragMode()
+            self.view.setDragMode(QGraphicsView.NoDrag)
             drag = QDrag(self)
             mime_data = QMimeData()
             mime_data.setUrls([QUrl.fromLocalFile(self.renderer.get_filename())])
-            print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", [QUrl.fromLocalFile(self.renderer.get_filename())])
             drag.setMimeData(mime_data)
             drag.exec_(Qt.CopyAction)
+            self.view.setDragMode(drag_mode)
             return
 
         if self.current is not None:

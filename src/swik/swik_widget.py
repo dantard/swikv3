@@ -219,6 +219,8 @@ class SwikWidget(Shell):
         self.manager.set_view(self.view)
         self.font_manager = FontManager(self.renderer)
 
+        self.miniature_view.page_changed.connect(lambda x, y: self.view.set_page(x))
+
         self.vlayout, self.hlayout, self.ilayout, self.app_layout = QVBoxLayout(), QHBoxLayout(), QHBoxLayout(), QVBoxLayout()
 
         self.file_changed_frame = QToolBar()
@@ -293,7 +295,7 @@ class SwikWidget(Shell):
         # self.toolbar.addWidget(LongPressButton())
 
         self.mode_group = GroupBox(self.manager.use_tool)
-        self.mode_group.add(tool_drag, icon=":/icons/privacy.png", text="Drag",default=True)
+        self.mode_group.add(tool_drag, icon=":/icons/privacy.png", text="Drag", default=True)
         self.mode_group.add(tool_text, icon=":/icons/text_cursor.png", text="Select Text")
         self.sign_btn = self.mode_group.add(self.tool_sign, icon=":/icons/sign.png", text="Sign")
         self.mode_group.add(tool_crop, icon=":/icons/crop.png", text="Crop")
@@ -304,7 +306,6 @@ class SwikWidget(Shell):
         self.mode_group.add(tool_mimi, icon=":/icons/mimic.png", text="Mimic PDF")
         self.tool_form_btn = self.mode_group.add(tool_form, icon=":/icons/form.png", text="Forms")
         self.mode_group.add(tool_nume, icon=":/icons/number.png", text="Number pages")
-
 
         # self.mode_group.append(self.toolbar)
 
@@ -626,6 +627,7 @@ class SwikWidget(Shell):
             filename, ext = QFileDialog.getOpenFileName(self, 'Open file', last_dir_for_open, 'PDF (*.pdf)')
 
         if filename:
+            
             _, ext = os.path.splitext(filename)
 
             if ext in ['.doc', '.docx', '.odt', '.rtf', '.html',
