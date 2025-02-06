@@ -5,16 +5,18 @@ import time
 import traceback
 from os.path import exists
 
+import fitz
 import pymupdf
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt, QRunnable, QThreadPool, pyqtSignal, QMutex, QRectF, QRect, QByteArray, QBuffer, QIODevice, \
     QTimer, QPointF, QFileSystemWatcher
 from PyQt5.QtGui import QPixmap, QImage, QBrush, QPen, QColor
-from PyQt5.QtWidgets import QLabel
+from PyQt5.QtWidgets import QLabel, QMessageBox
+from fontTools.misc.eexec import encrypt
 from pymupdf import TEXTFLAGS_DICT, TEXT_PRESERVE_IMAGES, TextWriter, Font, Point, Document, Rect, Quad, Annot
 from pymupdf.mupdf import PDF_ENCRYPT_KEEP, PDF_WIDGET_TYPE_TEXT, PDF_WIDGET_TYPE_CHECKBOX, PDF_ANNOT_IS_LOCKED, \
     PDF_ANNOT_HIGHLIGHT, \
-    PDF_ANNOT_SQUARE, PDF_WIDGET_TYPE_RADIOBUTTON, PDF_WIDGET_TYPE_COMBOBOX
+    PDF_ANNOT_SQUARE, PDF_WIDGET_TYPE_RADIOBUTTON, PDF_WIDGET_TYPE_COMBOBOX, PDF_ENCRYPT_NONE, PDF_ENCRYPT_AES_256
 
 import swik.utils as utils
 from swik.annotations.highlight_annotation import HighlightAnnotation
@@ -171,25 +173,38 @@ class MuPDFRenderer(QLabel):
             return self.OPEN_ERROR
 
     def save_pdf(self, filename, emit=True):
-        print("Saving to in renderer", filename)
+
+        encryption = PDF_ENCRYPT_KEEP
+
+        if self.document.needs_pass:
+            # ask if we want to remove the passwd with and input dialog
+            reply = QMessageBox.question(None, "Confirm", "The document will be saved without password protection. Do you want to proceed?",
+                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            if reply == QMessageBox.Yes:
+                self.document.authenticate(self.password)
+                self.password = None
+                encryption = PDF_ENCRYPT_NONE
+            else:
+                return False
+
         if self.watcher.files():
             self.watcher.removePaths(self.watcher.files())
 
         self.sync_requested.emit()
-        orig_data = self.document.tobytes(encryption=PDF_ENCRYPT_KEEP, deflate=True, garbage=3)
-        orig_doc = pymupdf.open("pdf", orig_data)
+
+        # TODO: orig_data = self.document.tobytes(encryption=encryption, deflate=True, garbage=3, owner_pw=self.password, user_pw=self.password)
+        # TODO: orig_doc = pymupdf.open("pdf", orig_data)
 
         self.sync_dynamic.emit()
 
         if filename != self.get_filename():
-            print("Saving to2", filename)
-            self.document.save(filename, encryption=PDF_ENCRYPT_KEEP, deflate=True, garbage=3)
+            self.document.save(filename, encryption=encryption, deflate=True, garbage=3, owner_pw=self.password, user_pw=self.password)
+            self.document.close()
         else:
-            print("Saving to3", filename)
             tmp_dir = tempfile.gettempdir() + os.sep
             temp_filename = tmp_dir + "swik_{}.tmp".format(int(time.time()))
 
-            self.document.save(temp_filename, encryption=PDF_ENCRYPT_KEEP, deflate=True, garbage=3)
+            self.document.save(temp_filename, encryption=encryption, deflate=True, garbage=3)
             self.document.close()
 
             shutil.copy2(temp_filename, filename)
@@ -199,8 +214,9 @@ class MuPDFRenderer(QLabel):
 
         self.filename = filename
         self.watcher.addPath(self.filename)
-
-        self.set_document(orig_doc, False)
+        # TODO: orig_doc.authenticate(self.password)
+        # TODO: removed 4 alex self.set_document(orig_doc, False)
+        self.open_pdf(filename, self.password)
         return True
 
     def get_page_size(self, index):
